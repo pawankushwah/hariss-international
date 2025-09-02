@@ -8,17 +8,20 @@ import CustomPasswordInput from "../../components/customPasswordInput";
 import CustomTextInput from "../../components/CustomTextInput";
 import Logo from "../../components/logo";
 import CardForLoginPage from "../../components/cardForLoginPage";
+import { useRouter } from "next/navigation";
 
 const LoginPage = () => {
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
+    const router = useRouter()
 
     function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
+         router.push("/dashboard");
         // Handle form submission logic here
-        alert("Form submitted");
-        console.log("User ID:", userId);
-        console.log("Password:", password);
+        // alert("Form submitted");
+        // console.log("User ID:", userId);
+        // console.log("Password:", password);
     }
 
     return (
