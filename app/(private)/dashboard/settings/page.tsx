@@ -6,7 +6,7 @@ export default function Settings() {
             <h1 className="text-[20px] font-semibold text-[#181D27] mb-[16px]">Settings</h1>
             <div className="flex bg-white w-full h-[calc(100%-46px)] border-[1px] border-[#E9EAEB] rounded-[8px] overflow-hidden">
                 {/* Settings sub-options */}
-                <div className="overflow-auto w-[240px] border-r-[1px] border-[#E9EAEB] p-[12px]">
+                <div className="overflow-auto w-[240px] border-r-[1px] border-[#E9EAEB] p-[12px] flex flex-col gap-[6px]">
                     <SidebarBtn
                         isActive={true}
                         label="Users & Roles"
@@ -24,7 +24,7 @@ export default function Settings() {
                 </div>
 
                 {/* Sub Options details */}
-                <div className="p-[20px]">
+                <div className="p-[20px] hidden sm:block">
                     <h1 className="text-[18px] font-semibold">Users & Roles</h1>
                 </div>
             </div>

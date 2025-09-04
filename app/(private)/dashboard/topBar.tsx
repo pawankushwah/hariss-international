@@ -32,7 +32,7 @@ export default function TopBar({
                 )}
 
                 {/* top bar main content */}
-                <div className="w-full h-full px-[16px] py-[14px] flex justify-between items-center bg-white border-b-[1px] border-[#E9EAEB]">
+                <div className="w-full h-full px-[16px] py-[14px] flex justify-between items-center gap-1 sm:gap-0 bg-white border-b-[1px] border-[#E9EAEB]">
                     <div className="flex items-center gap-[20px]">
                         {!horizontalSidebar && (
                             <Icon

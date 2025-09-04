@@ -2,8 +2,9 @@
 
 import Logo from "../../components/logo";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
+import { LinkDataType, SidebarDataType } from "./layout";
 
-export default function Sidebar() {
+export default function Sidebar({ data, onClickHandler }: { data: SidebarDataType[], onClickHandler: (href: string) => void }) {
     return (
         <div className="group peer">
             <div className="w-[80px] group-hover:w-[250px] h-[100vh] fixed ease-in-out duration-300 bg-white">
@@ -19,81 +20,32 @@ export default function Sidebar() {
                 <div className="w-full h-[900px] py-5 px-4 border-[1px] border-[#E9EAEB] border-t-0">
                     {/* siderbar main menu */}
                     <div className="mb-5 w-full h-full">
-                        <div className=" group-hover:mb-[20px]">
-                            <div className="text-[#717680] text-[14px] mb-3 hidden group-hover:block">
-                                Main Menu
-                            </div>
-                            <ul className="w-full flex flex-col gap-[6px]">
-                                <SidebarBtn
-                                    isActive={true}
-                                    href="/dashboard"
-                                    label="Dashboard"
-                                    labelTw="hidden group-hover:block"
-                                    leadingIcon="hugeicons:home-01"
-                                />
-
-                                <SidebarBtn
-                                    href="/dashboard/customer"
-                                    label="Customer"
-                                    labelTw="hidden group-hover:block"
-                                    leadingIcon="lucide:user"
-                                />
-
-                                <SidebarBtn
-                                    href="/dashboard/landmark"
-                                    label="Landmark"
-                                    labelTw="hidden group-hover:block"
-                                    leadingIcon="hugeicons:truck-delivery"
-                                />
-
-                                <SidebarBtn
-                                    href="/dashboard/inbox"
-                                    label="Items"
-                                    labelTw="hidden group-hover:block"
-                                    leadingIcon="lucide:inbox"
-                                />
-                            </ul>
-                        </div>
-
-                        {/* sidebar CRM */}
-                        <div>
-                            <div className="text-[#717680] text-[14px] mb-3 hidden group-hover:block">
-                                CRM
-                            </div>
-                            <ul className="w-full flex flex-col gap-[6px]">
-                                <SidebarBtn
-                                    href="/dashboard/masters"
-                                    label="Masters"
-                                    labelTw="hidden group-hover:block"
-                                    leadingIcon="hugeicons:workflow-square-06"
-                                    trailingIcon="mdi-light:chevron-right"
-                                    trailingIconTw="hidden group-hover:block"
-                                />
-
-                                <SidebarBtn
-                                    href="/dashboard/report"
-                                    label="Report"
-                                    labelTw="hidden group-hover:block"
-                                    leadingIcon="tabler:file-text"
-                                    trailingIcon="mdi-light:chevron-right"
-                                    trailingIconTw="hidden group-hover:block"
-                                />
-
-                                <SidebarBtn
-                                    href="/dashboard/agentTransaction"
-                                    label="Agent Transaction"
-                                    labelTw="hidden group-hover:block"
-                                    leadingIcon="mingcute:bill-line"
-                                />
-
-                                <SidebarBtn
-                                    href="/dashboard/harissTransaction"
-                                    label="Hariss Transaction"
-                                    labelTw="hidden group-hover:block"
-                                    leadingIcon="hugeicons:transaction"
-                                />
-                            </ul>
-                        </div>
+                        {
+                            data.map((group: SidebarDataType) => (
+                                <div key={group.name} className="group-hover:mb-[20px]">
+                                    <div className="text-[#717680] text-[14px] mb-3 hidden group-hover:block">
+                                        {group.name}
+                                    </div>
+                                    <ul className="w-full flex flex-col gap-[6px]">
+                                        {
+                                            group.data.map((link: LinkDataType) => (
+                                                <SidebarBtn
+                                                    key={link.href}
+                                                    isActive={link.isActive}
+                                                    href={link.href}
+                                                    label={link.label}
+                                                    labelTw="hidden group-hover:block"
+                                                    leadingIcon={link.leadingIcon}
+                                                    trailingIcon={link.trailingIcon}
+                                                    trailingIconTw="hidden group-hover:block"
+                                                    onClick={() => onClickHandler(link.href)}
+                                                />
+                                            ))
+                                        }
+                                    </ul>
+                                </div>
+                            ))
+                        }
                     </div>
                 </div>
             </div>
