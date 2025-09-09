@@ -7,6 +7,7 @@ import { useState } from "react";
 import CustomDropdown from "@/app/components/customDropdown";
 import FilterDropdown from "@/app/components/filterDropdown";
 import CustomCheckbox from "@/app/components/customCheckbox";
+import { useRouter } from "next/navigation";
 
 type RowProps = {
     id: number;
@@ -52,6 +53,7 @@ const filterData = new Array(10).fill(null).map(() => ({
 }));
 
 export default function Customer() {
+    const router = useRouter()
     const [selectedItems, setSelectedItems] = useState<Array<number>>([]);
     const allItemsCount = data.length;
     const isAllSelected = selectedItems.length === allItemsCount;
@@ -125,7 +127,7 @@ export default function Customer() {
                         </div>
                         <button
                             className="rounded-lg bg-[#EA0A2A] text-white px-4 py-[10px] flex items-center gap-[8px]"
-                            onClick={() => alert("Add Customer")}
+                            onClick={() => router.push("/dashboard/customer/add")}
                         >
                             <Icon icon="tabler:plus" width={20} />
                             <span className="md:block hidden">
