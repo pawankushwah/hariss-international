@@ -15,3 +15,4 @@ export default function CustomTextInput({label, value, onChange}: {label: string
         </div>
     );
 }
+
