@@ -80,7 +80,7 @@ export default function Customer() {
         <>
             <div className="flex justify-between items-center mb-[20px]">
                 <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
-                    Customer
+                    Company
                 </h1>
                 <div className="flex gap-[12px] relative">
                     <BorderIconButton
@@ -124,21 +124,20 @@ export default function Customer() {
                         <div className="w-[320px]">
                             <SearchBar />
                         </div>
-                        <Link href="/dashboard/customer/add">
-                              <button
-                            className="rounded-lg bg-[#EA0A2A] text-white px-4 py-[10px] flex items-center gap-[8px]"
-                          
-                        >
-                            <Icon icon="tabler:plus" width={20} />
-                            <span className="md:block hidden">
-                                Add Customer
-                            </span>
-                            <span className="hidden sm:block md:hidden">
-                                Add
-                            </span>
-                        </button>
+                        <Link href="/dashboard/company/add">
+                            <button
+                                className="rounded-lg bg-[#EA0A2A] text-white px-4 py-[10px] flex items-center gap-[8px] cursor-pointer"
+                                onClick={() => {}}
+                            >
+                                <Icon icon="tabler:plus" width={20} />
+                                <span className="md:block hidden">
+                                    Add Company
+                                </span>
+                                <span className="hidden sm:block md:hidden">
+                                    Add
+                                </span>
+                            </button>
                         </Link>
-                  
                     </div>
 
                     <div className="overflow-x-auto rounded-lg border border-[#E9EAEB]">
