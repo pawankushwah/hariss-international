@@ -1,7 +1,7 @@
 "use client";
-import WarehouseDetails from "@/app/(private)/dashboard/warehouse/warehouseManagement/warehouseDetails";
-import WarehouseContact from "@/app/(private)/dashboard/warehouse/warehouseManagement/warehouseContact";
-import WarehouseLocationInformation from "@/app/(private)/dashboard/warehouse/warehouseManagement/warehouseLocationInfo";
+import WarehouseDetails from "./warehouseDetails";
+import WarehouseContact from "./warehouseContact";
+import WarehouseLocationInformation from "./warehouseLocationInfo";
 import ContainerCard from "@/app/components/containerCard";
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
