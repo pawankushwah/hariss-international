@@ -25,8 +25,8 @@ export default function InputFields({ label, value, onChange, options }: Props) 
           id={label}
           value={value}
           onChange={onChange}
-          className="border border-gray-300 rounded-md px-3 mt-[6px]"
-          style={{ height: "44px", width: "406px" }}
+          className="border border-gray-300 rounded-md px-3 mt-[6px] h-[44px] w-full"
+     
         >
           <option value="">{`Select ${label}`}</option>
           {options.map((opt) => (
@@ -41,8 +41,8 @@ export default function InputFields({ label, value, onChange, options }: Props) 
           type="text"
           value={value}
           onChange={onChange}
-          className="border border-gray-300 rounded-md px-3 mt-[6px]"
-          style={{ height: "44px", width: "406px" }}
+          className="border border-gray-300 rounded-md px-3 mt-[6px] h-[44px]"
+      
           placeholder={`Enter ${label}`}  // ✅ moved here
         />
       )}
