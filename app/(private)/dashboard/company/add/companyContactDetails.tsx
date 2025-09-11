@@ -20,14 +20,15 @@ export default function CompanyContactDetails() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {/* Primary Contact */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700">Primary Contact</label>
-        <div className="flex">
+      <div className="flex flex-col gap-2 w-full">
+        <label className="text-sm font-medium text-gray-700">
+          Primary Contact
+        </label>
+        <div className="flex w-full">
           <select
             value={primaryCode}
             onChange={(e) => setPrimaryCode(e.target.value)}
-            className="border border-gray-300 rounded-l-md px-3 text-gray-900"
-            style={{ height: "44px" }}
+            className="border border-gray-300 rounded-l-md px-3 text-gray-900 h-[44px] w-24 sm:w-28"
           >
             {countryOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -40,8 +41,7 @@ export default function CompanyContactDetails() {
             value={primaryContact}
             onChange={(e) => setPrimaryContact(e.target.value)}
             placeholder="Contact Number"
-            className="border border-gray-300 rounded-r-md px-3 text-gray-900 placeholder-gray-400 flex-1"
-            style={{ height: "44px" }}
+            className="border border-gray-300 rounded-r-md px-3 text-gray-900 placeholder-gray-400 flex-1 h-[44px] w-full"
           />
         </div>
       </div>
