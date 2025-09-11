@@ -1,7 +1,7 @@
 "use client";
 
 import BorderIconButton from "@/app/components/borderIconButton";
-import SearchBar from "../searchBar";
+import SearchBar from "../../dashboard/searchBar";
 import { Icon } from "@iconify-icon/react";
 import { useState } from "react";
 import CustomDropdown from "@/app/components/customDropdown";
@@ -11,19 +11,32 @@ import Link from "next/link";
 
 type RowProps = {
     id: number;
-    routeCode: string;
-    routeName: string;
-    depotName: string;
-    routeType: string;
+    code: string;
+    brand: string;
+    numberPlate: string;
+    chassisNumber: string;
+    odoMeter: number;
+    vehicleType: string;
+    capacity: number;
+    ownerType: string;
+    ownerRefernce: string;
+    vehicleRoute: string;
     status: boolean;
 };
 
 const data: RowProps[] = new Array(10).fill(null).map((_, i) => ({
     id: i + 1,
-    routeCode: "AC0001604",
-    routeName: `Abdul Retail Shop`,
-    depotName: `DP01 - Zuwote Trading Group Ltd - Ggaba`,
-    routeType: `DP01 - Zuwote Trading Group Ltd - Ggaba`,
+    code: "AC0001604",
+    brand: "Toyato",
+    numberPlate: "DBA 123A",
+    chassisNumber: "14592879",
+    odoMeter: 12,
+    vehicleType: `Abdul Retail Shop`,
+    capacity: 5,
+    ownerType: `DP01 - Zuwote Trading Group Ltd - Ggaba`,
+    depotLocation: "Ggaba",
+    ownerRefernce: "0789517400, 0702563915",
+    vehicleRoute: "RT0671",
     status: true,
 }));
 
@@ -35,24 +48,61 @@ const dropdownDataList = [
     { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
 
-const filterData = new Array(10).fill(null).map(() => ({
-    depotId: "DP0172 ",
-    depotName: `Rwamayesi Company Limited-Old Kampala Lorem, ipsum dolor sit amet consectetur adipisicing elit. Aspernatur, omnis.`,
-}));
+const filterVehicleType = [
+  {
+    vehicleId: "R0171",
+    vehicleType:"Tuktuk",
+  },
+  {
+    vehicleId: "R0172",
+    vehicleType: "Truck",
+  },
+  {
+    vehicleId: "R0173",
+    vehicleType: "Bike",
+  },
+  {
+    vehicleId: "R0174",
+    vehicleType: "Van",
+  },
+];
+
+const filterData = [
+    {
+        "id":1,
+        "type":"Central"
+    },
+    {
+        "id":2,
+        "type":"Warehouse"
+    }
+]
+const reference = [
+    {
+        "id":1,
+        "type":"Warehouse A"
+    },
+    {
+        "id":2,
+        "type":"Warehouse B"
+    }
+]
 
 const filterRouteType = new Array(10).fill(null).map(() => ({
     routeId: "R0172 ",
     routeType: `Type 1`,
 }));
 
-export default function Route() {
+export default function VehicleRegistration() {
     const [selectedItems, setSelectedItems] = useState<Array<number>>([]);
     const allItemsCount = data.length;
     const isAllSelected = selectedItems.length === allItemsCount;
     const isIndeterminate = selectedItems.length > 0 && !isAllSelected;
     const [showDropdown, setShowDropdown] = useState(false);
+    const [showRouteTypeDropdown, setShowRouteTypeDropdown] = useState(false);
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-    const [showRouteTypeDropdown, setshowRouteTypeDropdown] = useState(false);
+    const [showReference, setShowReference] = useState(false);
+    const [showVehicleRoute, setShowVehicleRoute] = useState(false);
 
     const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
@@ -74,7 +124,7 @@ export default function Route() {
         <>
             <div className="flex justify-between items-center mb-[20px]">
                 <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
-                    Route
+                    Vehicle
                 </h1>
                 <div className="flex gap-[12px] relative">
                     <BorderIconButton
@@ -118,14 +168,14 @@ export default function Route() {
                         <div className="w-[320px]">
                             <SearchBar />
                         </div>
-                        <Link href="/dashboard/route/add">
+                        <Link href="/master/vehicle/add">
                             <button
                                 className="rounded-lg bg-[#EA0A2A] text-white px-4 py-[10px] flex items-center gap-[8px] cursor-pointer"
                                 onClick={() => {}}
                             >
                                 <Icon icon="tabler:plus" width={20} />
                                 <span className="md:block hidden">
-                                    Add Route
+                                    Add Vehicle
                                 </span>
                                 <span className="hidden sm:block md:hidden">
                                     Add
@@ -135,35 +185,92 @@ export default function Route() {
                     </div>
 
                     <div className="overflow-x-auto rounded-lg border border-[#E9EAEB]">
-                        <table className="table-auto w-full min-w-max">
+                        <table className="table-auto min-w-max">
                             <thead className="text-[12px] bg-[#FAFAFA] text-[#535862] sticky top-0 z-20">
                                 <tr className="relative h-[44px] border-b-[1px] border-[#E9EAEB]">
                                     <th className="px-[24px] py-[12px] font-[500]">
                                         <div className="flex items-center gap-[12px] whitespace-nowrap">
                                             <CustomCheckbox
                                                 id="selectAll"
-                                                label="Route Code"
+                                                label="Vehicle Code"
                                                 checked={isAllSelected}
                                                 indeterminate={isIndeterminate}
                                                 onChange={handleSelectAll}
                                             />
                                         </div>
                                     </th>
-                                    
                                     <th className="px-[24px] py-[12px] font-[500]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Route Name{" "}
-                                            <Icon
-                                                icon="mdi-light:arrow-down"
-                                                width={16}
-                                            />
+                                            Brand
                                         </div>
                                     </th>
-                                   
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Number Plate
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Chassis Number
+                                        </div>
+                                    </th>
                                     <th className="px-[24px] py-[12px] font-[500] w-[218px]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap relative">
-                                            Depot Name{" "}
+                                            Odo Meter
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Vehicle Type{" "}
                                             <Icon
+                                                icon="circum:filter"
+                                                width={16}
+                                                onClick={() =>
+                                                    setShowRouteTypeDropdown(
+                                                        !showRouteTypeDropdown
+                                                    )
+                                                }
+                                            />
+                                            {showRouteTypeDropdown && (
+                                                <div className="absolute top-[40px] z-40">
+                                                    <FilterDropdown>
+                                                        {filterVehicleType.map(
+                                                            (item, index) => {
+                                                                return (
+                                                                    <div
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
+                                                                    >
+                                                                        <span className="font-[500] text-[#181D27]">
+                                                                            {
+                                                                                item.vehicleId
+                                                                            }
+                                                                        </span>
+                                                                        <span className="w-full overflow-hidden text-ellipsis">
+                                                                            {
+                                                                                item.vehicleType
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        )}
+                                                    </FilterDropdown>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px]">
+                                            Capacity
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Owner Type{" "}
+                                             <Icon
                                                 icon="circum:filter"
                                                 width={16}
                                                 onClick={() =>
@@ -186,12 +293,12 @@ export default function Route() {
                                                                     >
                                                                         <span className="font-[500] text-[#181D27]">
                                                                             {
-                                                                                item.depotId
+                                                                                item.id
                                                                             }
                                                                         </span>
                                                                         <span className="w-full overflow-hidden text-ellipsis">
                                                                             {
-                                                                                item.depotName
+                                                                                item.type
                                                                             }
                                                                         </span>
                                                                     </div>
@@ -203,19 +310,62 @@ export default function Route() {
                                             )}
                                         </div>
                                     </th>
-                                    <th className="px-[24px] py-[12px] font-[500] w-[218px]">
-                                        <div className="flex items-center gap-[4px] whitespace-nowrap relative">
-                                            Route Type{" "}
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Reference{" "}
+                                             <Icon
+                                                icon="circum:filter"
+                                                width={16}
+                                                onClick={() =>
+                                                    setShowReference(
+                                                        !showReference
+                                                    )
+                                                }
+                                            />
+                                            {showReference && (
+                                                <div className="absolute top-[40px] z-40">
+                                                    <FilterDropdown>
+                                                        {reference.map(
+                                                            (item, index) => {
+                                                                return (
+                                                                    <div
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
+                                                                    >
+                                                                        <span className="font-[500] text-[#181D27]">
+                                                                            {
+                                                                                item.id
+                                                                            }
+                                                                        </span>
+                                                                        <span className="w-full overflow-hidden text-ellipsis">
+                                                                            {
+                                                                                item.type
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        )}
+                                                    </FilterDropdown>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Vehicle Route
                                             <Icon
                                                 icon="circum:filter"
                                                 width={16}
                                                 onClick={() =>
-                                                    setshowRouteTypeDropdown(
-                                                        !showRouteTypeDropdown
+                                                    setShowVehicleRoute(
+                                                        !showVehicleRoute
                                                     )
                                                 }
                                             />
-                                            {showRouteTypeDropdown && (
+                                             {showVehicleRoute && (
                                                 <div className="absolute top-[40px] z-40">
                                                     <FilterDropdown>
                                                         {filterRouteType.map(
@@ -270,7 +420,7 @@ export default function Route() {
                                                 <div className="flex items-center gap-[12px] whitespace-nowrap font-[500]">
                                                     <CustomCheckbox
                                                         id={row.id.toString()}
-                                                        label={row.routeCode}
+                                                        label={row.code}
                                                         checked={selectedItems.includes(
                                                             row.id
                                                         )}
@@ -282,21 +432,53 @@ export default function Route() {
                                                     />
                                                 </div>
                                             </td>
-                                           
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.routeName}
+                                                    {row.brand}
                                                 </div>
                                             </td>
-                                           
-                                            <td className="px-[24px] py-[12px]">
+                                            <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.depotName}
+                                                    {row.numberPlate}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px] whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    {row.chassisNumber}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px]">
                                                 <div className="flex items-center">
-                                                    {row.routeType}
+                                                    {row.odoMeter}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px] whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    {row.vehicleType}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px] whitespace-break-spaces">
+                                                <div className="flex items-center">
+                                                    {row.capacity}
+
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px] whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    {row.ownerType}
+
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px] whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    {row.ownerRefernce}
+
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px] whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    {row.vehicleRoute}
+
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">

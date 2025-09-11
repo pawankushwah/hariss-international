@@ -12,6 +12,7 @@ export type LinkDataType = {
     leadingIcon: IconifyIcon | string;
     trailingIcon?: IconifyIcon | string;
     iconColor?: string;
+    children?: LinkDataType[]; 
 };
 
 export const initialLinkData: SidebarDataType[] = [
@@ -25,13 +26,7 @@ export const initialLinkData: SidebarDataType[] = [
                 leadingIcon: "hugeicons:home-01",
                 iconColor: "text-blue-500"
             },
-            {
-                isActive: false,
-                href: "/dashboard/customer",
-                label: "Customer",
-                leadingIcon: "lucide:user",
-                iconColor: "text-green-500"
-            },
+            
              {
                 isActive: false,
                 href: "/dashboard/company",
@@ -39,47 +34,59 @@ export const initialLinkData: SidebarDataType[] = [
                 leadingIcon: "lucide:user",
                 iconColor: "text-green-500"
             },
-            {
-                isActive: false,
-                href: "/dashboard/landmark",
-                label: "Landmark",
-                leadingIcon: "hugeicons:truck-delivery",
-                iconColor: "text-purple-500"
-            },
-            {
-                isActive: false,
-                href: "/dashboard/inbox",
-                label: "Items",
-                leadingIcon: "lucide:inbox",
-                iconColor: "text-cyan-500"
-            }
+            
+            
         ],
     },
     {
         name: "CRM",
         data: [
-            {
+             {
                 isActive: false,
-                href: "/dashboard/masters",
+                href: "#",
                 label: "Masters",
                 leadingIcon: "hugeicons:workflow-square-06",
                 trailingIcon: "mdi-light:chevron-right",
-                iconColor: "text-yellow-400"
-            },
-            {
+                iconColor: "text-yellow-400",
+                children: [ 
+                    {
+                        isActive: false,
+                        href: "/master/customer",
+                        label: "Customer",
+                        leadingIcon: "lucide:user",
+                        iconColor: "text-green-500"
+                    },
+                    {
                 isActive: false,
-                href: "/dashboard/route",
+                href: "/master/item",
+                label: "Items",
+                leadingIcon: "mdi:package-variant",
+                iconColor: "text-cyan-500"
+            },
+                    {
+                isActive: false,
+                href: "/master/route",
                 label: "Route",
                 leadingIcon: "mdi:map",
                 iconColor: "text-yellow-400"
             },
             {
                 isActive: false,
-                href: "/dashboard/vehicle",
+                href: "/master/vehicle",
                 label: "Vehicle",
                 leadingIcon: "mdi:car",
                 iconColor: "text-yellow-400"
             },
+             {
+                isActive: false,
+                href: "/master/warehouse",
+                label: "Warehouse",
+                leadingIcon: "tabler:building-warehouse",
+                iconColor: "text-violet-500"
+            },
+                ],
+            },
+            
             {
                 isActive: false,
                 href: "/dashboard/report",
@@ -95,13 +102,7 @@ export const initialLinkData: SidebarDataType[] = [
                 leadingIcon: "mingcute:bill-line",
                 iconColor: "text-violet-500"
             },
-            {
-                isActive: false,
-                href: "/dashboard/warehouse",
-                label: "Warehouse",
-                leadingIcon: "mingcute:bill-line",
-                iconColor: "text-violet-500"
-            },
+           
             {
                 isActive: false,
                 href: "/dashboard/harissTransaction",

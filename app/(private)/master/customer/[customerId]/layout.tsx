@@ -28,7 +28,7 @@ export default function CustomerDetails({
 
     const onTabClick = (index: number) => {
         setActiveTab(index);
-        router.replace(`/dashboard/customer/${customerId}/${tabs[index].url}`);
+        router.replace(`/master/customer/${customerId}/${tabs[index].url}`);
     };
 
     return (
