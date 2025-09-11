@@ -1,7 +1,7 @@
 "use client";
 
 import BorderIconButton from "@/app/components/borderIconButton";
-import SearchBar from "../searchBar";
+import SearchBar from "../../dashboard/searchBar";
 import { Icon } from "@iconify-icon/react";
 import { useState } from "react";
 import CustomDropdown from "@/app/components/customDropdown";
@@ -12,31 +12,30 @@ import Link from "next/link";
 type RowProps = {
     id: number;
     code: string;
-    brand: string;
-    numberPlate: string;
-    chassisNumber: string;
-    odoMeter: number;
-    vehicleType: string;
-    capacity: number;
-    ownerType: string;
-    ownerRefernce: string;
-    vehicleRoute: string;
+    sapId: string;
+    customerName: string;
+    ownerName: string;
+    depotName: string;
+    depotLocation: string;
+    phoneNumber: string;
+    address: string;
+    district: string;
+    route: string;
     status: boolean;
 };
 
 const data: RowProps[] = new Array(10).fill(null).map((_, i) => ({
     id: i + 1,
     code: "AC0001604",
-    brand: "Toyato",
-    numberPlate: "DBA 123A",
-    chassisNumber: "14592879",
-    odoMeter: 12,
-    vehicleType: `Abdul Retail Shop`,
-    capacity: 5,
-    ownerType: `DP01 - Zuwote Trading Group Ltd - Ggaba`,
+    sapId: "-",
+    customerName: `Abdul Retail Shop`,
+    ownerName: `Musinguzi Abdul`,
+    depotName: `DP01 - Zuwote Trading Group Ltd - Ggaba`,
     depotLocation: "Ggaba",
-    ownerRefernce: "0789517400, 0702563915",
-    vehicleRoute: "RT0671",
+    phoneNumber: "0789517400, 0702563915",
+    address: "Kansanga Road",
+    district: "kampala",
+    route: "RT0671",
     status: true,
 }));
 
@@ -48,61 +47,18 @@ const dropdownDataList = [
     { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
 
-const filterVehicleType = [
-  {
-    vehicleId: "R0171",
-    vehicleType:"Tuktuk",
-  },
-  {
-    vehicleId: "R0172",
-    vehicleType: "Truck",
-  },
-  {
-    vehicleId: "R0173",
-    vehicleType: "Bike",
-  },
-  {
-    vehicleId: "R0174",
-    vehicleType: "Van",
-  },
-];
-
-const filterData = [
-    {
-        "id":1,
-        "type":"Central"
-    },
-    {
-        "id":2,
-        "type":"Warehouse"
-    }
-]
-const reference = [
-    {
-        "id":1,
-        "type":"Warehouse A"
-    },
-    {
-        "id":2,
-        "type":"Warehouse B"
-    }
-]
-
-const filterRouteType = new Array(10).fill(null).map(() => ({
-    routeId: "R0172 ",
-    routeType: `Type 1`,
+const filterData = new Array(10).fill(null).map(() => ({
+    depotId: "DP0172 ",
+    depotName: `Rwamayesi Company Limited-Old Kampala Lorem, ipsum dolor sit amet consectetur adipisicing elit. Aspernatur, omnis.`,
 }));
 
-export default function VehicleRegistration() {
+export default function Customer() {
     const [selectedItems, setSelectedItems] = useState<Array<number>>([]);
     const allItemsCount = data.length;
     const isAllSelected = selectedItems.length === allItemsCount;
     const isIndeterminate = selectedItems.length > 0 && !isAllSelected;
     const [showDropdown, setShowDropdown] = useState(false);
-    const [showRouteTypeDropdown, setShowRouteTypeDropdown] = useState(false);
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-    const [showReference, setShowReference] = useState(false);
-    const [showVehicleRoute, setShowVehicleRoute] = useState(false);
 
     const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
@@ -124,7 +80,7 @@ export default function VehicleRegistration() {
         <>
             <div className="flex justify-between items-center mb-[20px]">
                 <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
-                    Vehicle
+                    Warehouse
                 </h1>
                 <div className="flex gap-[12px] relative">
                     <BorderIconButton
@@ -168,20 +124,21 @@ export default function VehicleRegistration() {
                         <div className="w-[320px]">
                             <SearchBar />
                         </div>
-                        <Link href="/dashboard/vehicle/add">
-                            <button
-                                className="rounded-lg bg-[#EA0A2A] text-white px-4 py-[10px] flex items-center gap-[8px] cursor-pointer"
-                                onClick={() => {}}
-                            >
-                                <Icon icon="tabler:plus" width={20} />
-                                <span className="md:block hidden">
-                                    Add Vehicle
-                                </span>
-                                <span className="hidden sm:block md:hidden">
-                                    Add
-                                </span>
-                            </button>
+                        <Link href="/master/warehouse/addwarehouse">
+                              <button
+                            className="rounded-lg bg-[#EA0A2A] text-white px-4 py-[10px] flex items-center gap-[8px]"
+                          
+                        >
+                            <Icon icon="tabler:plus" width={20} />
+                            <span className="md:block hidden">
+                                Add Warehouse
+                            </span>
+                            <span className="hidden sm:block md:hidden">
+                                Add
+                            </span>
+                        </button>
                         </Link>
+                  
                     </div>
 
                     <div className="overflow-x-auto rounded-lg border border-[#E9EAEB]">
@@ -192,7 +149,7 @@ export default function VehicleRegistration() {
                                         <div className="flex items-center gap-[12px] whitespace-nowrap">
                                             <CustomCheckbox
                                                 id="selectAll"
-                                                label="Vehicle Code"
+                                                label="Code"
                                                 checked={isAllSelected}
                                                 indeterminate={isIndeterminate}
                                                 onChange={handleSelectAll}
@@ -201,76 +158,31 @@ export default function VehicleRegistration() {
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Brand
+                                            SAP ID
                                         </div>
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Number Plate
+                                            Warehouse Name{" "}
+                                            <Icon
+                                                icon="mdi-light:arrow-down"
+                                                width={16}
+                                            />
                                         </div>
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Chassis Number
+                                            Owner Name{" "}
+                                            <Icon
+                                                icon="mdi-light:arrow-down"
+                                                width={16}
+                                            />
                                         </div>
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500] w-[218px]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap relative">
-                                            Odo Meter
-                                        </div>
-                                    </th>
-                                    <th className="px-[24px] py-[12px] font-[500]">
-                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Vehicle Type{" "}
+                                            Depot Name{" "}
                                             <Icon
-                                                icon="circum:filter"
-                                                width={16}
-                                                onClick={() =>
-                                                    setShowRouteTypeDropdown(
-                                                        !showRouteTypeDropdown
-                                                    )
-                                                }
-                                            />
-                                            {showRouteTypeDropdown && (
-                                                <div className="absolute top-[40px] z-40">
-                                                    <FilterDropdown>
-                                                        {filterVehicleType.map(
-                                                            (item, index) => {
-                                                                return (
-                                                                    <div
-                                                                        key={
-                                                                            index
-                                                                        }
-                                                                        className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
-                                                                    >
-                                                                        <span className="font-[500] text-[#181D27]">
-                                                                            {
-                                                                                item.vehicleId
-                                                                            }
-                                                                        </span>
-                                                                        <span className="w-full overflow-hidden text-ellipsis">
-                                                                            {
-                                                                                item.vehicleType
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                        )}
-                                                    </FilterDropdown>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th className="px-[24px] py-[12px] font-[500]">
-                                        <div className="flex items-center gap-[4px]">
-                                            Capacity
-                                        </div>
-                                    </th>
-                                    <th className="px-[24px] py-[12px] font-[500]">
-                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Owner Type{" "}
-                                             <Icon
                                                 icon="circum:filter"
                                                 width={16}
                                                 onClick={() =>
@@ -293,12 +205,12 @@ export default function VehicleRegistration() {
                                                                     >
                                                                         <span className="font-[500] text-[#181D27]">
                                                                             {
-                                                                                item.id
+                                                                                item.depotId
                                                                             }
                                                                         </span>
                                                                         <span className="w-full overflow-hidden text-ellipsis">
                                                                             {
-                                                                                item.type
+                                                                                item.depotName
                                                                             }
                                                                         </span>
                                                                     </div>
@@ -312,88 +224,35 @@ export default function VehicleRegistration() {
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Reference{" "}
-                                             <Icon
-                                                icon="circum:filter"
+                                            Depot Location{" "}
+                                            <Icon
+                                                icon="mdi-light:arrow-down"
                                                 width={16}
-                                                onClick={() =>
-                                                    setShowReference(
-                                                        !showReference
-                                                    )
-                                                }
                                             />
-                                            {showReference && (
-                                                <div className="absolute top-[40px] z-40">
-                                                    <FilterDropdown>
-                                                        {reference.map(
-                                                            (item, index) => {
-                                                                return (
-                                                                    <div
-                                                                        key={
-                                                                            index
-                                                                        }
-                                                                        className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
-                                                                    >
-                                                                        <span className="font-[500] text-[#181D27]">
-                                                                            {
-                                                                                item.id
-                                                                            }
-                                                                        </span>
-                                                                        <span className="w-full overflow-hidden text-ellipsis">
-                                                                            {
-                                                                                item.type
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                        )}
-                                                    </FilterDropdown>
-                                                </div>
-                                            )}
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px]">
+                                            Phone Number
                                         </div>
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Vehicle Route
+                                            Address
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            District
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Route
                                             <Icon
                                                 icon="circum:filter"
                                                 width={16}
-                                                onClick={() =>
-                                                    setShowVehicleRoute(
-                                                        !showVehicleRoute
-                                                    )
-                                                }
                                             />
-                                             {showVehicleRoute && (
-                                                <div className="absolute top-[40px] z-40">
-                                                    <FilterDropdown>
-                                                        {filterRouteType.map(
-                                                            (item, index) => {
-                                                                return (
-                                                                    <div
-                                                                        key={
-                                                                            index
-                                                                        }
-                                                                        className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
-                                                                    >
-                                                                        <span className="font-[500] text-[#181D27]">
-                                                                            {
-                                                                                item.routeId
-                                                                            }
-                                                                        </span>
-                                                                        <span className="w-full overflow-hidden text-ellipsis">
-                                                                            {
-                                                                                item.routeType
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                        )}
-                                                    </FilterDropdown>
-                                                </div>
-                                            )}
                                         </div>
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500]">
@@ -434,51 +293,47 @@ export default function VehicleRegistration() {
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.brand}
+                                                    -
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    {row.numberPlate}
-                                                </div>
+                                                <Link href={`/master/customer/${row.id}/overview`} className="flex items-center cursor-pointer hover:text-[#EA0A2A]">
+                                                    {row.customerName}
+                                                </Link>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.chassisNumber}
+                                                    {row.ownerName}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px]">
                                                 <div className="flex items-center">
-                                                    {row.odoMeter}
+                                                    {row.depotName}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.vehicleType}
+                                                    {row.depotLocation}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-break-spaces">
                                                 <div className="flex items-center">
-                                                    {row.capacity}
-
+                                                    {row.phoneNumber}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.ownerType}
-
+                                                    {row.address}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.ownerRefernce}
-
+                                                    {row.district}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.vehicleRoute}
-
+                                                    {row.route}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">

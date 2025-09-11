@@ -1,7 +1,7 @@
 "use client";
 
 import BorderIconButton from "@/app/components/borderIconButton";
-import SearchBar from "../searchBar";
+import SearchBar from "../../dashboard/searchBar";
 import { Icon } from "@iconify-icon/react";
 import { useState } from "react";
 import CustomDropdown from "@/app/components/customDropdown";
@@ -11,20 +11,39 @@ import Link from "next/link";
 
 type RowProps = {
     id: number;
-    routeCode: string;
-    routeName: string;
-    depotName: string;
-    routeType: string;
+    itemCode: string;
+    sapId: string;
+    hsnCode: string;
+    itemName: string;
+    itemDescription: string;
+    itemCategory: string;
+    itemSubCategory: string;
+    itemGroup: string;
+    itemUPC: string;
+    itemUom: string;
+    itemBasePrice: string;
+    exciseCode: string;
+    shelfLife: string;
     status: boolean;
 };
 
 const data: RowProps[] = new Array(10).fill(null).map((_, i) => ({
     id: i + 1,
-    routeCode: "AC0001604",
-    routeName: `Abdul Retail Shop`,
-    depotName: `DP01 - Zuwote Trading Group Ltd - Ggaba`,
-    routeType: `DP01 - Zuwote Trading Group Ltd - Ggaba`,
+    itemCode: "AC0001604",
+    sapId: "500-0001604",
+    hsnCode: "1001", 
+    itemName: 'Test Item',
+    itemDescription: `This is a description for item ${i + 1}`,
+    itemCategory: 'Beverages',
+    itemSubCategory: 'Soft Drinks',
+    itemGroup: 'Non-Alcoholic',
+    itemUPC: `123456789012`,
+    itemUom: 'Pieces',
+    itemBasePrice: '100.00',
+    exciseCode: 'EXC123',
+    shelfLife: '12 months',
     status: true,
+   
 }));
 
 const dropdownDataList = [
@@ -35,24 +54,76 @@ const dropdownDataList = [
     { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
 
-const filterData = new Array(10).fill(null).map(() => ({
-    depotId: "DP0172 ",
-    depotName: `Rwamayesi Company Limited-Old Kampala Lorem, ipsum dolor sit amet consectetur adipisicing elit. Aspernatur, omnis.`,
-}));
+const itemCategoryDropdown = [
+    {
+        depotId: "D001",
+        depotName: "Main Depot",
+    },
+    {
+        depotId: "D002",
+        depotName: "Secondary Depot",
+    },
+    {
+        depotId: "D003",
+        depotName: "East Side Depot",
+    },
+]
+const itemSubCategoryDropdown = [
+    {
+        depotId: "D001",
+        depotName: "Main Depot",
+    },
+    {
+        depotId: "D002",
+        depotName: "Secondary Depot",
+    },
+    {
+        depotId: "D003",
+        depotName: "East Side Depot",
+    },
+]
 
-const filterRouteType = new Array(10).fill(null).map(() => ({
-    routeId: "R0172 ",
-    routeType: `Type 1`,
-}));
+const itemGroupDropdown = [
+    {
+        depotId: "D001",
+        depotName: "Main Depot",
+    },
+    {
+        depotId: "D002",
+        depotName: "Secondary Depot",
+    },
+    {
+        depotId: "D003",
+        depotName: "East Side Depot",
+    },
+]
 
-export default function Route() {
+const itemUomDropdown = [
+    {
+        depotId: "D001",
+        depotName: "Main Depot",
+    },
+    {
+        depotId: "D002",
+        depotName: "Secondary Depot",
+    },
+    {
+        depotId: "D003",
+        depotName: "East Side Depot",
+    },
+]
+
+
+export default function AddItem() {
     const [selectedItems, setSelectedItems] = useState<Array<number>>([]);
     const allItemsCount = data.length;
     const isAllSelected = selectedItems.length === allItemsCount;
     const isIndeterminate = selectedItems.length > 0 && !isAllSelected;
     const [showDropdown, setShowDropdown] = useState(false);
-    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-    const [showRouteTypeDropdown, setshowRouteTypeDropdown] = useState(false);
+    const [itemCategory, setItemCategory] = useState(false);
+    const [itemSubCategory, setItemSubCategory] = useState(false);
+    const [itemGroup, setItemGroup] = useState(false);
+    const [itemUom, setItemUom] = useState(false);
 
     const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
@@ -74,7 +145,7 @@ export default function Route() {
         <>
             <div className="flex justify-between items-center mb-[20px]">
                 <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
-                    Route
+                    Item
                 </h1>
                 <div className="flex gap-[12px] relative">
                     <BorderIconButton
@@ -118,14 +189,14 @@ export default function Route() {
                         <div className="w-[320px]">
                             <SearchBar />
                         </div>
-                        <Link href="/dashboard/route/add">
+                        <Link href="/master/item/add">
                             <button
                                 className="rounded-lg bg-[#EA0A2A] text-white px-4 py-[10px] flex items-center gap-[8px] cursor-pointer"
                                 onClick={() => {}}
                             >
                                 <Icon icon="tabler:plus" width={20} />
                                 <span className="md:block hidden">
-                                    Add Route
+                                    Add Item
                                 </span>
                                 <span className="hidden sm:block md:hidden">
                                     Add
@@ -142,40 +213,58 @@ export default function Route() {
                                         <div className="flex items-center gap-[12px] whitespace-nowrap">
                                             <CustomCheckbox
                                                 id="selectAll"
-                                                label="Route Code"
+                                                label="Item Code"
                                                 checked={isAllSelected}
                                                 indeterminate={isIndeterminate}
                                                 onChange={handleSelectAll}
                                             />
                                         </div>
                                     </th>
-                                    
                                     <th className="px-[24px] py-[12px] font-[500]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap">
-                                            Route Name{" "}
+                                            SAP ID
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            HSN Code
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Excise Code
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Item Name{" "}
                                             <Icon
                                                 icon="mdi-light:arrow-down"
                                                 width={16}
                                             />
                                         </div>
                                     </th>
-                                   
+                                   <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Item Description
+                                        </div>
+                                    </th>
                                     <th className="px-[24px] py-[12px] font-[500] w-[218px]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap relative">
-                                            Depot Name{" "}
+                                            Item Category{" "}
                                             <Icon
                                                 icon="circum:filter"
                                                 width={16}
                                                 onClick={() =>
-                                                    setShowFilterDropdown(
-                                                        !showFilterDropdown
+                                                    setItemCategory(
+                                                        !itemCategory
                                                     )
                                                 }
                                             />
-                                            {showFilterDropdown && (
+                                            {itemCategory && (
                                                 <div className="absolute top-[40px] z-40">
                                                     <FilterDropdown>
-                                                        {filterData.map(
+                                                        {itemCategoryDropdown.map(
                                                             (item, index) => {
                                                                 return (
                                                                     <div
@@ -205,20 +294,20 @@ export default function Route() {
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500] w-[218px]">
                                         <div className="flex items-center gap-[4px] whitespace-nowrap relative">
-                                            Route Type{" "}
+                                            Item Sub Category{" "}
                                             <Icon
                                                 icon="circum:filter"
                                                 width={16}
                                                 onClick={() =>
-                                                    setshowRouteTypeDropdown(
-                                                        !showRouteTypeDropdown
+                                                    setItemSubCategory(
+                                                        !itemSubCategory
                                                     )
                                                 }
                                             />
-                                            {showRouteTypeDropdown && (
+                                            {itemSubCategory && (
                                                 <div className="absolute top-[40px] z-40">
                                                     <FilterDropdown>
-                                                        {filterRouteType.map(
+                                                        {itemSubCategoryDropdown.map(
                                                             (item, index) => {
                                                                 return (
                                                                     <div
@@ -229,12 +318,12 @@ export default function Route() {
                                                                     >
                                                                         <span className="font-[500] text-[#181D27]">
                                                                             {
-                                                                                item.routeId
+                                                                                item.depotId
                                                                             }
                                                                         </span>
                                                                         <span className="w-full overflow-hidden text-ellipsis">
                                                                             {
-                                                                                item.routeType
+                                                                                item.depotName
                                                                             }
                                                                         </span>
                                                                     </div>
@@ -244,6 +333,107 @@ export default function Route() {
                                                     </FilterDropdown>
                                                 </div>
                                             )}
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500] w-[218px]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap relative">
+                                            Item Group{" "}
+                                            <Icon
+                                                icon="circum:filter"
+                                                width={16}
+                                                onClick={() =>
+                                                    setItemGroup(
+                                                        !itemGroup
+                                                    )
+                                                }
+                                            />
+                                             {itemGroup && (
+                                                <div className="absolute top-[40px] z-40">
+                                                    <FilterDropdown>
+                                                        {itemGroupDropdown.map(
+                                                            (item, index) => {
+                                                                return (
+                                                                    <div
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
+                                                                    >
+                                                                        <span className="font-[500] text-[#181D27]">
+                                                                            {
+                                                                                item.depotId
+                                                                            }
+                                                                        </span>
+                                                                        <span className="w-full overflow-hidden text-ellipsis">
+                                                                            {
+                                                                                item.depotName
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        )}
+                                                    </FilterDropdown>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Item UPC
+                                        </div>
+                                    </th>
+                                    <th className="px-[24px] py-[12px] font-[500] w-[218px]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap relative">
+                                            Item UOM{" "}
+                                            <Icon
+                                                icon="circum:filter"
+                                                width={16}
+                                                onClick={() =>
+                                                    setItemUom(
+                                                        !itemUom
+                                                    )
+                                                }
+                                            />
+                                            {itemUom && (
+                                                <div className="absolute top-[40px] z-40">
+                                                    <FilterDropdown>
+                                                        {itemUomDropdown.map(
+                                                            (item, index) => {
+                                                                return (
+                                                                    <div
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
+                                                                    >
+                                                                        <span className="font-[500] text-[#181D27]">
+                                                                            {
+                                                                                item.depotId
+                                                                            }
+                                                                        </span>
+                                                                        <span className="w-full overflow-hidden text-ellipsis">
+                                                                            {
+                                                                                item.depotName
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        )}
+                                                    </FilterDropdown>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </th>
+                                     <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Item Base Price
+                                        </div>
+                                    </th>
+                                     <th className="px-[24px] py-[12px] font-[500]">
+                                        <div className="flex items-center gap-[4px] whitespace-nowrap">
+                                            Shelf Life
                                         </div>
                                     </th>
                                     <th className="px-[24px] py-[12px] font-[500]">
@@ -270,7 +460,7 @@ export default function Route() {
                                                 <div className="flex items-center gap-[12px] whitespace-nowrap font-[500]">
                                                     <CustomCheckbox
                                                         id={row.id.toString()}
-                                                        label={row.routeCode}
+                                                        label={row.itemCode}
                                                         checked={selectedItems.includes(
                                                             row.id
                                                         )}
@@ -285,20 +475,66 @@ export default function Route() {
                                            
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    {row.routeName}
+                                                    {row.sapId}
                                                 </div>
                                             </td>
                                            
                                             <td className="px-[24px] py-[12px]">
                                                 <div className="flex items-center">
-                                                    {row.depotName}
+                                                    {row.hsnCode}
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px]">
                                                 <div className="flex items-center">
-                                                    {row.routeType}
+                                                    {row.itemName}
                                                 </div>
                                             </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.itemDescription}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.itemCategory}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.itemSubCategory}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.itemGroup}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.itemUPC}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.itemUom}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.itemBasePrice}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.exciseCode}
+                                                </div>
+                                            </td>
+                                            <td className="px-[24px] py-[12px]">
+                                                <div className="flex items-center">
+                                                    {row.shelfLife}
+                                                </div>
+                                            </td>
+                                           
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
                                                 <div className="flex items-center">
                                                     {row.status ? (

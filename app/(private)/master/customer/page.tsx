@@ -1,7 +1,7 @@
 "use client";
 
 import BorderIconButton from "@/app/components/borderIconButton";
-import SearchBar from "../searchBar";
+import SearchBar from "../../dashboard/searchBar";
 import { Icon } from "@iconify-icon/react";
 import { useState } from "react";
 import CustomDropdown from "@/app/components/customDropdown";
@@ -124,7 +124,7 @@ export default function Customer() {
                         <div className="w-[320px]">
                             <SearchBar />
                         </div>
-                        <Link href="/dashboard/customer/add">
+                        <Link href="/master/customer/add">
                               <button
                             className="rounded-lg bg-[#EA0A2A] text-white px-4 py-[10px] flex items-center gap-[8px]"
                           
@@ -297,7 +297,7 @@ export default function Customer() {
                                                 </div>
                                             </td>
                                             <td className="px-[24px] py-[12px] whitespace-nowrap">
-                                                <Link href={`/dashboard/customer/${row.id}/overview`} className="flex items-center cursor-pointer hover:text-[#EA0A2A]">
+                                                <Link href={`/master/customer/${row.id}/overview`} className="flex items-center cursor-pointer hover:text-[#EA0A2A]">
                                                     {row.customerName}
                                                 </Link>
                                             </td>
