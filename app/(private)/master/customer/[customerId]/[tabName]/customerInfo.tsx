@@ -4,23 +4,11 @@ import ContainerCard from "@/app/components/containerCard";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import KeyValueData from "../keyValueData";
 import SummaryCard from "@/app/components/summaryCard";
-import Table from "@/app/components/customTable";
+import Table, { TableDataType } from "@/app/components/customTable";
 
-export type tableDataType = {
-    id: number;
-    title: string;
-    address: string;
-    country: string;
-    city: string;
-    globalPosition: string;
-    route: string;
-    phoneNumber: string;
-    landmark: string;
-};
-
-const tableData: tableDataType[] = new Array(3).fill(null).map((_, i) => ({
-    id: i + 1,
-    title: "Title here",
+const tableData = new Array(3).fill(null).map((_, i) => ({
+    id: i.toString(),
+    title: `Title here ${i +1}`,
     address: "Cedre Villa K Addres Line 1 Here, Addres Line 2 Here,",
     country: `UAE`,
     city: `DUB`,
@@ -31,22 +19,28 @@ const tableData: tableDataType[] = new Array(3).fill(null).map((_, i) => ({
 }));
 
 const columns = [
-  { key: "title", label: 'Title', render: (value: string) => <span className="font-semibold">{value}</span> },
-  { key: "address", label: 'Address', width: 100 },
-  { key: "country", label: 'Country' },
-  { key: "city", label: 'City' },
-  { key: "globalPosition", label: 'Latitude & Longitude' },
-  { key: "route", label: 'Route' },
-  { key: "phoneNumber", label: 'Phone Number' },
-  { key: "landmark", label: 'Landmark' },
+    {
+        key: "title",
+        label: "Title",
+        render: (row: TableDataType) => (
+            <span className="font-semibold text-[#181D27] text-[14px]">{row.title}</span>
+        ),
+    },
+    { key: "address", label: "Address", width: 200 },
+    { key: "country", label: "Country" },
+    { key: "city", label: "City" },
+    { key: "globalPosition", label: "Latitude & Longitude", width: 150 },
+    { key: "route", label: "Route" },
+    { key: "phoneNumber", label: "Phone Number", width: 150 },
+    { key: "landmark", label: "Landmark" },
 ];
 
 export type columnDataType = typeof columns;
 
 export default function CustomerInfo() {
     return (
-        <div className="flex flex-col lg:flex-row gap-[20px] w-full">
-            <ContainerCard className="w-full lg:w-[350px] space-y-[30px] h-fit">
+        <div className="flex flex-col lg:flex-row gap-[20px]">
+            <ContainerCard className="w-full xl:w-[350px] space-y-[30px] p-[30px] h-fit">
                 <SummaryCard
                     icon="fa6-solid:building-wheat"
                     iconWidth={40}
@@ -83,10 +77,10 @@ export default function CustomerInfo() {
                 </div>
             </ContainerCard>
 
-            <div className="flex flex-col gap-[20px]">
-                <div className="flex flex-col 2xl:flex-row gap-[20px]">
-                    <div className="flex flex-col">
-                        <ContainerCard className="w-full md:w-[465px] h-fit">
+            <div className="flex flex-col overflow-auto">
+                <div className="flex flex-col xl:flex-row xl:gap-[20px] w-full">
+                    <div className="flex flex-col w-full 2xl:w-fit">
+                        <ContainerCard className="w-full 2xl:w-[465px]">
                             <KeyValueData
                                 title="Customer Information"
                                 data={[
@@ -118,7 +112,7 @@ export default function CustomerInfo() {
                                 ]}
                             />
                         </ContainerCard>
-                        <ContainerCard className="w-full md:w-[465px] h-fit">
+                        <ContainerCard className="w-full 2xl:w-[465px]">
                             <KeyValueData
                                 title="Sales Information"
                                 data={[
@@ -137,8 +131,8 @@ export default function CustomerInfo() {
                         </ContainerCard>
                     </div>
 
-                    <div className="flex flex-col">
-                        <ContainerCard className="w-full md:w-[465px]">
+                    <div className="flex flex-col w-full 2xl:w-fit">
+                        <ContainerCard className="w-full 2xl:w-[465px]">
                             <KeyValueData
                                 title="Contact Information"
                                 data={[
@@ -160,7 +154,7 @@ export default function CustomerInfo() {
                                 ]}
                             />
                         </ContainerCard>
-                        <ContainerCard className="w-full md:w-[465px]">
+                        <ContainerCard className="w-full 2xl:w-[465px]">
                             <div className="text-[18px] font-semibold mb-[25px]">
                                 Address Information
                             </div>
@@ -184,29 +178,30 @@ export default function CustomerInfo() {
                 </div>
 
                 {/* table */}
-                <div className="w-[1000px]">
-
-                <Table
-                    config={{
-                        rowActions: [
-                            {
-                                icon: "lucide:edit-2",
-                                onClick: (data) => {
-                                    console.log(data);
-                                }
-                            },
-                            {
-                                icon: "lucide:trash-2",
-                                onClick: (data) => {
-                                    confirm("Are you sure you want to delete this customer?");
-                                }
-                            }
-                        ],
-                        columns: columns
-                    }}
-                    data={tableData}
-                />
-            </div>
+                <div className="">
+                    <Table
+                        config={{
+                            rowActions: [
+                                {
+                                    icon: "lucide:edit-2",
+                                    onClick: (data) => {
+                                        console.log(data);
+                                    },
+                                },
+                                {
+                                    icon: "lucide:trash-2",
+                                    onClick: () => {
+                                        confirm(
+                                            "Are you sure you want to delete this customer?"
+                                        );
+                                    },
+                                },
+                            ],
+                            columns: columns,
+                        }}
+                        data={tableData}
+                    />
+                </div>
             </div>
         </div>
     );

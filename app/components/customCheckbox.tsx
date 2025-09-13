@@ -6,7 +6,7 @@ export default function CustomCheckbox({
     onChange,
 }: {
     id: string;
-    label: string;
+    label: string | React.ReactNode;
     checked: boolean;
     indeterminate?: boolean;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -45,7 +45,7 @@ export default function CustomCheckbox({
     );
 
     return (
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center ${label && "gap-3"}`}>
             <input
                 type="checkbox"
                 id={id}
