@@ -2,6 +2,7 @@
 import WarehouseDetails from "./warehouseDetails";
 import WarehouseContact from "./warehouseContact";
 import WarehouseLocationInformation from "./warehouseLocationInfo";
+import WarehouseAdditionalInformation from "./warehouseAdditionalInformation";
 import ContainerCard from "@/app/components/containerCard";
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
@@ -38,6 +39,10 @@ export default function addwarehouse() {
                    <ContainerCard>
                     <h2 className="mb-4 font-semibold text-[18px] leading-[100%] text-[#181D27] tracking-[0%]"> Location Information</h2>
     <WarehouseLocationInformation/>
+                </ContainerCard>
+                   <ContainerCard>
+                    <h2 className="mb-4 font-semibold text-[18px] leading-[100%] text-[#181D27] tracking-[0%]"> Additional Information</h2>
+    <WarehouseAdditionalInformation/>
                 </ContainerCard>
 
                 <div className="flex justify-end gap-3 mt-6">
