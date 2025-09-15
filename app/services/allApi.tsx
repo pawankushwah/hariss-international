@@ -14,10 +14,10 @@ API.interceptors.request.use(
 <<<<<<< HEAD
       const token = localStorage.getItem("token"); // or whatever key you use
 =======
-      const token = localStorage.getItem("token"); 
+      const token = localStorage.getItem("token")
 >>>>>>> 90313c9b9fdea781b6a442a617484306ddf96aa3
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        config.headers.Authorization = `Bearer ${token}`
       }
     }
     return config;
