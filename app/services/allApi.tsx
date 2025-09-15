@@ -13,3 +13,4 @@ export const login = async (credentials: { email: string; password: string }) =>
   const res = await API.post("/master/auth/login", credentials);
   return res.data;
 };
+
