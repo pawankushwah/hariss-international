@@ -43,6 +43,7 @@ export default function AddCustomer() {
 
   
   const [countries, setCountries] = useState<{ value: string; label: string }[]>([]);
+  const [currency, setCurrency ] = useState<{ value: string; label: string }[]>([]);
 
   type ApiCountry = {
   id?: string;
@@ -70,13 +71,6 @@ useEffect(() => {
   fetchCountries();
 }, []);
 
-
-  const currencyOptions = [
-    { value: "usd", label: "USD" },
-    { value: "inr", label: "INR" },
-    { value: "aed", label: "AED" },
-    { value: "eur", label: "EUR" },
-  ];
 
   return (
     <>
@@ -243,7 +237,7 @@ useEffect(() => {
               currency={sellingCurrency}
               onAmountChange={(e) => setSellingAmount(e.target.value)}
               onCurrencyChange={(e) => setSellingCurrency(e.target.value)}
-              options={currencyOptions}
+              options={currency}
             />
 
             <FormInputField
@@ -253,7 +247,7 @@ useEffect(() => {
               currency={purchaseCurrency}
               onAmountChange={(e) => setPurchaseAmount(e.target.value)}
               onCurrencyChange={(e) => setPurchaseCurrency(e.target.value)}
-              options={currencyOptions}
+              options={currency}
             />
 
             <InputFields
