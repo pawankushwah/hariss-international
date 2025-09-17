@@ -2,23 +2,35 @@
 
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify-icon/react";
-import { useRouter } from "next/navigation";
 
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { countryList, deleteCountry } from "@/app/services/allApi";
+import { customerTypeList } from "@/app/services/allApi";
 import Loading from "@/app/components/Loading";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
-import DeleteConfirmPopup from "@/app/components/deletePopUp";
-import { useSnackbar } from "@/app/services/snackbarContext"; // ✅ import snackbar
+
+interface CustomerType {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  [key: string]: string; 
+}
 
 interface DropdownItem {
   icon: string;
   label: string;
   iconWidth: number;
 }
+
+const mockCustomer: CustomerType[] = new Array(10).fill(null).map((_, i) => ({
+  id: (i + 1).toString(),
+  code: `AC00016${i + 1}`,
+  name: `Abdul Retail Shop ${i + 1}`,
+  status: "Active",
+}));
 
 const dropdownDataList: DropdownItem[] = [
   { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
@@ -29,71 +41,43 @@ const dropdownDataList: DropdownItem[] = [
 ];
 
 const columns = [
-  { key: "country_code", label: "Country Code" },
-  { key: "country_name", label: "Country Name" },
-  { key: "currency", label: "Currency" },
+  { key: "code", label: "Code" },
+  { key: "name", label: "Name" },
+  { key: "status", label: "Status" },
 ];
 
-export default function Country() {
-  interface CountryItem {
-    id?: number | string;
-    country_code?: string;
-    country_name?: string;
-    currency?: string;
-  }
-
-  const [countries, setCountries] = useState<CountryItem[]>([]);
+export default function Customer() {
+  const [customers, setCustomers] = useState<CustomerType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
 
-  const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<CountryItem | null>(null);
-
-  const router = useRouter();
-  const { showSnackbar } = useSnackbar(); // ✅ snackbar hook
-
-  type TableRow = TableDataType & { id?: string };
-
-  // normalize countries to TableDataType for the Table component
-  const tableData: TableDataType[] = countries.map((c) => ({
-    id: c.id?.toString() ?? "",
-    country_code: c.country_code ?? "",
-    country_name: c.country_name ?? "",
-    currency: c.currency ?? "",
-  }));
-
   useEffect(() => {
-    const fetchCountries = async () => {
-      try {
-        const listRes = await countryList({});
-        setCountries(listRes.data);
-      } catch (error: unknown) {
-        console.error("API Error:", error);
-      } finally {
-        setLoading(false);
+  const fetchCustomers = async () => {
+    try {
+      const listRes = await customerTypeList();
+      console.log("API Response ✅", listRes);
+
+      const formatted: CustomerType[] = (listRes.data || []).map((c: CustomerType) => ({
+  ...c,
+  status: c.status === "active" ? "Active" : "Inactive", 
+}));
+
+      setCustomers(formatted);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("API Error:", error.message);
+      } else {
+        console.error("Unexpected error:", error);
       }
-    };
-
-    fetchCountries();
-  }, []);
-
-  const handleConfirmDelete = async () => {
-    if (!selectedRow) return;
-
-  try {
-  if (!selectedRow?.id) throw new Error('Missing id');
-  await deleteCountry(String(selectedRow.id)); // call API
-      
-      showSnackbar("Country deleted successfully ", "success"); 
-      router.refresh();
-    } catch (error) {
-      console.error("Delete failed ❌:", error);
-      showSnackbar("Failed to delete country ❌", "error"); 
+      setCustomers(mockCustomer);
     } finally {
-      setShowDeletePopup(false);
-      setSelectedRow(null);
+      setLoading(false);
     }
   };
+
+  fetchCustomers();
+}, []);
+
 
   return loading ? (
     <Loading />
@@ -101,7 +85,7 @@ export default function Country() {
     <>
       <div className="flex justify-between items-center mb-[20px]">
         <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
-          Country
+          Customer Type
         </h1>
 
         <div className="flex gap-[12px] relative">
@@ -139,7 +123,7 @@ export default function Country() {
 
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={tableData}
+          data={customers}
           config={{
             header: {
               searchBar: true,
@@ -147,49 +131,30 @@ export default function Country() {
               actions: [
                 <SidebarBtn
                   key={0}
-                  href="/dashboard/settings/country/add"
+                  href="/dashboard/settings/customer/customerType/add"
                   isActive
                   leadingIcon="lucide:plus"
-                  label="Add Country"
+                  label="Add Customer Type"
                   labelTw="hidden sm:block"
                 />,
               ],
             },
+            pageSize: 5,
             footer: { nextPrevBtn: true, pagination: true },
             columns,
             rowSelection: true,
             rowActions: [
               { icon: "lucide:eye" },
-              {
-                icon: "lucide:edit-2",
-                onClick: (data: object) => {
-                  const row = data as TableRow;
-                  router.push(`/dashboard/settings/country/update_country/${row.id}`);
-                },
-              },
+              { icon: "lucide:edit-2", onClick: console.log },
               {
                 icon: "lucide:more-vertical",
-                onClick: (data: object) => {
-                  const row = data as TableRow;
-                  setSelectedRow({ id: row.id, country_code: row.country_code, country_name: row.country_name });
-                  setShowDeletePopup(true);
-                },
+                onClick: () =>
+                  confirm("Are you sure you want to delete this customer?"),
               },
             ],
-            pageSize: 10,
           }}
         />
       </div>
-
-      {showDeletePopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <DeleteConfirmPopup
-            title="Country"
-            onClose={() => setShowDeletePopup(false)}
-            onConfirm={handleConfirmDelete}
-          />
-        </div>
-      )}
     </>
   );
 }

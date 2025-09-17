@@ -20,15 +20,33 @@ export const initialLinkData: SidebarDataType[] = [
         data: [
             {
                 isActive: false,
-                href: "/dashboard/settings/changeTheme",
-                label: "Change Theme",
-                leadingIcon: "mdi:white-balance-sunny",
+
+               
+                href: "/dashboard/settings/theme",
+                label: "Theme",
+                leadingIcon: "hugeicons:workflow-square-06",
+
                 iconColor: "text-green-500",
             },
             {
                 isActive: false,
                 href: "/dashboard/settings/user",
                 label: "Users",
+                leadingIcon: "mdi:account-circle",
+                iconColor: "text-green-500",
+            },
+              {
+                isActive: false,
+                href: "/dashboard/settings/user-types",
+                label: "Users Types",
+                leadingIcon: "mdi:account-circle",
+                iconColor: "text-green-500",
+            },
+
+             {
+                isActive: false,
+                href: "/dashboard/settings/outlet-channel",
+                label: "Outlet Channel",
                 leadingIcon: "mdi:account-circle",
                 iconColor: "text-green-500",
             },
@@ -39,13 +57,7 @@ export const initialLinkData: SidebarDataType[] = [
                 leadingIcon: "mdi:account-tie",
                 iconColor: "text-green-500",
             },
-            {
-                isActive: false,
-                href: "/dashboard/settings/country",
-                label: "Country",
-                leadingIcon: "mdi:earth",
-                iconColor: "text-green-500",
-            },
+
             {
                 isActive: false,
                 href: "#",
@@ -69,8 +81,15 @@ export const initialLinkData: SidebarDataType[] = [
             },
             {
                 isActive: false,
-                href: "/dashboard",
-                label: "Reason",
+                href: "/dashboard/settings/region",
+                label: "Region",
+                leadingIcon: "lucide:life-buoy",
+                iconColor: "text-green-500",
+            },
+               {
+                isActive: false,
+                href: "/dashboard/settings/routetype",
+                label: "Route Type",
                 leadingIcon: "lucide:life-buoy",
                 iconColor: "text-green-500",
             },
@@ -111,12 +130,12 @@ export const initialLinkData: SidebarDataType[] = [
                         iconColor: "text-yellow-400",
                     },
                     {
-                        isActive: false,
-                        href: "/dashboard/master/pricing",
-                        label: "Country",
-                        leadingIcon: "mdi:currency-usd",
-                        iconColor: "text-yellow-400",
-                    },
+                            isActive: false,
+                            href: "/dashboard/settings/country",
+                            label: "Country",
+                            leadingIcon: "mdi:earth",
+                            iconColor: "text-green-500",
+                        },
                     {
                         isActive: false,
                         href: "/dashboard/master/vehicle",
@@ -126,7 +145,7 @@ export const initialLinkData: SidebarDataType[] = [
                     },
                     {
                         isActive: false,
-                        href: "/dashboard/master/warehouse",
+                        href: "/dashboard/settings/company/subRegion",
                         label: "Sub Region",
                         leadingIcon: "tabler:building-warehouse",
                         iconColor: "text-violet-500",
@@ -164,7 +183,7 @@ export const initialLinkData: SidebarDataType[] = [
                 children: [
                     {
                         isActive: false,
-                        href: "/dashboard/master/customer",
+                        href: "/dashboard/settings/customer/customerType",
                         label: "Customer Type",
                         leadingIcon: "lucide:user",
                         iconColor: "text-green-500",
