@@ -1,5 +1,7 @@
 // app/services/allApi.ts
-import axios from "axios";
+
+import axios, { AxiosError } from "axios"; 
+
 
 const API = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL, 
@@ -82,3 +84,59 @@ export const countryList = async (data: Record<string, string>) => {
   }
 };
 
+export interface RegionPayload {
+  region_name: string;
+  status?: number | null;
+  country_id?: number | null;
+}
+
+
+export const addRegion = async (data: RegionPayload) => {
+  try {
+    const res = await API.post("/api/master/region/add_region", data);
+    return res; // ✅ return full response
+  } catch (error) {
+    console.error("Add Region failed ❌", error);
+    throw error;
+  }
+};
+
+
+//  outlet channel  api 
+
+
+
+
+export interface OutletChannelPayload {
+  outlet_channel: string;
+  status: number;
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data?: T;
+}
+
+export const createOutletChannel = async (
+  payload: OutletChannelPayload
+): Promise<ApiResponse> => {
+  try {
+    const response = await axios.post<ApiResponse>(
+      "/api/settings/outlet-channels", // change if needed
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError<ApiResponse>;
+    if (axiosError.response?.data) {
+      return axiosError.response.data;
+    }
+    throw new Error(axiosError.message);
+  }
+};
