@@ -118,6 +118,7 @@ import IconButton from "@/app/components/iconButton";
 import SettingPopUp from "@/app/components/settingPopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { addCountry } from "@/app/services/allApi";
+import { TableDataType } from "@/app/components/customTable";
 
 // ✅ Yup Schema
 const CountrySchema = Yup.object().shape({
@@ -137,7 +138,7 @@ export default function AddCountry() {
     currency: "",
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {[key: string]: string}) => {
     try {
       const payload = {
         ...values,

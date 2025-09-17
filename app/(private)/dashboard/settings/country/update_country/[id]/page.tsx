@@ -42,7 +42,7 @@ export default function EditCountry() {
   };
 
   // ✅ Submit handler for editing only
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: {[key: string]: string}) => {
     if (!queryId) return;
 
     try {
