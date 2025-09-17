@@ -170,3 +170,68 @@ export const deleteWarehouse = async (id:string) => {
   const res = await API.delete(`/api/master/warehouse/${id}`);
   return res.data;
 }
+
+export const addCustomerType = async (payload: Record<string, string>) => {
+  try {
+    const res = await API.post("/api/settings/customer-type/create", payload);
+    return res.data;
+  } catch (error) {
+    console.error("Add Customer Type failed ❌", error);
+    throw error;
+  }
+};
+
+export const customerTypeList = async (params?: Record<string, string>) => {
+  try {
+    const res = await API.get("/api/settings/customer-type/list", { params });
+    return res.data;
+  } catch (error) {
+    console.error("Customer Type List failed ❌", error);
+    throw error;
+  }
+};
+
+
+export const addRegion = async  (payload?: {regionName: string, countryId: number, status: number}) => {
+  try {
+    const res = await API.post("/api/master/region/add_region", { payload });
+    return res.data;
+  } catch (error) {
+    console.error("Add Region failed ❌", error);
+    throw error;
+  }
+};
+
+export const listCountries = async () => {
+  try {
+    const res = await API.get("/api/master/country/list_country", { params: { page: "1", limit: "200" } });
+    return res.data.data;
+  } catch (error) {
+    console.error("List Countries failed ❌", error);
+    throw error;
+  }
+};
+     
+
+
+
+export const routeTypeList = async (params?: Record<string, string>) => {
+  try {
+    const res = await API.get("/api/settings/route-type/list", { params });
+    return res.data;
+
+  } catch (error) {
+    console.error("Route Type List failed ❌", error);
+    throw error;
+  }
+};
+
+export const addRouteType = async (payload: Record<string, string | number>) => {
+  try {
+    const res = await API.post("/api/settings/route-type/create", payload);
+    return res.data;
+  } catch (error) {
+    console.error("Add Route Type failed ❌", error);
+    throw error;
+  }
+};
