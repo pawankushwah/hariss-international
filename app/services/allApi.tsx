@@ -219,7 +219,7 @@ export const updateItemCategory = async (category_id: number, category_name?: st
   }
 
   try {
-    const res = await API.put(`/api/settings/item_category/${category_id}/update`, body);
+    const res = await API.put(`/api/settings/item_category/${category_id}`, body);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -228,7 +228,7 @@ export const updateItemCategory = async (category_id: number, category_name?: st
 
 export const deleteItemCategory = async (category_id: number) => {
   try {
-    const res = await API.delete(`/api/settings/item_category/${category_id}/delete`);
+    const res = await API.delete(`/api/settings/item_category/${category_id}`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

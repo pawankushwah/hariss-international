@@ -10,6 +10,7 @@ import Popup from "@/app/components/popUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import CreateUpdate from "./createUpdate";
 import StatusBtn from "@/app/components/statusBtn2";
+import { useRouter } from "next/navigation";
 
 const mockCategoryData = new Array(100).fill(null).map((_, i) => ({
     id: (i + 1).toString(),
@@ -30,6 +31,7 @@ export type categoryType = {
 };
 
 export default function Category() {
+    const router = useRouter();
     const [categoryData, setCategoryData] = useState<TableDataType[]>(
         [] as TableDataType[]
     );
@@ -47,9 +49,10 @@ export default function Category() {
     async function deleteCategory() {
         if (!deleteItemCategoryId) return;
         const listRes = await deleteItemCategory(deleteItemCategoryId);
-        if (listRes.error) return showSnackbar(listRes.message, "error")
+        if (listRes.error) return showSnackbar(listRes.data.message, "error")
         showSnackbar("Category deleted successfully", "success");
         setShowDeletePopup(false);
+        router.refresh();
     }
 
     useEffect(() => {
