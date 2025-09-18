@@ -155,47 +155,47 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
   // mapped dropdown options (explicit typed mappings)
   const companyOptions = (Array.isArray(companyListData) ? companyListData : []).map((c: CompanyItem) => ({
     value: String(c.id ?? ''),
-    label: c.company_code && c.company_name ? ${c.company_code} - ${c.company_name} : (c.company_name ?? '')
+    label: c.company_code && c.company_name ? `${c.company_code} - ${c.company_name}` : (c.company_name ?? '')
   }));
 
   const countryOptions = (Array.isArray(countryListData) ? countryListData : []).map((c: CountryItem) => ({
     value: String(c.id ?? ''),
-    label: c.country_code && c.country_name ? ${c.country_code} - ${c.country_name} : (c.country_name ?? '')
+    label: c.country_code && c.country_name ? `${c.country_code} - ${c.country_name}` : (c.country_name ?? '')
   }));
 
   const regionOptions = (Array.isArray(regionListData) ? regionListData : []).map((c: RegionItem) => ({
     value: String(c.id ?? ''),
-    label: c.region_code && c.region_name ? ${c.region_code} - ${c.region_name} : (c.region_name ?? '')
+    label: c.region_code && c.region_name ? `${c.region_code} - ${c.region_name}` : (c.region_name ?? '')
   }));
 
   const routeOptions = (Array.isArray(routeListData) ? routeListData : []).map((c: RouteItem) => ({
     value: String(c.id ?? ''),
-    label: c.route_code && c.route_name ? ${c.route_code} - ${c.route_name} : (c.route_name ?? '')
+    label: c.route_code && c.route_name ? `${c.route_code} - ${c.route_name}` : (c.route_name ?? '')
   }));
 
   const warehouseOptions = (Array.isArray(warehouseListData) ? warehouseListData : []).map((c: WarehouseItem) => ({
     value: String(c.id ?? ''),
-    label: c.warehouse_code && c.warehouse_name ? ${c.warehouse_code} - ${c.warehouse_name} : (c.warehouse_name ?? '')
+    label: c.warehouse_code && c.warehouse_name ? `${c.warehouse_code} - ${c.warehouse_name}` : (c.warehouse_name ?? '')
   }));
 
   const routeTypeOptions = (Array.isArray(routeTypeData) ? routeTypeData : []).map((c: RouteTypeItem) => ({
     value: String(c.id ?? ''),
-    label: c.route_type_code && c.route_type_name ? ${c.route_type_code} - ${c.route_type_name} : (c.route_type_name ?? '')
+    label: c.route_type_code && c.route_type_name ? `${c.route_type_code} - ${c.route_type_name}` : (c.route_type_name ?? '')
   }));
 
   const areaOptions = (Array.isArray(areaListData) ? areaListData : []).map((c: AreaItem) => ({
     value: String(c.id ?? ''),
-    label: c.area_code && c.area_name ? ${c.area_code} - ${c.area_name} : (c.area_name ?? '')
+    label: c.area_code && c.area_name ? `${c.area_code} - ${c.area_name}` : (c.area_name ?? '')
   }));
 
   const companyCustomersOptions = (Array.isArray(companyCustomersData) ? companyCustomersData : []).map((c: CustomerItem) => ({
     value: String(c.id ?? ''),
-    label: c.customer_code && c.owner_name ? ${c.customer_code} - ${c.owner_name} : (c.owner_name ?? '')
+    label: c.customer_code && c.owner_name ? `${c.customer_code} - ${c.owner_name}` : (c.owner_name ?? '')
   }));
 
   const companyCustomersTypeOptions = (Array.isArray(companyCustomersTypeData) ? companyCustomersTypeData : []).map((c: CustomerTypeItem) => ({
     value: String(c.id ?? ''),
-    label: c.code && c.name ? ${c.code} - ${c.name} : (c.name ?? '')
+    label: c.code && c.name ? `${c.code} - ${c.name}` : (c.name ?? '')
   }));
 
   const itemCategoryOptions = (Array.isArray(itemCategoryData) ? itemCategoryData : []).map((c: ItemCategoryItem) => ({
@@ -210,12 +210,12 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
 
   const channelOptions = (Array.isArray(channelListData) ? channelListData : []).map((c: ChannelItem) => ({
     value: String(c.id ?? ''),
-    label: c.outlet_channel_code && c.outlet_channel ? ${c.outlet_channel_code} - ${c.outlet_channel} : (c.outlet_channel ?? '')
+    label: c.outlet_channel_code && c.outlet_channel ? `${c.outlet_channel_code} - ${c.outlet_channel}` : (c.outlet_channel ?? '')
   }));
 
   const userTypeOptions = (Array.isArray(userTypesData) ? userTypesData : []).map((c: UserTypeItem) => ({
     value: String(c.id ?? ''),
-    label: c.code && c.name ? ${c.code} - ${c.name} : (c.name ?? '')
+    label: c.code && c.name ? `${c.code} - ${c.name}` : (c.name ?? '')
   }));
 
 
@@ -239,7 +239,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         userTypes()
       ]);
 
-      // normalize: accept unknown response and extract array of items from .data when present
+      // normalize: accept unknown response and extract array of items from `.data` when present
       const normalize = (r: unknown): unknown[] => {
         if (r && typeof r === 'object') {
           const obj = r as Record<string, unknown>;
