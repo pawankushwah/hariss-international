@@ -28,12 +28,12 @@ type FormValues = {
     region_id: string;
     area_id: string;
     district: string;
-    town: string;
+    town_village: string;
     street: string;
     landmark: string;
     latitude: string;
     longitude: string;
-    thresholdRadius: string;
+    threshold_radius: string;
     device_no: string;
     is_efris: string;
     stock_capital: string;
@@ -51,19 +51,19 @@ export default function addwarehouse() {
         business_type: '',
         statusType: '',
         ownerContactCountry: '',
-    tinCode: '',
-    tin_no: '',
+        tinCode: '',
+        tin_no: '',
         owner_number: '',
         owner_email: '',
         region_id: '',
         area_id: '',
         district: '',
-        town: '',
+        town_village: '',
         street: '',
         landmark: '',
         latitude: '',
         longitude: '',
-        thresholdRadius: '',
+        threshold_radius: '',
         device_no: '',
         is_efris: '',
         stock_capital: '',
@@ -71,23 +71,23 @@ export default function addwarehouse() {
     };
 
     const validationSchema = Yup.object().shape({
-        registrationNumber: Yup.string().required('Registration Number is required'),
-        warehouseType: Yup.string().required('Warehouse Type is required'),
-        warehouseName: Yup.string().required('Warehouse Name is required'),
-        warehouseCode: Yup.string().required('Warehouse Code is required'),
-        agentId: Yup.string().required('Agent ID is required'),
-        ownerName: Yup.string().required('Warehouse Owner Name is required'),
-        bussinessType: Yup.string().required('Business Type is required'),
+        registation_no: Yup.string().required('Registration Number is required'),
+        warehouse_type: Yup.string().required('Warehouse Type is required'),
+        warehouse_name: Yup.string().required('Warehouse Name is required'),
+        warehouse_code: Yup.string().required('Warehouse Code is required'),
+        agent_id: Yup.string().required('Agent ID is required'),
+        owner_name: Yup.string().required('Warehouse Owner Name is required'),
+        business_type: Yup.string().required('Business Type is required'),
         statusType: Yup.string().required('Status is required'),
-        contact: Yup.string().required('Contact number is required').matches(/^\d+$/, 'Contact must be numeric').min(7,'Contact must be at least 7 digits'),
-        email: Yup.string().email('Invalid email').required('Email is required'),
-        region: Yup.string().required('Region is required'),
-        subRegion: Yup.string().required('Sub Region is required'),
+        owner_number: Yup.string().required('Contact number is required').matches(/^\d+$/, 'Contact must be numeric').min(7,'Contact must be at least 7 digits'),
+        owner_email: Yup.string().email('Invalid email').required('Email is required'),
+        region_id: Yup.string().required('Region is required'),
+        area_id: Yup.string().required('Sub Region is required'),
         latitude: Yup.string().required('Latitude is required').matches(/^[-+]?\d{1,3}(?:\.\d+)?$/, 'Latitude must be a valid decimal number'),
         longitude: Yup.string().required('Longitude is required').matches(/^[-+]?\d{1,3}(?:\.\d+)?$/, 'Longitude must be a valid decimal number'),
-        thresholdRadius: Yup.string().required('Threshold Radius is required').matches(/^\d+(?:\.\d+)?$/, 'Threshold Radius must be numeric'),
-        deviceNo: Yup.string().required('Device No. is required').matches(/^\d+$/, 'Device No. must be numeric'),
-        efris: Yup.string().required('EFRIS Configuration is required').min(3, 'EFRIS Configuration must be at least 3 characters'),
+        threshold_radius: Yup.string().required('Threshold Radius is required').matches(/^\d+(?:\.\d+)?$/, 'Threshold Radius must be numeric'),
+        device_no: Yup.string().required('Device No. is required').matches(/^\d+$/, 'Device No. must be numeric'),
+        is_efris: Yup.string().required('EFRIS Configuration is required').min(3, 'EFRIS Configuration must be at least 3 characters'),
     });
 
     const handleSubmit = async (values: FormValues, { setSubmitting, resetForm }: FormikHelpers<FormValues>) => {
