@@ -113,49 +113,59 @@ export default function EditWarehouse() {
             try {
                 const res = await getWarehouseById(String(routeId));
                 const data = res?.data ?? res;
+                console.log('API Response for warehouse edit:', JSON.stringify(data, null, 2)); // Debug log
                 if (!mounted) return;
                 // map API fields to form keys used in this page
-                setFetched({
-                    registation_no: data?.registration_no ?? '',
-                    password: '', // password should not be prefilled for security
-                    warehouse_type: data?.warehouse_type?.toString() ?? '',
-                    warehouse_name: data?.warehouse_name ?? '',
-                    warehouse_code: data?.warehouse_code ?? '',
-                    agent_id: data?.agent_id?.toString() ?? '',
-                    owner_name: data?.owner_name ?? '',
-                    business_type: data?.business_type ?? '',
-                    status: data?.status ?? '',
-                    ownerContactCountry: data?.ownerContactCountry ?? '',
-                    tinCode: data?.tinCode ?? '',
-                    tin_no: data?.tin_no ?? '',
-                    owner_number: data?.owner_number ?? '',
-                    owner_email: data?.owner_email ?? '',
-                    company_customer_id: data?.company_customer_id ?? '',
-                    warehouse_manager: data?.warehouse_manager ?? '',
-                    warehouse_manager_contact: data?.warehouse_manager_contact ?? '',
-                    region_id: data?.region_id ?? '',
-                    area_id: data?.area_id ?? '',
-                    city: data?.city ?? '',
-                    location: data?.location ?? '',
-                    address: data?.address ?? '',
-                    district: data?.district ?? '',
-                    town_village: data?.town_village ?? '',
-                    street: data?.street ?? '',
-                    landmark: data?.landmark ?? '',
-                    latitude: data?.latitude ?? '',
-                    longitude: data?.longitude ?? '',
-                    threshold_radius: data?.threshold_radius ?? '',
-                    device_no: data?.device_no ?? '',
-                    p12_file: data?.p12_file ?? '',
-                    branch_id: data?.branch_id ?? '',
-                    is_branch: data?.is_branch ?? '',
-                    invoice_sync: data?.invoice_sync ?? '',
-                    is_efris: data?.is_efris ?? '',
-                    created_user: data?.created_user ?? '',
-                    updated_user: data?.updated_user ?? '',
-                    stock_capital: data?.stock_capital ?? '',
-                    deposite_amount: data?.deposite_amount ?? '',
-                });
+                const mappedData = {
+                    registation_no: data?.registration_no || data?.registation_no || data?.reg_no || '',
+                    password: '', // password should be empty for security - user needs to enter new one
+                    warehouse_type: String(data?.warehouse_type || data?.type || ''),
+                    warehouse_name: data?.warehouse_name || data?.name || '',
+                    warehouse_code: data?.warehouse_code || data?.code || '',
+                    agent_id: String(data?.agent_id || data?.agentId || ''),
+                    owner_name: data?.owner_name || data?.ownerName || '',
+                    business_type: String(data?.business_type || data?.businessType || ''),
+                    status: String(data?.status || ''),
+                    ownerContactCountry: data?.ownerContactCountry || data?.owner_contact_country || data?.contact_country || '',
+                    tinCode: data?.tinCode || data?.tin_code || data?.tin_country || '',
+                    tin_no: data?.tin_no || data?.tinNo || data?.tin_number || '',
+                    owner_number: data?.owner_number || data?.ownerNumber || data?.contact_number || '',
+                    owner_email: data?.owner_email || data?.ownerEmail || data?.email || '',
+                    company_customer_id: String(data?.company_customer_id || data?.companyCustomerId || data?.customer_id || ''),
+                    warehouse_manager: data?.warehouse_manager || data?.warehouseManager || data?.manager || '',
+                    warehouse_manager_contact: data?.warehouse_manager_contact || data?.warehouseManagerContact || data?.manager_contact || '',
+                    region_id: String(data?.region_id || data?.regionId || data?.region || ''),
+                    area_id: String(data?.area_id || data?.areaId || data?.area || ''),
+                    city: data?.city || '',
+                    location: data?.location || '',
+                    address: data?.address || '',
+                    district: data?.district || '',
+                    town_village: data?.town_village || data?.townVillage || data?.town || '',
+                    street: data?.street || '',
+                    landmark: data?.landmark || '',
+                    latitude: String(data?.latitude || data?.lat || ''),
+                    longitude: String(data?.longitude || data?.lng || data?.long || ''),
+                    threshold_radius: String(data?.threshold_radius || data?.thresholdRadius || data?.radius || ''),
+                    device_no: String(data?.device_no || data?.deviceNo || data?.device_number || ''),
+                    p12_file: data?.p12_file || data?.p12File || data?.p12_file_name || data?.certificate_file || '',
+                    branch_id: String(data?.branch_id || data?.branchId || ''),
+                    is_branch: String(data?.is_branch || data?.isBranch || ''),
+                    invoice_sync: String(data?.invoice_sync || data?.invoiceSync || ''),
+                    is_efris: String(data?.is_efris || data?.isEfris || data?.efris || ''),
+                    created_user: data?.created_user || data?.createdUser || data?.created_by || '',
+                    updated_user: data?.updated_user || data?.updatedUser || data?.updated_by || '',
+                    stock_capital: String(data?.stock_capital || data?.stockCapital || ''),
+                    deposite_amount: String(data?.deposite_amount || data?.depositeAmount || data?.deposit_amount || ''),
+                };
+                
+                setFetched(mappedData);
+                console.log('Mapped form data:', JSON.stringify({
+                    registation_no: mappedData.registation_no,
+                    company_customer_id: mappedData.company_customer_id,
+                    agent_id: mappedData.agent_id,
+                    p12_file: mappedData.p12_file,
+                    password: 'HIDDEN_FOR_SECURITY'
+                }, null, 2)); // Debug specific problematic fields
         } catch (err: unknown) {
             console.error('Failed to fetch warehouse', err);
             }
@@ -191,10 +201,19 @@ export default function EditWarehouse() {
         device_no: Yup.string()
             .required('Device Number is required')
             .matches(/^\d+$/, 'Device Number must be numeric'),
-        p12_file: Yup.string().required('P12 File is required'),
+        p12_file: Yup.string()
+            .test('p12-required', 'P12 File is required for new warehouse', function(value) {
+                // For edit mode, P12 file is optional (user can keep existing file)
+                // For add mode, P12 file is required
+                return !routeId ? !!value : true; // Required only if routeId is empty (add mode)
+            }),
         password: Yup.string()
-            .required('Password is required')
-            .min(6, 'Password must be at least 6 characters'),
+            .min(6, 'Password must be at least 6 characters')
+            .test('password-required', 'Password is required for new warehouse or if changing password', function(value) {
+                // For edit mode, password is optional (user can keep existing password)
+                // For add mode, password is required
+                return !routeId ? !!value : true; // Required only if routeId is empty (add mode)
+            }),
         status: Yup.string().required('Status is required'),
         is_efris: Yup.string().required('EFRIS Configuration is required'),
         created_user: Yup.string().required('Created User is required'),

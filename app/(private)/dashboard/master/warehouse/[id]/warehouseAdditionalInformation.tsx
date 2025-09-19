@@ -2,7 +2,7 @@
 import React from 'react';
 import CustomSecurityCode from "@/app/components/customSecurityCode";
 import InputFields from "@/app/components/inputFields";
-import { useFormik } from "formik";
+
 type Props = {
     values: Record<string, string>;
     errors?: Record<string, string>;
@@ -29,19 +29,23 @@ export default function WarehouseAdditionalInformation({ values, errors, touched
                 error={errors?.is_efris && touched?.is_efris ? errors.is_efris : false}
             />
 
-            <InputFields
-                label="P12 File *"
-                name="p12_file"
-                type="file"
-                value={values.p12_file}
-                onChange={(e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) {
-                        setFieldValue('p12_file', file.name);
-                    }
-                }}
-                error={errors?.p12_file && touched?.p12_file ? errors.p12_file : false}
-            />
+            <div>
+                <InputFields
+                    label="P12 File *"
+                    name="p12_file"
+                    type="file"
+                    onChange={(e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                            setFieldValue('p12_file', file.name);
+                        }
+                    }}
+                    error={errors?.p12_file && touched?.p12_file ? errors.p12_file : false}
+                />
+                {values.p12_file && (
+                    <p className="text-sm text-gray-600 mt-1">Current file: {values.p12_file}</p>
+                )}
+            </div>
 
             <CustomSecurityCode
                 label="Stock Capital"
@@ -88,15 +92,7 @@ export default function WarehouseAdditionalInformation({ values, errors, touched
                 error={errors?.invoice_sync && touched?.invoice_sync ? errors.invoice_sync : false}
             />
 
-                        <InputFields
-                          name="companyLogo"
-                          label="Company Logo"
-                          type="file"
-                          onChange={(e) =>
-                              (e.currentTarget as HTMLInputElement).files?.[0]
-                          }
-                        />
-
+                      
                         <InputFields
                 label="Created User *"
                 name="created_user"

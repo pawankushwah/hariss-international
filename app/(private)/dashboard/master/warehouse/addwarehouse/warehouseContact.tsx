@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default function WarehouseContactDetails({ values, errors, touched, handleChange, setFieldValue }: Props) {
-  const { countryOptions,onlyCountryOptions } = useAllDropdownListData();
+  const { onlyCountryOptions } = useAllDropdownListData();
   // fallback if context not populated
   const fallbackCountries = [
     { value: "uae", label: "UAE" },

@@ -17,7 +17,6 @@ type Props = {
 
 export default function WarehouseDetails({ values, errors, touched, handleChange, setFieldValue }: Props) {
     const [isOpen, setIsOpen] = React.useState(false);
-    const { loading, warehouseOptions } = useAllDropdownListData();
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -140,6 +139,9 @@ export default function WarehouseDetails({ values, errors, touched, handleChange
                 {errors?.password && touched?.password && (
                     <span className="text-xs text-red-500 mt-1">{errors.password}</span>
                 )}
+                <p className="text-xs text-gray-500 mt-1">
+                    Leave empty to keep current password, or enter new password to update
+                </p>
             </div>
         </div>
     );

@@ -2,7 +2,7 @@
 import React from 'react';
 import CustomSecurityCode from "@/app/components/customSecurityCode";
 import InputFields from "@/app/components/inputFields";
-import { useFormik } from "formik";
+
 type Props = {
     values: Record<string, string>;
     errors?: Record<string, string>;
@@ -88,14 +88,7 @@ export default function WarehouseAdditionalInformation({ values, errors, touched
                 error={errors?.invoice_sync && touched?.invoice_sync ? errors.invoice_sync : false}
             />
 
-                        <InputFields
-                          name="companyLogo"
-                          label="Company Logo"
-                          type="file"
-                          onChange={(e) =>
-                              (e.currentTarget as HTMLInputElement).files?.[0]
-                          }
-                        />
+                       
 
                         <InputFields
                 label="Created User *"

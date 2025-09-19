@@ -17,7 +17,6 @@ type Props = {
 
 export default function WarehouseDetails({ values, errors, touched, handleChange, setFieldValue }: Props) {
     const [isOpen, setIsOpen] = React.useState(false);
-   const { loading,warehouseOptions } = useAllDropdownListData();
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

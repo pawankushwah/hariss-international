@@ -12,15 +12,10 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import { getRouteById, updateRoute } from "@/app/services/allApi";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
-const schema = yup.object().shape({
-  route_code: yup.string().required("Route code is required").max(10),
-  route_name: yup.string().required("Route name is required").max(100),
-  route_type: yup.array().of(yup.number()).required("Route type is required").min(1, "At least one route type is required"),
-  status: yup.number().required("Status is required").oneOf([0, 1, 2], "Invalid status"),
-});
+
 
 export default function EditRoute() {
-  const { routeTypeOptions, loading, areaOptions } = useAllDropdownListData();
+  const { routeTypeOptions } = useAllDropdownListData();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
@@ -59,7 +54,7 @@ export default function EditRoute() {
         let routeTypeArray: string[] = [];
         if (data?.route_type) {
           if (Array.isArray(data.route_type)) {
-            routeTypeArray = data.route_type.map((rt: any) => String(rt));
+            routeTypeArray = data.route_type.map((rt: string) => String(rt));
           } else {
             routeTypeArray = [String(data.route_type)];
           }

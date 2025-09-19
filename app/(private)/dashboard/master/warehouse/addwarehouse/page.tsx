@@ -54,7 +54,7 @@ type FormValues = {
     deposite_amount: string;
 };
 
-export default function addwarehouse() {
+export default function AddWarehouse() {
     const router = useRouter();
     const { showSnackbar } = useSnackbar();
     const initialValues: FormValues = {
@@ -164,13 +164,16 @@ export default function addwarehouse() {
             router.push("/dashboard/master/warehouse");
             resetForm();
         } catch (err: unknown) {
-            const anyErr = err as any;
-            if (anyErr?.response) {
-                 showSnackbar(`Error adding warehouse - response.status: ${anyErr.response.status}`, "error");
-                console.error('Error adding warehouse - response.status:', anyErr.response.status);
+            const error = err as unknown;
+            if (typeof error === 'object' && error !== null && 'response' in error) {
+                const response = (error as { response?: { status?: number } }).response;
+                if (response && typeof response.status === 'number') {
+                    showSnackbar(`Error adding warehouse - response.status: ${response.status}`, "error");
+                    console.error('Error adding warehouse - response.status:', response.status);
+                }
+            } else {
+                showSnackbar("Failed to submit form", "error");
             }
-        } finally {
-             showSnackbar("Failed to submit form", "error");
             setSubmitting(false);
         }
     };

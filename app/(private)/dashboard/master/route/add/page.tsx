@@ -14,7 +14,7 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
 export default function Route() {
-  const { routeTypeOptions, loading, areaOptions } = useAllDropdownListData();
+  const { routeTypeOptions } = useAllDropdownListData();
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
   const [isOpen, setIsOpen] = useState(false);
@@ -25,14 +25,6 @@ export default function Route() {
   const [status, setStatus] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-
-  const schema = yup.object().shape({
-    route_code: yup.string().required("Route code is required").max(10),
-    route_name: yup.string().required("Route name is required").max(100),
-    route_type: yup.array().of(yup.number()).required("Route type is required").min(1, "At least one route type is required"),
-    status: yup.number().required("Status is required").oneOf([0, 1, 2], "Invalid status"),
-  });
-
   const clearErrors = () => setErrors({});
 
   const handleSubmit = async () => {
@@ -55,7 +47,7 @@ export default function Route() {
 
     try {
       setSubmitting(true);
-      const res = await addRoutes(payload);
+      await addRoutes(payload);
       showSnackbar("Route added successfully ", "success");
       router.push("/dashboard/master/route");
       setSubmitting(false);
