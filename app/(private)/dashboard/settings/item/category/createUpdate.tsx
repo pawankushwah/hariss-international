@@ -8,15 +8,18 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { categoryType } from "./page";
+import { useState } from "react";
 
 export default function CreateUpdate({
     type,
     updateItemCategoryData,
     onClose,
+    onRefresh
 }: {
     type: "create" | "update";
     updateItemCategoryData?: categoryType;
     onClose: () => void;
+    onRefresh: () => void
 }) {
     const { showSnackbar } = useSnackbar();
 
@@ -40,10 +43,11 @@ export default function CreateUpdate({
                     values.categoryName,
                     values.status as 0 | 1
                 );
-                if (res.error) return showSnackbar(res.message, "error")
+                if (res.error) return showSnackbar(res.data.message, "error")
                 else {
                     showSnackbar("Item Category Created Successfully", "success");
                     onClose();
+                    onRefresh();
                 }
             }
             if (type === "update") {
@@ -64,10 +68,11 @@ export default function CreateUpdate({
                         values.categoryName,
                         values.status as 0 | 1
                     );
-                    if (res.error) return showSnackbar(res.message, "error");
+                    if (res.error) return showSnackbar(res.data.message, "error");
                     else {
                         showSnackbar("Item Category Updated Successfully", "success");
                         onClose();
+                        onRefresh();
                     }
                 }
             }

@@ -2,18 +2,69 @@
 
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import * as yup from "yup";
+import { addRoutes } from "@/app/services/allApi";
 import InputFields from "@/app/components/inputFields";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import SettingPopUp from "@/app/components/settingPopUp";
 import IconButton from "@/app/components/iconButton";
+import { useSnackbar } from "@/app/services/snackbarContext";
+import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
+
 export default function Route() {
+  const { routeTypeOptions } = useAllDropdownListData();
+  const router = useRouter();
+  const { showSnackbar } = useSnackbar();
   const [isOpen, setIsOpen] = useState(false);
   const [routeCode, setRouteCode] = useState("");
   const [routeName, setRouteName] = useState("");
-  const [routeType, setRouteType] = useState("");
-  const [warehouse, setWarehouse] = useState("");
+  const [routeType, setRouteType] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
   const [status, setStatus] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const clearErrors = () => setErrors({});
+
+  const handleSubmit = async () => {
+    clearErrors();
+    type AddRoutePayload = {
+      route_code?: string;
+      route_name?: string;
+      route_type?: number[] | undefined;
+      status?: number | undefined;
+      description:string;
+    };
+
+    const payload: AddRoutePayload = {
+      route_code: routeCode,
+      route_name: routeName,
+      route_type: routeType.length > 0 ? routeType.map(rt => Number(rt)) : undefined,
+      status: status ? (status === "active" ? 1 : status === "inactive" ? 0 : Number(status)) : undefined,
+      description:description
+    };
+
+    try {
+      setSubmitting(true);
+      await addRoutes(payload);
+      showSnackbar("Route added successfully ", "success");
+      router.push("/dashboard/master/route");
+      setSubmitting(false);
+    } catch (err: unknown) {
+      setSubmitting(false);
+      if (err instanceof yup.ValidationError && Array.isArray(err.inner)) {
+        const formErrors: Record<string, string> = {};
+        err.inner.forEach((e) => {
+          if (e.path) formErrors[e.path] = e.message;
+        });
+        setErrors(formErrors);
+      } else {
+        showSnackbar("Failed to submit form", "error");
+        console.error(err);
+      }
+    }
+  };
 
 
   return (
@@ -47,6 +98,9 @@ export default function Route() {
                   value={routeCode}
                   onChange={(e) => setRouteCode(e.target.value)}
                 />
+                {errors.route_code && (
+                  <p className="text-red-500 text-sm mt-1">{errors.route_code}</p>
+                )}
 
                 <IconButton bgClass="white" className="mb-2 cursor-pointer text-[#252B37]"
                   icon="mi:settings"
@@ -66,46 +120,57 @@ export default function Route() {
                   value={routeName}
                   onChange={(e) => setRouteName(e.target.value)}
                 />
+                {errors.route_name && (
+                  <p className="text-red-500 text-sm mt-1">{errors.route_name}</p>
+                )}
               </div>
               <div>
                 <InputFields
                   label="Route Type"
-                  value={routeType}
-                  onChange={(e) => setRouteType(e.target.value)}
-                  options={[
-                    { value: "route1", label: "Route 1" },
-                    { value: "route2", label: "Route 2" },
-                    { value: "route3", label: "Route 3" },
-                  ]}
+                  value={routeType.join(",")}
+                  onChange={(e) => {
+                    const selectedValue = e.target.value;
+                    if (selectedValue && !routeType.includes(selectedValue)) {
+                      setRouteType([...routeType, selectedValue]);
+                    }
+                  }}
+                  options={routeTypeOptions}
                 />
+                {/* Display selected route types */}
+                {routeType.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {routeType.map((type, index) => {
+                      const label = routeTypeOptions?.find(opt => opt.value === type)?.label || type;
+                      return (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                        >
+                          {label}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRouteType(routeType.filter((_, i) => i !== index));
+                            }}
+                            className="ml-1 text-blue-600 hover:text-blue-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                {errors.route_type && (
+                  <p className="text-red-500 text-sm mt-1">{errors.route_type}</p>
+                )}
 
               </div>
             </div>
           </div>
         </div>
         {/* Location Information */}
-        <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
-          <div className="p-6">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">
-              Location Information
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <InputFields
-                  label="Warehouse"
-                  value={warehouse}
-                  onChange={(e) => setWarehouse(e.target.value)}
-                  options={[
-                    { value: "warehouseA", label: "warehouse A" },
-                    { value: "warehouseB", label: "warehouse B" },
-                    { value: "warehouseC", label: "warehouse C" },
-                  ]}
-                />
-              </div>
-
-            </div>
-          </div>
-        </div>
+       
         {/* Additional Information */}
         <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 ">
           <div className="p-6">
@@ -113,6 +178,14 @@ export default function Route() {
               Additional Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div>
+                <InputFields
+                  label="Description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+               
+              </div>
               <div>
                 <InputFields
                   label="Status"
@@ -123,6 +196,9 @@ export default function Route() {
                     { value: "inactive", label: "In Active" },
                   ]}
                 />
+                {errors.status && (
+                  <p className="text-red-500 text-sm mt-1">{errors.status}</p>
+                )}
               </div>
 
             </div>
@@ -139,10 +215,12 @@ export default function Route() {
           </button>
 
           <SidebarBtn
-            label="Submit"
-            isActive={true}
-            leadingIcon="mdi:check"   // checkmark icon
-            onClick={() => console.log("Form submitted ✅")} />
+            label={submitting ? "Submitting..." : "Submit"}
+            isActive={!submitting}
+            leadingIcon="mdi:check"
+            onClick={handleSubmit}
+            disabled={submitting}
+          />
         </div>
       </div>
 

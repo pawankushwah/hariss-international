@@ -2,37 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify-icon/react";
+import { useRouter } from "next/navigation";
 
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table from "@/app/components/customTable";
+import Table, { TableDataType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { customerTypeList } from "@/app/services/allApi";
 import Loading from "@/app/components/Loading";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
+import DeleteConfirmPopup from "@/app/components/deletePopUp";
+import { useSnackbar } from "@/app/services/snackbarContext";
+import { customerTypeList, deleteCustomerType } from "@/app/services/allApi";
 
 interface CustomerType {
-  id: string;
-  code: string;
-  name: string;
-  status: string;
-  [key: string]: string; 
+  id?: string | number;
+  code?: string;
+  name?: string;
+  status?: string | number;
+  [key: string]: string | number | undefined;
 }
 
-interface DropdownItem {
-  icon: string;
-  label: string;
-  iconWidth: number;
-}
-
-const mockCustomer: CustomerType[] = new Array(10).fill(null).map((_, i) => ({
-  id: (i + 1).toString(),
-  code: `AC00016${i + 1}`,
-  name: `Abdul Retail Shop ${i + 1}`,
-  status: "Active",
-}));
-
-const dropdownDataList: DropdownItem[] = [
+const dropdownDataList = [
   { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
   { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
   { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
@@ -46,45 +36,84 @@ const columns = [
   { key: "status", label: "Status" },
 ];
 
-export default function Customer() {
+export default function CustomerPage() {
   const [customers, setCustomers] = useState<CustomerType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<CustomerType | null>(null);
+  const [refresh, setRefresh] = useState<boolean>(false);
 
+  const { showSnackbar } = useSnackbar();
+  const router = useRouter();
+
+  // normalize table data
+  const tableData: TableDataType[] = customers.map((c) => ({
+    id: c.id?.toString() ?? "",
+    code: c.code ?? "",
+    name: c.name ?? "",
+    status:
+      c.status === "active" || c.status === 1
+        ? "Active"
+        : "Inactive",
+  }));
+
+  // fetch list
   useEffect(() => {
-  const fetchCustomers = async () => {
-    try {
-      const listRes = await customerTypeList();
-      console.log("API Response ✅", listRes);
-
-      const formatted: CustomerType[] = (listRes.data || []).map((c: CustomerType) => ({
-  ...c,
-  status: c.status === "active" ? "Active" : "Inactive", 
-}));
-
-      setCustomers(formatted);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("API Error:", error.message);
-      } else {
-        console.error("Unexpected error:", error);
+    const fetchCustomers = async () => {
+      try {
+        const res = await customerTypeList();
+        setCustomers(res?.data || []);
+      } catch (error) {
+        console.error("Failed to fetch customers ❌", error);
+        showSnackbar("Failed to fetch customers ❌", "error");
+      } finally {
+        setLoading(false);
       }
-      setCustomers(mockCustomer);
-    } finally {
-      setLoading(false);
+    };
+    fetchCustomers();
+  }, [refresh]);
+
+  // delete handler
+ const handleConfirmDelete = async () => {
+  if (!selectedRow?.id) return;
+
+  try {
+    const res = await deleteCustomerType(String(selectedRow.id));
+
+    // success check
+    if (res?.success || res?.message || res) {
+      setCustomers((prev) =>
+        prev.filter((c) => String(c.id) !== String(selectedRow.id))
+      );
+
+      showSnackbar("Customer deleted successfully ✅", "success");
+setRefresh(!refresh);
+      // optional: if list becomes empty after delete
+      if (customers.length === 1) {
+        // after deleting last item, customers will be []
+        setCustomers([]);
+      }
+
+      setShowDeletePopup(false);
+      setSelectedRow(null);
+    } else {
+      showSnackbar("Failed to delete customer ❌", "error");
     }
-  };
+  } catch (error) {
+    console.error("Delete failed ❌", error);
+    showSnackbar("Delete failed ❌", "error");
+  }
+};
 
-  fetchCustomers();
-}, []);
 
+  if (loading) return <Loading />;
 
-  return loading ? (
-    <Loading />
-  ) : (
+  return (
     <>
+      {/* Header */}
       <div className="flex justify-between items-center mb-[20px]">
-        <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
+        <h1 className="text-[20px] font-semibold text-[#181D27]">
           Customer Type
         </h1>
 
@@ -121,40 +150,67 @@ export default function Customer() {
         </div>
       </div>
 
+      {/* Table */}
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={customers}
+          data={tableData}
           config={{
             header: {
               searchBar: true,
               columnFilter: true,
               actions: [
                 <SidebarBtn
-                  key={0}
+                  key="add-customer-type"
                   href="/dashboard/settings/customer/customerType/add"
-                  isActive
                   leadingIcon="lucide:plus"
                   label="Add Customer Type"
                   labelTw="hidden sm:block"
+                  isActive
                 />,
               ],
             },
-            pageSize: 5,
             footer: { nextPrevBtn: true, pagination: true },
             columns,
             rowSelection: true,
             rowActions: [
-              { icon: "lucide:eye" },
-              { icon: "lucide:edit-2", onClick: console.log },
               {
-                icon: "lucide:more-vertical",
-                onClick: () =>
-                  confirm("Are you sure you want to delete this customer?"),
+                icon: "lucide:edit-2",
+                onClick: (row: object) => {
+                  const r = row as TableDataType;
+                  router.push(
+                    `/dashboard/settings/customer/customerType/updateCustomerType/${r.id}`
+                  );
+                },
+              },
+              {
+                icon: "lucide:trash",
+                onClick: (row: object) => {
+                  const r = row as TableDataType;
+                  setSelectedRow({
+                    id: r.id,
+                    code: r.code,
+                    name: r.name,
+                    status: r.status,
+                  });
+                  setShowDeletePopup(true);
+                },
               },
             ],
+            pageSize: 10,
           }}
         />
       </div>
+
+      {/* Delete Popup */}
+      {showDeletePopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <DeleteConfirmPopup
+            title="Delete Customer Type"
+            onClose={() => setShowDeletePopup(false)}
+            onConfirm={handleConfirmDelete}
+          />
+        </div>
+      )}
     </>
   );
 }
