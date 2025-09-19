@@ -224,7 +224,7 @@ export const updateItemCategory = async (category_id: number, category_name?: st
   }
 
   try {
-    const res = await API.put(`/api/settings/item_category/${category_id}`, body);
+    const res = await API.put(`/api/settings/item_category/${category_id}/update`, body);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -233,7 +233,7 @@ export const updateItemCategory = async (category_id: number, category_name?: st
 
 export const deleteItemCategory = async (category_id: number) => {
   try {
-    const res = await API.delete(`/api/settings/item_category/${category_id}`);
+    const res = await API.delete(`/api/settings/item_category/${category_id}/delete`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -798,7 +798,7 @@ export const getArea = async () => {
 
 export const addArea = async (body:object) => {
   try {
-    const res = await API.post(`/api/master/area/add_area`);
+    const res = await API.post(`/api/master/area/add_area`,body);
 
     return res.data;
   } catch (error: unknown) {
@@ -1075,13 +1075,82 @@ export const outletChannelList = async (data: Record<string, string>) => {
 
 
 export const deleteChannel = async (id:string) => {
-    const res = await API.delete(`/api/settings/outlet-channels/${id}`);
+  try {
+       const res = await API.delete(`/api/settings/outlet-channels/${id}`);
     return res.data;
+  } catch (error) {
+    console.error("User List failed ❌", error);
+    throw error;
+  }
 };
 
 export const updateChannel = async (id:string,payload:object) => {
-    const res = await API.put(`/api/settings/outlet-channels/{id}/${id}`,payload);
+  try {
+           const res = await API.put(`/api/settings/outlet-channels/{id}/${id}`,payload);
+
     return res.data;
+  } catch (error) {
+    console.error("User List failed ❌", error);
+    throw error;
+  }
 };
+
+export const getExpenseTypeList = async () => {
+  try {
+           const res = await API.get(`/api/settings/expense_type/list`);
+
+    return res.data;
+  } catch (error) {
+    console.error("User List failed ❌", error);
+    throw error;
+  }
+};
+
+export const getExpenseTypeById = async (id:string) => {
+  try {
+           const res = await API.get(`/api/settings/expense_type/${id}`);
+
+    return res.data;
+  } catch (error) {
+    console.error("User List failed ❌", error);
+    throw error;
+  }
+};
+
+export const addExpenseType = async (body:object) => {
+  try {
+           const res = await API.post(`/api/settings/expense_type/create`,body);
+
+    return res.data;
+  } catch (error) {
+    console.error("User List failed ❌", error);
+    throw error;
+  }
+};
+
+export const updateExpenseType = async (id:string,body:object) => {
+  try {
+           const res = await API.put(`/api/settings/expense_type/${id}/update`,body);
+
+    return res.data;
+  } catch (error) {
+    console.error("User List failed ❌", error);
+    throw error;
+  }
+};
+
+
+export const deleteExpenseType = async (id:string) => {
+  try {
+           const res = await API.delete(`/api/settings/expense_type/${id}/delete`);
+
+    return res.data;
+  } catch (error) {
+    console.error("User List failed ❌", error);
+    throw error;
+  }
+};
+
+
 
 

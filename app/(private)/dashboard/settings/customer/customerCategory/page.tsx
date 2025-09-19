@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 
 import BorderIconButton from "@/app/components/borderIconButton";
@@ -17,7 +16,6 @@ import {
   deleteCustomerCategory,
 } from "@/app/services/allApi";
 
-// ✅ Define proper types for API response
 interface CustomerCategoryAPI {
   id: string;
   outlet_channel_id: string;
