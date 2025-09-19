@@ -1237,6 +1237,87 @@ export const deleteExpenseType = async (id:string) => {
   }
 };
 
+export const salesmanTypeList = async (data: Record<string, string>) => {
+  try {
+    const res = await API.get("/api/settings/salesman_type/list", data);
+   
+    return res.data;
+  } catch (error) {
+    console.error("User List failed ❌", error);
+    throw error;
+  }
+};
+
+export const addSalesmanType = async (payload:object) => {
+    const res = await API.post("/api/settings/salesman_type/create", payload);
+
+    return res.data;
+};
+
+export const getSalesmanTypeById = async (id:string) => {
+    const res = await API.get(`/api/settings/salesman_type/${id}`);
+ 
+    return res.data;
+  
+};
 
 
+export const updateSalesmanType = async (id:string,payload:object) => {
+    const res = await API.put(`/api/settings/salesman_type/${id}/update`,payload);
+ 
+    return res.data;
+};
 
+//{id}/delete
+
+
+export const deleteSalesmanType = async (id:string) => {
+    const res = await API.delete(`api/settings/salesman_type/${id}/delete`);
+    return res.data;
+};
+
+export const vehicleList = async () => {
+  try {
+    const res = await API.get("/api/master/vehicle/list");
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const deleteVehicle = async (id: string) => {
+  try {
+    const res = await API.delete(`/api/master/vehicle/${id}/delete`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const addVehicle = async (data: FormData | Record<string, string>) => {
+  try {
+    const res = await API.post("/api/master/vehicle/create", data);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const updateVehicle = async (id: string, data: FormData | Record<string, string>) => {
+  try {
+    const res = await API.put(`/api/master/vehicle/${id}`, data);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getVehicleById = async (id: string) => {
+  try {
+    const res = await API.get(`/api/master/vehicle/${id}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};

@@ -4,7 +4,7 @@ import SearchBar from "./searchBar";
 import { Icon } from "@iconify-icon/react";
 import CustomDropdown from "./customDropdown";
 import BorderIconButton from "./borderIconButton";
-import { createContext, JSX, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import FilterDropdown from "./filterDropdown";
 import CustomCheckbox from "./customCheckbox";
 import DismissibleDropdown from "./dismissibleDropdown";
@@ -31,7 +31,7 @@ type configType = {
                   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
               }; // yet to implement
         columnFilter?: boolean;
-        actions?: JSX.Element[];
+        actions?: React.ReactNode[];
     };
     rowActions?: {
         icon: string;
@@ -49,12 +49,12 @@ type configType = {
         key: string;
         label: string;
         width?: number;
-        render?: (row: TableDataType) => JSX.Element;
+        render?: (row: TableDataType) => React.ReactNode;
         align?: "left" | "center" | "right"; // yet to implement
         isSortable?: boolean;
         filter?: {
             isFilterable?: boolean;
-            render: (data: TableDataType[]) => JSX.Element;
+            render: (data: TableDataType[]) => React.ReactNode;
         };
     }[];
 };
