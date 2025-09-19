@@ -703,7 +703,6 @@ export const routeTypeList = async (params?: Record<string, string>) => {
 export const addRouteType = async (payload: Record<string, string | number>) => {
   try {
     const res = await API.post("/api/settings/route-type/add", payload);
-
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -721,16 +720,15 @@ export const getRouteTypeById = async (id: string) => {
   }
 };
 
-
-export const updateRouteTypeById = async (id: string,payload:object) => {
+export const updateRouteTypeById = async (id: string, payload: object) => {
   try {
-    const res = await API.put(`/api/settings/route-type/${id}/update`,payload);
-
+    const res = await API.put(`/api/settings/route-type/${id}/update`, payload);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
   }
 };
+
 
 export const deleteRouteTypeById = async (id: string) => {
   try {
