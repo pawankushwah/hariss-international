@@ -8,6 +8,7 @@ import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
 import Table, { TableDataType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
+import { outletChannelList, deleteOutletChannel } from "@/app/services/allApi";
 import Loading from "@/app/components/Loading";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
@@ -82,16 +83,23 @@ export default function ChannelList() {
     if (!selectedRow) return;
 
   try {
-  if (!selectedRow?.id) throw new Error('Missing id');
-  await deleteOutletChannel(String(selectedRow.id)); // call API
-      
-      showSnackbar("Channel deleted successfully ", "success"); 
-      router.refresh();
-    } catch (error) {
-      console.error("Delete failed ❌", error);
-      showSnackbar("Failed to delete channel ❌", "error");
-    }
-  };
+    await deleteOutletChannel(String(selectedRow.id)); // API call
+    await fetchChannels();
+
+    // ✅ Remove deleted row from state
+    setChannels((prev) =>
+      prev.filter((c) => String(c.id) !== String(selectedRow.id))
+    );
+
+    showSnackbar("Channel deleted successfully ✅", "success");
+  } catch (error) {
+    console.error("Delete failed ❌:", error);
+    showSnackbar("Failed to delete channel ❌", "error");
+  } finally {
+    setShowDeletePopup(false);
+    setSelectedRow(null);
+  }
+};
 
   if (loading) return <Loading />;
 
