@@ -43,11 +43,18 @@ export default function RouteType() {
   }
 
   const [routeType, setRouteType] = useState<RouteTypeItem[]>([]);
+<<<<<<< HEAD
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RouteTypeItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+=======
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<RouteTypeItem | null>(null);
+>>>>>>> 261e07b (region and route type complete crud and salsman type error fix and company costumer get and delete)
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -56,6 +63,7 @@ export default function RouteType() {
 
   type TableRow = TableDataType & { id?: string };
 
+<<<<<<< HEAD
   const tableData: TableDataType[] = routeType.map((item) => ({
     id: String(item.id ?? ""),
     route_type_code: item.route_type_code ?? "",
@@ -79,9 +87,38 @@ export default function RouteType() {
 
     fetchRouteTypes();
   }, [updated]); // refetch automatically after update
+=======
+  // ✅ Table data mapping
+  const tableData: TableDataType[] = routeType.map((c) => ({
+    id: c.id?.toString() ?? "",
+    route_type_code: c.route_type_code ?? "",
+    route_type_name: c.route_type_name ?? "",
+    status: c.status === 1 ? "Active" : "Inactive",
+  }));
 
+  // ✅ Reusable fetch function
+  const fetchRouteTypes = async () => {
+    setLoading(true);
+    try {
+      const listRes = await routeTypeList({});
+      setRouteType(listRes.data || []);
+    } catch (error) {
+      console.error("API Error:", error);
+      showSnackbar("Failed to fetch Route Type ❌", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRouteTypes();
+  }, []);
+>>>>>>> 261e07b (region and route type complete crud and salsman type error fix and company costumer get and delete)
+
+  // ✅ Delete handler with refresh
   const handleConfirmDelete = async () => {
     if (!selectedRow?.id) return;
+<<<<<<< HEAD
     const idToDelete = String(selectedRow.id);
     setDeletingId(idToDelete);
 
@@ -94,6 +131,18 @@ export default function RouteType() {
     } catch (error) {
       console.error("Delete failed:", error);
       showSnackbar("Failed to delete Route Type", "error");
+=======
+
+    try {
+      await deleteRouteTypeById(String(selectedRow.id));
+      showSnackbar("Route Type deleted successfully ✅", "success");
+
+      // 🔄 Refresh list from server instead of just local filter
+      await fetchRouteTypes();
+    } catch (error) {
+      console.error("Delete failed ❌:", error);
+      showSnackbar("Failed to delete Route Type ❌", "error");
+>>>>>>> 261e07b (region and route type complete crud and salsman type error fix and company costumer get and delete)
     } finally {
       setShowDeletePopup(false);
       setSelectedRow(null);
@@ -172,9 +221,13 @@ export default function RouteType() {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
+<<<<<<< HEAD
                   router.push(
                     `/dashboard/settings/routetype/update_routetype/${row.id}`
                   );
+=======
+                  router.push(`/dashboard/settings/routetype/update/${row.id}`);
+>>>>>>> 261e07b (region and route type complete crud and salsman type error fix and company costumer get and delete)
                 },
               },
               {

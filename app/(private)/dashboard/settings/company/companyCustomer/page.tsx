@@ -136,7 +136,11 @@ export default function CompanyCustomers() {
             rowActions: [
               {
                 icon: "lucide:edit-2",
+<<<<<<< HEAD
                 onClick: (row: TableDataType) => router.push(`/dashboard/settings/company/companyCustomer/update/${row.id}`),
+=======
+                onClick: (row: TableDataType) => router.push(`/dashboard/settings/customers/update/${row.id}`),
+>>>>>>> 261e07b (region and route type complete crud and salsman type error fix and company costumer get and delete)
               },
               {
                 icon: "lucide:trash-2",

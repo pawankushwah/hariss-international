@@ -362,6 +362,7 @@ export const initialLinkData: SidebarDataType[] = [
                 leadingIcon: "mdi:currency-usd",
                 iconColor: "text-green-500",
             },
+<<<<<<< HEAD
             {
                 isActive: false,
                 href: "/dashboard/settings/promotionTypes",
@@ -370,6 +371,9 @@ export const initialLinkData: SidebarDataType[] = [
                 iconColor: "text-green-500",
             },
             {
+=======
+              {
+>>>>>>> 261e07b (region and route type complete crud and salsman type error fix and company costumer get and delete)
                 isActive: false,
                 href: "/dashboard/settings/salesman-type",
                 label: "Salesman Type",

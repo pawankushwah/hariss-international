@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useState } from "react";
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useFormik } from "formik";
@@ -12,7 +13,8 @@ import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import InputFields from "@/app/components/inputFields";
 import { addRouteType } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
-// Define the validation schema using Yup
+
+// ✅ Validation schema
 const validationSchema = Yup.object({
   routeTypeName: Yup.string()
     .trim()
@@ -38,13 +40,15 @@ const validationSchema = Yup.object({
 });
 
 export default function AddRouteType() {
-    const { showSnackbar } = useSnackbar();
+  const { showSnackbar } = useSnackbar();
+  const router = useRouter(); // ✅ for redirect
+
   const formik = useFormik({
     initialValues: {
       routeTypeName: "",
       status: "1",
     },
-    validationSchema: validationSchema,
+    validationSchema,
     onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
         const res = await addRouteType({
@@ -55,9 +59,13 @@ export default function AddRouteType() {
         console.log("👉 API Response:", res);
 
         if (res?.status) {
-          showSnackbar("Route Type Add successfully ", "success");
+          showSnackbar("Route Type added successfully ✅", "success");
           resetForm();
+
+          // ✅ Redirect to RouteType list page
+          router.push("/dashboard/settings/routetype");
         } else {
+<<<<<<< HEAD
           alert("Failed to add Route Type ❌: " + (res?.message || "Unknown error"));
 export default function AddRouteType() {
     const { showSnackbar } = useSnackbar();
@@ -87,6 +95,16 @@ export default function AddRouteType() {
         alert("Error adding Route Type ❌");
         console.error("Add Route Type error", err);
         alert("Error adding Route Type ❌");
+=======
+          showSnackbar(
+            "Failed to add Route Type ❌: " + (res?.message || "Unknown error"),
+            "error"
+          );
+        }
+      } catch (err) {
+        console.error("Add Route Type error", err);
+        showSnackbar("Error adding Route Type ❌", "error");
+>>>>>>> 261e07b (region and route type complete crud and salsman type error fix and company costumer get and delete)
       } finally {
         setSubmitting(false);
       }
@@ -112,7 +130,7 @@ export default function AddRouteType() {
       <div className="bg-white rounded-xl shadow p-6">
         <form onSubmit={formik.handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Route Type Name Field */}
+            {/* Route Type Name */}
             <InputFields
               label="Route Type Name"
               type="text"
@@ -127,7 +145,7 @@ export default function AddRouteType() {
               }
             />
 
-            {/* Status Field */}
+            {/* Status */}
             <InputFields
               label="Status"
               type="select"
