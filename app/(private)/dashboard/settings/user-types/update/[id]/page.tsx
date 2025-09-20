@@ -1,148 +1,146 @@
 "use client";
 
-import { Icon } from "@iconify-icon/react";
-import Link from "next/link";
-import { useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Formik, Form, ErrorMessage } from "formik";
-import * as Yup from "yup";
-
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { getUserById, updateUser } from "@/app/services/allApi";
+import { useSnackbar } from "@/app/services/snackbarContext";
 import InputFields from "@/app/components/inputFields";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import IconButton from "@/app/components/iconButton";
-import SettingPopUp from "@/app/components/settingPopUp";
-import { useSnackbar } from "@/app/services/snackbarContext";
-import { editCountry } from "@/app/services/allApi";
+import { Icon } from "@iconify-icon/react";
+import Link from "next/link";
 
-// ✅ Yup Schema for edit
-const CountrySchema = Yup.object().shape({
-  country_code: Yup.string().required("Country Code is required."),
-  country_name: Yup.string().required("Country Name is required."),
-  currency: Yup.string().required("Currency is required."),
+import { Formik, Form, ErrorMessage, type FormikHelpers } from "formik";
+import * as Yup from "yup";
+
+// ✅ Yup Validation Schema
+const UserSchema = Yup.object().shape({
+  code: Yup.string().required("Code is required."),
+  name: Yup.string().required("Name is required."),
+  status: Yup.string().required("Status is required."),
 });
 
-export default function EditCountry() {
-  const searchParams = useSearchParams();
+type UserForm = {
+  code: string;
+  name: string;
+  status: string;
+};
+
+export default function UpdateUserPage() {
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
 
-  // ✅ Get query params
-  const queryId = searchParams.get("id") || "";
-  const queryCode = searchParams.get("code") || "";
-  const queryName = searchParams.get("name") || "";
-  const queryCurrency = searchParams.get("currency") || "";
+  const { id } = useParams<{ id: string }>();
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [initialValues, setInitialValues] = useState<UserForm>({
+    code: "",
+    name: "",
+    status: "active",
+  });
 
-  // ✅ Pre-filled initial values
-  type CountryFormValues = {
-    country_code: string;
-    country_name: string;
-    currency: string;
-  };
+  // ✅ Fetch existing user by id
+  useEffect(() => {
+    if (!id) return;
+    const fetchData = async () => {
+      try {
+        const res = await getUserById(String(id));
+        const data = res.data;
+        setInitialValues({
+          code: data.code ?? "",
+          name: data.name ?? "",
+          status: data.status ?? "active",
+        });
+      } catch (err) {
+        console.error("Failed to fetch user:", err);
+      }
+    };
+    fetchData();
+  }, [id]);
 
-  const initialValues: CountryFormValues = {
-    country_code: queryCode,
-    country_name: queryName,
-    currency: queryCurrency,
-  };
-
-  // ✅ Submit handler for editing only (Formik signature)
-  const handleSubmit = async (values: CountryFormValues) => {
-    if (!queryId) return;
-
+  // ✅ Submit update
+  const handleSubmit = async (
+    values: UserForm,
+    { setSubmitting }: FormikHelpers<UserForm>
+  ) => {
     try {
-      await editCountry(queryId, { ...values, status: 1 });
-      showSnackbar("Country updated successfully ✅", "success");
-      router.push("/dashboard/settings/country");
-    } catch (error) {
-      console.error("Failed to edit country:", error);
-      showSnackbar("Failed to update country ❌", "error");
+      await updateUser(String(id), values);
+      showSnackbar("User updated successfully ✅", "success");
+      router.push("/dashboard/settings/user-types");
+    } catch (err) {
+      console.error("Update failed:", err);
+      showSnackbar("Failed to update ❌", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="w-full h-full overflow-x-hidden p-4">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard/settings/country">
+          <Link href="/dashboard/settings/user-types">
             <Icon icon="lucide:arrow-left" width={24} />
           </Link>
-          <h1 className="text-xl font-semibold text-gray-900">Edit Country</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Update User</h1>
         </div>
       </div>
 
+      {/* ✅ Formik */}
       <Formik
-        initialValues={initialValues}
-        validationSchema={CountrySchema}
         enableReinitialize
+        initialValues={initialValues}
+        validationSchema={UserSchema}
         onSubmit={handleSubmit}
       >
-        {({ handleSubmit, values, setFieldValue }) => (
-          <Form onSubmit={handleSubmit}>
+        {({ values, handleChange }) => (
+          <Form>
             <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
               <div className="p-6">
                 <h2 className="text-lg font-medium text-gray-800 mb-4">
-                  Country Details
+                  User Type Details
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Country Code */}
-                  <div className="flex items-end gap-2 max-w-[406px]">
-                    <div className="w-full">
-                      <InputFields
-                        label="Country Code"
-                        value={values.country_code}
-                        onChange={(e) =>
-                          setFieldValue("country_code", e.target.value)
-                        }
-                      />
-                      <ErrorMessage
-                        name="country_code"
-                        component="span"
-                        className="text-xs text-red-500"
-                      />
-                    </div>
-                    <IconButton
-                      bgClass="white"
-                      className="mb-2 cursor-pointer text-[#252B37]"
-                      icon="mi:settings"
-                      onClick={() => setIsOpen(true)}
-                    />
-                    <SettingPopUp
-                      isOpen={isOpen}
-                      onClose={() => setIsOpen(false)}
-                      title="Country Code"
-                    />
-                  </div>
-
-                  {/* Country Name */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Code */}
                   <div>
                     <InputFields
-                      label="Country Name"
-                      value={values.country_name}
-                      onChange={(e) =>
-                        setFieldValue("country_name", e.target.value)
-                      }
+                      label="Code"
+                      name="code"
+                      value={values.code}
+                      onChange={handleChange}
                     />
                     <ErrorMessage
-                      name="country_name"
+                      name="code"
                       component="span"
                       className="text-xs text-red-500"
                     />
                   </div>
 
-                  {/* Currency */}
+                  {/* Name */}
                   <div>
                     <InputFields
-                      label="Currency"
-                      value={values.currency}
-                      onChange={(e) =>
-                        setFieldValue("currency", e.target.value)
-                      }
+                      label="Name"
+                      name="name"
+                      value={values.name}
+                      onChange={handleChange}
                     />
                     <ErrorMessage
-                      name="currency"
+                      name="name"
+                      component="span"
+                      className="text-xs text-red-500"
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <InputFields
+                      label="Status"
+                      name="status"
+                      value={values.status}
+                      onChange={handleChange}
+                    />
+                    <ErrorMessage
+                      name="status"
                       component="span"
                       className="text-xs text-red-500"
                     />
@@ -152,15 +150,21 @@ export default function EditCountry() {
             </div>
 
             {/* Buttons */}
-            <div className="flex justify-end gap-4 mt-6 pr-0">
+            <div className="flex justify-end gap-4 mt-6">
               <button
-                type="reset"
+                type="button"
+                onClick={() => router.push("/dashboard/settings/user-types")}
                 className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Cancel
               </button>
 
-              <SidebarBtn label="Update" isActive={true} leadingIcon="mdi:check" type="submit" />
+              <SidebarBtn
+                label="Update"
+                isActive={true}
+                leadingIcon="mdi:check"
+                type="submit"
+              />
             </div>
           </Form>
         )}

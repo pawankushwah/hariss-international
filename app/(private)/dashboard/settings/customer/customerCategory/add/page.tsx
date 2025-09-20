@@ -5,18 +5,23 @@ import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import InputFields from "@/app/components/inputFields";
 import SearchableDropdown from "@/app/components/SearchableDropdown";
 import { addCustomerCategory, channelList } from "@/app/services/allApi";
+import { useSnackbar } from "@/app/services/snackbarContext";
 import { Icon } from "@iconify-icon/react";
 import { useFormik } from "formik";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import * as Yup from "yup";
+import { useRouter } from "next/navigation";
 
 interface OutletChannel {
   id: number;
+  outlet_channel_code: string;
 }
 
 export default function AddCustomerCategory() {
   const [outletChannels, setOutletChannels] = useState<{ value: string; label: string }[]>([]);
+  const { showSnackbar } = useSnackbar();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchOutletChannels = async () => {
@@ -25,7 +30,7 @@ export default function AddCustomerCategory() {
         const dataArray: OutletChannel[] = res?.data || [];
         const options = dataArray.map((oc) => ({
           value: String(oc.id),
-          label: String(oc.id), // ✅ only ID
+          label: oc.outlet_channel_code,
         }));
         setOutletChannels(options);
       } catch (error) {
@@ -39,13 +44,11 @@ export default function AddCustomerCategory() {
   const formik = useFormik({
     initialValues: {
       outlet_channel_id: "",
-      customer_category_code: "",
       customer_category_name: "",
       status: "1",
     },
     validationSchema: Yup.object({
       outlet_channel_id: Yup.string().required("Outlet channel is required"),
-      customer_category_code: Yup.string().required("Code is required"),
       customer_category_name: Yup.string().required("Name is required"),
       status: Yup.string().required("Status is required"),
     }),
@@ -53,17 +56,17 @@ export default function AddCustomerCategory() {
       try {
         const payload = {
           outlet_channel_id: Number(values.outlet_channel_id),
-          customer_category_code: values.customer_category_code,
           customer_category_name: values.customer_category_name,
           status: Number(values.status),
         };
         const res = await addCustomerCategory(payload);
         console.log("✅ Category Added:", res);
-        alert("Customer category added successfully!");
+        showSnackbar("Customer category added successfully ✅", "success");
         resetForm();
+        router.push("/dashboard/settings/customer/customerCategory");
       } catch (error) {
         console.error("❌ Add Customer Category failed", error);
-        alert("Failed to add customer category");
+        showSnackbar("Failed to add customer category ❌", "error");
       }
     },
   });
@@ -92,17 +95,11 @@ export default function AddCustomerCategory() {
               name="outlet_channel_id"
               value={formik.values.outlet_channel_id}
               options={outletChannels}
-              onChange={(val) => formik.setFieldValue("outlet_channel_id", val)}
-              error={formik.touched.outlet_channel_id && formik.errors.outlet_channel_id}
-            />
-
-            <InputFields
-              name="customer_category_code"
-              label="Category Code"
-              value={formik.values.customer_category_code}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.customer_category_code && formik.errors.customer_category_code}
+              onChange={(val) => formik.setFieldValue("outlet_channel_id", String(val))}
+              error={
+                formik.touched.outlet_channel_id &&
+                formik.errors.outlet_channel_id
+              }
             />
 
             <InputFields
@@ -111,7 +108,10 @@ export default function AddCustomerCategory() {
               value={formik.values.customer_category_name}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              error={formik.touched.customer_category_name && formik.errors.customer_category_name}
+              error={
+                formik.touched.customer_category_name &&
+                formik.errors.customer_category_name
+              }
             />
 
             <InputFields
@@ -134,6 +134,7 @@ export default function AddCustomerCategory() {
           <button
             className="px-4 py-2 h-[40px] w-[80px] rounded-md font-semibold border border-gray-300 text-gray-700 hover:bg-gray-100"
             type="button"
+            onClick={() => router.back()}
           >
             Cancel
           </button>
@@ -143,7 +144,6 @@ export default function AddCustomerCategory() {
             leadingIcon="mdi:check"
             type="submit"
           />
-          <button type="submit">Submit</button>
         </div>
       </form>
     </>

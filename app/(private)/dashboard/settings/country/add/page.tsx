@@ -13,7 +13,6 @@ import IconButton from "@/app/components/iconButton";
 import SettingPopUp from "@/app/components/settingPopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { addCountry } from "@/app/services/allApi";
-import { TableDataType } from "@/app/components/customTable";
 
 // ✅ Yup Schema
 const CountrySchema = Yup.object().shape({
@@ -48,11 +47,8 @@ export default function AddCountry() {
         ...values,
         status: 1,
       };
-
       const res = await addCountry(payload);
       showSnackbar("Country added successfully ", "success");
-
-      console.log("API response ✅:", res);
       router.push("/dashboard/settings/country");
     } catch (error) {
       console.error("Error submitting country ❌:", error);
@@ -60,7 +56,7 @@ export default function AddCountry() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }; 
 
   return (
     <div className="w-full h-full overflow-x-hidden p-4">
