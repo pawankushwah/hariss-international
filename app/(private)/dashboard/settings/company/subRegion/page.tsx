@@ -185,7 +185,7 @@ export default function SubRegion() {
                 },
               },
               {
-                icon: "lucide:more-vertical",
+                icon: "lucide:trash-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
                   setSelectedRow({ id: row.id });

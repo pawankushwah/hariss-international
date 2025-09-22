@@ -31,7 +31,23 @@ const dropdownDataList: DropdownItem[] = [
 const columns = [
   { key: "route_type_code", label: "Route Type Code" },
   { key: "route_type_name", label: "Route Type Name" },
-  { key: "status", label: "Status" },
+  {
+        key: "status",
+        label: "Status",
+        render: (row: TableDataType) => (
+            <div className="flex items-center">
+                {Number(row.status) === 1 ? (
+                    <span className="text-sm text-[#027A48] bg-[#ECFDF3] font-[500] p-1 px-4 rounded-xl text-[12px]">
+                        Active
+                    </span>
+                ) : (
+                    <span className="text-sm text-red-700 bg-red-200 p-1 px-4 rounded-xl text-[12px]">
+                        Inactive
+                    </span>
+                )}
+            </div>
+        ),
+    },
 ];
 
 export default function RouteType() {
@@ -162,7 +178,7 @@ export default function RouteType() {
             columns,
             rowSelection: true,
             rowActions: [
-              { icon: "lucide:eye" },
+              
               {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
@@ -171,7 +187,7 @@ export default function RouteType() {
                 },
               },
               {
-                icon: "lucide:more-vertical",
+                icon: "lucide:trash-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
                   setSelectedRow({ id: row.id });

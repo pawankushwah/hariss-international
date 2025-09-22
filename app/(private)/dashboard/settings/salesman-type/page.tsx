@@ -28,7 +28,24 @@ const dropdownDataList: DropdownItem[] = [
 const columns = [
     { key: "salesman_type_code", label: "Salesman Code" },
     { key: "salesman_type_name", label: "Salesman Name" },
-    { key: "salesman_type_status", label: "Status" }
+    // { key: "salesman_type_status", label: "Status" },
+    {
+        key: "salesman_type_status",
+        label: "Status",
+        render: (row: TableDataType) => (
+            <div className="flex items-center">
+                {Number(row.salesman_type_status) === 1 ? (
+                    <span className="text-sm text-[#027A48] bg-[#ECFDF3] font-[500] p-1 px-4 rounded-xl text-[12px]">
+                        Active
+                    </span>
+                ) : (
+                    <span className="text-sm text-red-700 bg-red-200 p-1 px-4 rounded-xl text-[12px]">
+                        Inactive
+                    </span>
+                )}
+            </div>
+        ),
+    },
 
 ];
 
@@ -166,7 +183,7 @@ export default function Country() {
                                     href="/dashboard/settings/salesman-type/add"
                                     isActive
                                     leadingIcon="lucide:plus"
-                                    label="Add New"
+                                    label="Add Salesman Type"
                                     labelTw="hidden sm:block"
                                 />,
                             ],
@@ -175,7 +192,7 @@ export default function Country() {
                         columns,
                         rowSelection: true,
                         rowActions: [
-                            { icon: "lucide:eye" },
+                            
                             {
                                 icon: "lucide:edit-2",
                                 onClick: (data: object) => {
@@ -185,7 +202,7 @@ export default function Country() {
                                 },
                             },
                             {
-                                icon: "lucide:more-vertical",
+                                icon: "lucide:trash-2",
                                 onClick: (data: object) => {
                                     const row = data as TableRow;
                                     setSelectedRow({
