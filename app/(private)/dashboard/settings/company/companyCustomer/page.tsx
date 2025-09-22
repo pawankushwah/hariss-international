@@ -136,7 +136,7 @@ export default function CompanyCustomers() {
             rowActions: [
               {
                 icon: "lucide:edit-2",
-                onClick: (row: TableDataType) => router.push(`/dashboard/settings/customers/update/${row.id}`),
+                onClick: (row: TableDataType) => router.push(`/dashboard/settings/company/companyCustomer/update/${row.id}`),
               },
               {
                 icon: "lucide:trash-2",

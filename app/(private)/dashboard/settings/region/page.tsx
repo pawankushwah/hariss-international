@@ -53,28 +53,27 @@ export default function Region() {
 
     fetchRegions();
   }, []);
+const handleConfirmDelete = async () => {
+  if (!selectedRow?.id) return;
 
-  const handleConfirmDelete = async () => {
-    if (!selectedRow?.id) return;
+  try {
+    await deleteRegion(String(selectedRow.id));
 
-    try {
-      await deleteRegion(String(selectedRow.id));
+    // Remove deleted row from local state
+    setRegions((prev) =>
+      prev.filter((region) => region.id !== selectedRow.id)
+    );
 
-      // Remove deleted row from local state
-      setRegions((prev) =>
-        prev.filter((region) => region.id !== selectedRow.id)
-      );
-
-      showSnackbar("Region deleted successfully ✅", "success");
-    } catch (error) {
-      console.error("Delete failed ❌", error);
-      showSnackbar("Failed to delete Region ❌", "error");
-    } finally {
-      setShowDeletePopup(false);
-      setSelectedRow(null);
-    }
-  };
-
+    showSnackbar("Region deleted successfully ✅", "success");
+    window.location.reload(); // This reloads the page
+  } catch (error) {
+    console.error("Delete failed ❌", error);
+    showSnackbar("Failed to delete Region ❌", "error");
+  } finally {
+    setShowDeletePopup(false);
+    setSelectedRow(null);
+  }
+};
   if (loading) return <Loading />;
 
   return (

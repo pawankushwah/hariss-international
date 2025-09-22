@@ -162,7 +162,7 @@ export default function RouteType() {
             columns,
             rowSelection: true,
             rowActions: [
-              { icon: "lucide:eye" },
+            
               {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
@@ -171,7 +171,7 @@ export default function RouteType() {
                 },
               },
               {
-                icon: "lucide:more-vertical",
+                icon: "lucide:trash-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
                   setSelectedRow({ id: row.id });
