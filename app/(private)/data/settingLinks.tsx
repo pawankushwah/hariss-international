@@ -65,13 +65,13 @@ export const initialLinkData: SidebarDataType[] = [
             //     leadingIcon: "tabler:database",
             //     iconColor: "text-green-500",
             // },
-            {
-                isActive: false,
-                href: "/dashboard",
-                label: "Prefernce",
-                leadingIcon: "hugeicons:sliders-vertical",
-                iconColor: "text-green-500",
-            },
+            // {
+            //     isActive: false,
+            //     href: "/dashboard",
+            //     label: "Prefernce",
+            //     leadingIcon: "hugeicons:sliders-vertical",
+            //     iconColor: "text-green-500",
+            // },
             // {
             //     isActive: false,
             //     href: "/dashboard",
@@ -110,11 +110,18 @@ export const initialLinkData: SidebarDataType[] = [
                 children: [
                     {
                         isActive: false,
-                        href: "/dashboard/settings/customer/companyType",
-                        label: "Company Type",
+                        href: "/dashboard/settings/company/companyCustomer",
+                        label: "Company Customer",
                         leadingIcon: "lucide:user",
                         iconColor: "text-green-500",
                     },
+                    // {
+                    //     isActive: false,
+                    //     href: "/dashboard/settings/customer/companyType",
+                    //     label: "Company Type",
+                    //     leadingIcon: "lucide:user",
+                    //     iconColor: "text-green-500",
+                    // },
                     // {
                     //     isActive: false,
                     //     href: "/dashboard/master/item",
@@ -199,6 +206,13 @@ export const initialLinkData: SidebarDataType[] = [
                         isActive: false,
                         href: "/dashboard/settings/customer/customerSubCategory",
                         label: "Customer Sub Category",
+                        leadingIcon: "mdi:map",
+                        iconColor: "text-yellow-400",
+                    },
+                    {
+                        isActive: false,
+                        href: "/dashboard/settings/customer/discountType",
+                        label: "Discount Types",
                         leadingIcon: "mdi:map",
                         iconColor: "text-yellow-400",
                     },
@@ -318,20 +332,20 @@ export const initialLinkData: SidebarDataType[] = [
     //             leadingIcon: "mdi:briefcase-account",
     //             iconColor: "text-yellow-400",
     //         },
-    //         {
-    //             isActive: false,
-    //             href: "/dashboard/company",
-    //             label: "Salesman Type",
-    //             leadingIcon: "mdi:account-tie",
-    //             iconColor: "text-green-500",
-    //         },
-    //         {
-    //             isActive: false,
-    //             href: "/dashboard/salesman",
-    //             label: "Salesman Organization",
-    //             leadingIcon: "mdi:account-multiple-outline",
-    //             iconColor: "text-green-500",
-    //         },
+            {
+                isActive: false,
+                href: "/dashboard/settings/salesman-type",
+                label: "Salesman Type",
+                leadingIcon: "mdi:account-tie",
+                iconColor: "text-green-500",
+            },
+            // {
+            //     isActive: false,
+            //     href: "/dashboard/salesman",
+            //     label: "Salesman Organization",
+            //     leadingIcon: "mdi:account-multiple-outline",
+            //     iconColor: "text-green-500",
+            // },
 
     //         {
     //             isActive: false,
@@ -346,6 +360,13 @@ export const initialLinkData: SidebarDataType[] = [
                 href: "/dashboard/settings/expenseType",
                 label: "Expense Type",
                 leadingIcon: "mdi:currency-usd",
+                iconColor: "text-green-500",
+            },
+            {
+                isActive: false,
+                href: "/dashboard/settings/promotionTypes",
+                label: "Promotion Type",
+                leadingIcon: "hugeicons:promotion",
                 iconColor: "text-green-500",
             },
 

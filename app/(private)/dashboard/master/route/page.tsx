@@ -114,40 +114,38 @@ export default function Route() {
     status: c.status ?? "",
   }));
 
-  useEffect(() => {
-        const fetchRoutes = async () => {
-            try {
-                setLoading(true);
-                const listRes = await routeList();
-                // routeList returns response shape similar to other list endpoints: { data: [...] }
-                setRoutes(listRes?.data ?? []);
-            } catch (error: unknown) {
-                console.error("API Error:", error);
-                setRoutes([]);
-            } finally {
-                setLoading(false);
-            }
-        };
+    // Move fetchRoutes outside useEffect so it can be reused
+    const fetchRoutes = async () => {
+        try {
+            setLoading(true);
+            const listRes = await routeList();
+            setRoutes(listRes?.data ?? []);
+        } catch (error: unknown) {
+            console.error("API Error:", error);
+            setRoutes([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchRoutes();
-  }, []);
+    }, []);
 
-   const handleConfirmDelete = async () => {
-      if (!selectedRow) return;
-  
-    try {
-    if (!selectedRow?.id) throw new Error('Missing id');
-    await deleteRoute(String(selectedRow.id)); // call API
-        
-        showSnackbar("Route deleted successfully ", "success"); 
-        router.refresh();
-      } catch (error) {
-        console.error("Delete failed ❌:", error);
-        showSnackbar("Failed to delete Route ❌", "error"); 
-      } finally {
-        setShowDeletePopup(false);
-        setSelectedRow(null);
-      }
+    const handleConfirmDelete = async () => {
+        if (!selectedRow) return;
+        try {
+            if (!selectedRow?.id) throw new Error('Missing id');
+            await deleteRoute(String(selectedRow.id)); // call API
+            showSnackbar("Route deleted successfully ", "success");
+            await fetchRoutes();
+        } catch (error) {
+            console.error("Delete failed ❌:", error);
+            showSnackbar("Failed to delete Route ❌", "error");
+        } finally {
+            setShowDeletePopup(false);
+            setSelectedRow(null);
+        }
     };
 
     if (loading) return <Loading />;
@@ -223,9 +221,7 @@ export default function Route() {
                         columns: columns,
                         rowSelection: true,
                         rowActions: [
-                            {
-                                icon: "lucide:eye",
-                            },
+                            
                             {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
@@ -234,7 +230,7 @@ export default function Route() {
                 },
               },
                             {
-                            icon: "lucide:more-vertical",
+                            icon: "lucide:trash-2",
                             onClick: (data: object) => {
                             const row = data as TableRow;
                             setSelectedRow({ id: row.id });
