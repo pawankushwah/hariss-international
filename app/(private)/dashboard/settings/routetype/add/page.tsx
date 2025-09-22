@@ -1,32 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useState } from "react";
-import { Icon } from "@iconify-icon/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import SidebarBtn from "@/app/components/dashboardSidebarBtn";
+import { addRouteType } from "@/app/services/allApi";
+import { useSnackbar } from "@/app/services/snackbarContext";
 import InputFields from "@/app/components/inputFields";
-import { addRouteType } from "@/app/services/allApi";
-import { useSnackbar } from "@/app/services/snackbarContext";
-
-// ✅ Validation schema
-const validationSchema = Yup.object({
-  routeTypeName: Yup.string()
-    .trim()
-    .required("Route Type Name is required")
-    .min(3, "Route Type Name must be at least 3 characters")
-    .max(50, "Route Type Name cannot exceed 50 characters"),
-  status: Yup.string()
-    .oneOf(["1", "0"], "Invalid status selected")
-    .required("Status is required"),
-});
-import { addRouteType } from "@/app/services/allApi";
-import { useSnackbar } from "@/app/services/snackbarContext";
+import SidebarBtn from "@/app/components/dashboardSidebarBtn";
+import Link from "next/link";
+import { Icon } from "@iconify-icon/react";
 // Define the validation schema using Yup
 const validationSchema = Yup.object({
   routeTypeName: Yup.string()
@@ -65,37 +47,6 @@ export default function AddRouteType() {
           // ✅ Redirect to RouteType list page
           router.push("/dashboard/settings/routetype");
         } else {
-<<<<<<< HEAD
-          alert("Failed to add Route Type ❌: " + (res?.message || "Unknown error"));
-export default function AddRouteType() {
-    const { showSnackbar } = useSnackbar();
-  const formik = useFormik({
-    initialValues: {
-      routeTypeName: "",
-      status: "1",
-    },
-    validationSchema: validationSchema,
-    onSubmit: async (values, { setSubmitting, resetForm }) => {
-      try {
-        const res = await addRouteType({
-          route_type_name: values.routeTypeName.trim(),
-          status: Number(values.status),
-        });
-
-        console.log("👉 API Response:", res);
-
-        if (res?.status) {
-          showSnackbar("Route Type Add successfully ", "success");
-          resetForm();
-        } else {
-          alert("Failed to add Route Type ❌: " + (res?.message || "Unknown error"));
-        }
-      } catch (err) {
-        console.error("Add Route Type error", err);
-        alert("Error adding Route Type ❌");
-        console.error("Add Route Type error", err);
-        alert("Error adding Route Type ❌");
-=======
           showSnackbar(
             "Failed to add Route Type ❌: " + (res?.message || "Unknown error"),
             "error"
@@ -104,16 +55,12 @@ export default function AddRouteType() {
       } catch (err) {
         console.error("Add Route Type error", err);
         showSnackbar("Error adding Route Type ❌", "error");
->>>>>>> 261e07b (region and route type complete crud and salsman type error fix and company costumer get and delete)
       } finally {
         setSubmitting(false);
       }
     },
   });
-        setSubmitting(false);
-      }
-    },
-  });
+      
 
   return (
     <div className="p-6">

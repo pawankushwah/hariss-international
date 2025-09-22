@@ -63,7 +63,7 @@ export default function RouteType() {
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RouteTypeItem | null>(null);
-
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const updated = searchParams.get("updated"); // detect if redirected after update

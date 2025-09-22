@@ -1,5 +1,6 @@
 // app/services/allApi.ts
 import axios from "axios";
+import { Params } from "next/dist/server/request/params";
 
 const API = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL, 
@@ -74,15 +75,6 @@ export const updateCompany = async (id: string, data: object) => {
    try {
     const res = await API.put(`/api/master/company/company/${id}`, data);
 
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-export const deleteCompany = async (id: string) => {
-   try {
-    const res = await API.delete(`/api/master/company/company/${id}`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -633,7 +625,7 @@ export const deleteWarehouse = async (id:string) => {
   }
 }
 
-export const addCustomerType = async (payload: Record<string, string>) => {
+export const addCustomerType = async (payload: object) => {
   try {
     const res = await API.post("/api/settings/customer-type/create", payload);
 
@@ -685,9 +677,9 @@ export const customerTypeList = async (params?: Record<string, string>) => {
 
 
 
-export const getCustomerType = async (id: string) => {
+export const getCustomerType = async () => {
   try {
-    const res = await API.get(`/api/settings/customer-type/${id}`);
+    const res = await API.get(`/api/settings/customer-type/list`);
     return res.data;
   } catch (error) {
     console.error("Get Customer Type by ID failed ❌", error);
@@ -823,9 +815,10 @@ export const getAreaById = async (id:string) => {
   }
 };
 
-export const updateAreaById = async (id: string, payload: object) => {
-    try {
-        const res = await API.put(`/api/master/area/area/${id}`, payload);
+export const updateAreaById = async (id:string,body:object) => {
+  try {
+    const res = await API.put(`/api/master/area/area/${id}`,body);
+
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -1348,6 +1341,46 @@ export const updatePromotionType = async (body: { code: string, name: string, st
 export const deletePromotionType = async (id: number) => {
   try {
     const res = await API.delete(`/api/settings/promotion_type/${id}/delete`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const getCustomerSubCategoryById = async (id: number) => {
+  try {
+    const res = await API.get(`/api/settings/customer-sub-category/${id}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const updateCustomerSubCategory = async (id: string,body:object) => {
+  try {
+    const res = await API.put(`/api/settings/customer-sub-category/${id}/update`,body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const customerSubCategoryList = async () => {
+  try {
+    const res = await API.get(`/api/settings/customer-sub-category/list`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const deleteCustomerSubCategory = async (id:number) => {
+  try {
+    const res = await API.delete(`/api/settings/customer-sub-category/${id}/delete`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const addCustomerSubCategory = async (body:object) => {
+  try {
+    const res = await API.post(`/api/settings/customer-sub-category/create`,body);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

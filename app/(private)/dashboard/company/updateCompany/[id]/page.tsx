@@ -2,7 +2,6 @@
 
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useFormik } from "formik";
@@ -10,22 +9,19 @@ import * as Yup from "yup";
 
 import ContainerCard from "@/app/components/containerCard";
 import FormInputField from "@/app/components/formInputField";
-=======
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Formik, Form } from "formik";
-
-import ContainerCard from "@/app/components/containerCard";
-import InputFields from "@/app/components/inputFields";
->>>>>>> 3ade6ef38c608c0e9a72d40012aacedd1c9d92b3
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import InputFields from "@/app/components/inputFields";
 import IconButton from "@/app/components/iconButton";
 import SettingPopUp from "@/app/components/settingPopUp";
-<<<<<<< HEAD
 import Loading from "@/app/components/Loading";
 
-import { getCompanyById, editCompany, countryList, regionList, subRegionList } from "@/app/services/allApi";
+import {
+  getCompanyById,
+  updateCompany,
+  countryList,
+  regionList,
+  subRegionList,
+} from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
 
 // ✅ Yup Schema
@@ -68,74 +64,6 @@ interface Company {
   website: string;
   module_access: string[];
 }
-=======
-import { useSnackbar } from "@/app/services/snackbarContext";
-import { updateCompany, companyList } from "@/app/services/allApi";
-import Loading from "@/app/components/Loading";
-
-// ✅ Company type with all fields you’re accessing
-interface Company {
-  id: string | number;
-  company_type?: string;
-  company_code?: string;
-  company_name?: string;
-  website?: string;
-  primary_contact?: string;
-  toll_free_no?: string;
-  email?: string;
-  region?: string;
-  sub_region?: string;
-  district?: string;
-  town?: string;
-  street?: string;
-  landmark?: string;
-  country_id?: string;
-  tin_number?: string;
-  selling_currency?: string;
-  purchase_currency?: string;
-  vat?: string;
-  module_access?: string[];
-  service_type?: string;
-}
-
-// ✅ Form values type
-interface CompanyFormValues {
-  companyType: string;
-  companyCode: string;
-  companyName: string;
-  companyWebsite: string;
-  companyLogo: File | null;
-  primaryCode: string;
-  primaryContact: string;
-  tollFreeCode: string;
-  tollFreeNumber: string;
-  email: string;
-  region: string;
-  subRegion: string;
-  district: string;
-  town: string;
-  street: string;
-  landmark: string;
-  country: string;
-  tinNumber: string;
-  sellingCurrency: string;
-  purchaseCurrency: string;
-  vatNo: string;
-  modules: string;
-  serviceType: string;
-}
-
-// ✅ Static dropdowns
-const companyTypeOptions = [
-  { value: "manufacturing", label: "Manufacturing" },
-  { value: "trading", label: "Trading" },
-];
-
-const serviceTypeOptions = [
-  { value: "branch", label: "Branch" },
-  { value: "warehouse", label: "Warehouse" },
-];
->>>>>>> 3ade6ef38c608c0e9a72d40012aacedd1c9d92b3
 
 interface Country {
   id?: string;
@@ -158,10 +86,8 @@ interface SubRegion {
 
 // ✅ Main Component
 export default function EditCompany() {
-  const params = useParams();
-const queryId = params?.id as string;
-  const router = useRouter();
   const { id: queryId } = useParams();
+  const router = useRouter();
   const { showSnackbar } = useSnackbar();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -232,7 +158,7 @@ const queryId = params?.id as string;
         module_access: modulesArray,
       };
 
-      const res = await editCompany(queryId, payload);
+      const res = await updateCompany(queryId as string, payload);
       if (res?.error) {
         showSnackbar(res?.data?.message || "Failed to update company ❌", "error");
       } else {
@@ -277,7 +203,7 @@ const queryId = params?.id as string;
 
         // Company
         if (queryId) {
-          const res = await getCompanyById(queryId);
+          const res = await getCompanyById(queryId as string);
           const company: Company = res?.data?.data || res?.data || res;
 
           formik.setValues({
@@ -302,7 +228,7 @@ const queryId = params?.id as string;
             sellingCurrency: company.selling_currency,
             purchaseCurrency: company.purchase_currency,
             vatNo: company.vat,
-           modules: company.module_access ? company.module_access.join(", ") : "",
+            modules: company.module_access ? company.module_access.join(", ") : "",
             serviceType: company.service_type,
             status: company.status,
           });
@@ -320,7 +246,6 @@ const queryId = params?.id as string;
 
   if (loading) return <Loading />;
 
-  // Helper to safely get first item if value might be array
   const safeString = (val: string | string[] | undefined) =>
     Array.isArray(val) ? val[0] : val || "";
 
