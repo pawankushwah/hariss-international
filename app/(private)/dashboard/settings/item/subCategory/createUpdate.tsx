@@ -6,7 +6,6 @@ import InputDropdown from "@/app/components/inputDropdown";
 import InputFields from "@/app/components/inputFields";
 import {
     createItemSubCategory,
-    itemCategoryList,
     updateItemSubCategory,
 } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
