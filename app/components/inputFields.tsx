@@ -43,8 +43,15 @@ export default function InputFields({
   const isMulti = options && options.length > 0 && typeof isSingle !== 'undefined' && isSingle === false;
   const selectedValues: string[] = Array.isArray(value) ? value : [];
 
+<<<<<<< HEAD
   const filteredOptions = options?.filter(opt =>
     opt.label.toLowerCase().includes(search.toLowerCase())
+=======
+  // Filtered options for search
+  const filteredOptions =
+  options?.filter((opt) =>
+    (opt?.label ?? "").toString().toLowerCase().includes(search.toLowerCase())
+>>>>>>> 16a4fa4 (adfgbgb)
   ) || [];
 
   useEffect(() => {

@@ -5,14 +5,18 @@ import Link from "next/link";
 import { useState } from "react";
 import InputFields from "@/app/components/inputFields";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { addVehicle, warehouseList } from "@/app/services/allApi";
+import { addVehicle, warehouseList} from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
-
 
 interface Warehouse {
   id: number;
   warehouse_name: string;
 }
+
+// interface RouteType {
+//   id: number;
+//   route_type_name: string;
+// }
 
 interface VehicleFormValues {
   vehicleBrand: string;
@@ -21,7 +25,12 @@ interface VehicleFormValues {
   description: string;
   vehicleType: string;
   ownerType: string;
+<<<<<<< HEAD
   warehouseId: string; // form value is string
+=======
+  warehouseId: string;
+  routeType: string;
+>>>>>>> 16a4fa4 (adfgbgb)
   odoMeter: string;
   capacity: string;
   status: "active" | "inactive"; // form value is string
@@ -46,6 +55,7 @@ interface VehiclePayload {
 // Yup validation
 const VehicleSchema = Yup.object().shape({
   vehicleBrand: Yup.string().required("Vehicle Brand is required"),
+<<<<<<< HEAD
   numberPlate: Yup.string()
     .matches(/^[A-Z0-9]{6,12}$/i, "Number Plate must be 6–12 alphanumeric characters")
     .required("Number Plate is required"),
@@ -61,6 +71,17 @@ const VehicleSchema = Yup.object().shape({
   capacity: Yup.string()
     .matches(/^\d+(\s?kg)?$/i, "Capacity must be numeric or numeric + 'kg'")
     .required("Capacity is required"),
+=======
+  numberPlate: Yup.string().required("Number Plate is required"),
+  chassisNumber: Yup.string().required("Chassis Number is required"),
+  description: Yup.string().required("Description is required"),
+  vehicleType: Yup.string().required("Vehicle Type is required"),
+  ownerType: Yup.string().required("Owner Type is required"),
+  warehouseId: Yup.string().required("Warehouse is required"),
+  // routeType: Yup.string().required("Route Type is required"),
+  odoMeter: Yup.string().required("Odometer is required"),
+  capacity: Yup.string().required("Capacity is required"),
+>>>>>>> 16a4fa4 (adfgbgb)
   status: Yup.string().oneOf(["active", "inactive"]).required(),
   validFrom: Yup.date().required("Valid From date is required"),
   validTo: Yup.date()
@@ -70,6 +91,7 @@ const VehicleSchema = Yup.object().shape({
 
 export default function AddVehicle() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  // const [routeTypes, setRouteTypes] = useState<RouteType[]>([]);
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
 
@@ -87,6 +109,7 @@ export default function AddVehicle() {
     fetchWarehouses();
   }, [showSnackbar]);
 
+<<<<<<< HEAD
   const handleSubmit = async (values: VehicleFormValues) => {
     try {
       // Convert warehouseId and status to numbers
@@ -103,6 +126,42 @@ export default function AddVehicle() {
   valid_from: values.validFrom,
   valid_to: values.validTo,
 };
+=======
+  // fetch route types
+  // useEffect(() => {
+  //   const fetchRouteTypes = async () => {
+  //     try {
+  //       const res = await routeTypeList();
+  //       if (res?.data && Array.isArray(res.data)) {
+  //         setRouteTypes(res.data);
+  //       }
+  //     } catch (err) {
+  //       console.error("Failed to fetch route types ❌", err);
+  //       showSnackbar("Failed to fetch route types ❌", "error");
+  //     }
+  //   };
+  //   fetchRouteTypes();
+  // }, [showSnackbar]);
+
+  // submit handler
+  const handleSubmit = async (values: VehicleFormValues) => {
+    try {
+      const payload: Record<string, string> = {
+        number_plate: values.numberPlate,
+        vehicle_chassis_no: values.chassisNumber,
+        description: values.description,
+        vehicle_brand: values.vehicleBrand,
+        capacity: values.capacity,
+        vehicle_type: values.vehicleType,
+        owner_type: values.ownerType,
+        warehouse_id: values.warehouseId,
+        // route_type_id: values.routeType,
+        opening_odometer: values.odoMeter,
+        status: values.status === "active" ? "1" : "0",
+        valid_from: new Date().toISOString().split("T")[0],
+        valid_to: "2026-09-01",
+      };
+>>>>>>> 16a4fa4 (adfgbgb)
 
       const res = await addVehicle(payload);
 
@@ -140,6 +199,7 @@ export default function AddVehicle() {
           description: "",
           ownerType: "",
           warehouseId: "",
+          routeType: "",
           odoMeter: "",
           capacity: "",
           status: "active",
@@ -155,6 +215,7 @@ export default function AddVehicle() {
             <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6 p-6">
               <h2 className="text-lg font-medium text-gray-800 mb-4">Vehicle Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+<<<<<<< HEAD
                 <InputFields label="Vehicle Brand" value={values.vehicleBrand} onChange={handleChange} onBlur={handleBlur} error={touched.vehicleBrand && errors.vehicleBrand} name="vehicleBrand" />
                 <InputFields label="Number Plate" value={values.numberPlate} onChange={handleChange} onBlur={handleBlur} error={touched.numberPlate && errors.numberPlate} name="numberPlate" />
                 <InputFields label="Chassis Number" value={values.chassisNumber} onChange={handleChange} onBlur={handleBlur} error={touched.chassisNumber && errors.chassisNumber} name="chassisNumber" />
@@ -164,6 +225,29 @@ export default function AddVehicle() {
                   { value: "3", label: "Bike" },
                   { value: "4", label: "Tuktuk" },
                 ]} />
+=======
+                <InputFields label="Vehicle Brand" value={values.vehicleBrand} onChange={handleChange} name="vehicleBrand" />
+                <InputFields label="Number Plate" value={values.numberPlate} onChange={handleChange} name="numberPlate" />
+                <InputFields label="Chassis Number" value={values.chassisNumber} onChange={handleChange} name="chassisNumber" />
+                <InputFields
+                  label="Vehicle Type"
+                  value={values.vehicleType}
+                  onChange={handleChange}
+                  name="vehicleType"
+                  options={[
+                    { value: "1", label: "Truck" },
+                    { value: "2", label: "Van" },
+                    { value: "3", label: "Bike" },
+                    { value: "4", label: "Tuktuk" },
+                  ]}
+                />
+                <InputFields
+                  label="Description"
+                  value={values.description}
+                  onChange={handleChange}
+                  name="description"
+                />
+>>>>>>> 16a4fa4 (adfgbgb)
               </div>
             </div>
           </div>
@@ -174,11 +258,38 @@ export default function AddVehicle() {
                 Location Information
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+<<<<<<< HEAD
                 <InputFields label="Owner Type" value={values.ownerType} onChange={handleChange} onBlur={handleBlur} error={touched.ownerType && errors.ownerType} name="ownerType" options={[
                   { value: "0", label: "Company Owned" },
                   { value: "1", label: "Contractor" },
                 ]} />
                 <InputFields label="Warehouse" value={values.warehouseId} onChange={handleChange} onBlur={handleBlur} error={touched.warehouseId && errors.warehouseId} name="warehouseId" options={warehouses.map(w => ({ value: String(w.id), label: w.warehouse_name }))} />
+=======
+                <InputFields
+                  label="Owner Type"
+                  value={values.ownerType}
+                  onChange={handleChange}
+                  name="ownerType"
+                  options={[
+                    { value: "0", label: "Company Owned" },
+                    { value: "1", label: "Contractor" },
+                  ]}
+                />
+                <InputFields
+                  label="Warehouse"
+                  value={values.warehouseId}
+                  onChange={handleChange}
+                  name="warehouseId"
+                  options={warehouses.map((w) => ({ value: String(w.id), label: w.warehouse_name }))}
+                />
+                {/* <InputFields
+                  label="Route Type"
+                  value={values.routeType}
+                  onChange={handleChange}
+                  name="routeType"
+                  options={routeTypes.map((r) => ({ value: String(r.id), label: r.route_type_name }))}
+                /> */}
+>>>>>>> 16a4fa4 (adfgbgb)
               </div>
             </div>
           </div>
