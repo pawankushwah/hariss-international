@@ -8,6 +8,7 @@ import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
 import Table, { TableDataType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
+import { outletChannelList, deleteOutletChannel } from "@/app/services/allApi";
 import Loading from "@/app/components/Loading";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
@@ -71,41 +72,50 @@ export default function ChannelList() {
     status: c.status !== undefined ? String(c.status) : "0",
   }));
 
-  // Fetch channels
-  useEffect(() => {
-    const fetchChannels = async () => {
-      setLoading(true);
-      try {
-        const res = await channelList();
-        const data = Array.isArray(res?.data) ? res.data : [];
-        setChannels(data);
-      } catch (error) {
-        console.error("Failed to fetch channels ❌", error);
-        showSnackbar("Failed to fetch channels ❌", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchChannels();
-  }, [refresh]);
+ useEffect(() => {
+  const fetchChannels = async () => {
+    try {
+      const listRes = await channelList();
+      console.log("API Response 👉", listRes);
+
+      // ✅ Correct array path
+      const data = Array.isArray(listRes?.original?.data)
+        ? listRes.original.data
+        : [];
+
+      setChannels(data);
+    } catch (error: unknown) {
+      console.error("API Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchChannels();
+}, []);
 
   // Delete handler
   const handleConfirmDelete = async () => {
-    if (!selectedRow?.id) return;
-    try {
-      await deleteOutletChannel(String(selectedRow.id));
-      setChannels((prev) =>
-        prev.filter((c) => String(c.id) !== String(selectedRow.id))
-      );
-      showSnackbar("Channel deleted successfully ✅", "success");
-      setSelectedRow(null);
-      setShowDeletePopup(false);
-      setRefresh(!refresh);
-    } catch (error) {
-      console.error("Delete failed ❌", error);
-      showSnackbar("Failed to delete channel ❌", "error");
-    }
-  };
+    if (!selectedRow) return;
+
+  try {
+    await deleteOutletChannel(String(selectedRow.id)); // API call
+    await fetchChannels();
+
+    // ✅ Remove deleted row from state
+    setChannels((prev) =>
+      prev.filter((c) => String(c.id) !== String(selectedRow.id))
+    );
+
+    showSnackbar("Channel deleted successfully ✅", "success");
+  } catch (error) {
+    console.error("Delete failed ❌:", error);
+    showSnackbar("Failed to delete channel ❌", "error");
+  } finally {
+    setShowDeletePopup(false);
+    setSelectedRow(null);
+  }
+};
 
   if (loading) return <Loading />;
 

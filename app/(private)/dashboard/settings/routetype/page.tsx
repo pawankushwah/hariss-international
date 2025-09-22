@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify-icon/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
@@ -65,6 +65,8 @@ export default function RouteType() {
   const [selectedRow, setSelectedRow] = useState<RouteTypeItem | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const updated = searchParams.get("updated"); // detect if redirected after update
   const { showSnackbar } = useSnackbar();
 
   type TableRow = TableDataType & { id?: string };
@@ -111,13 +113,15 @@ export default function RouteType() {
     } finally {
       setShowDeletePopup(false);
       setSelectedRow(null);
+      setDeletingId(null);
     }
   };
 
-  return loading ? (
-    <Loading />
-  ) : (
+  if (loading) return <Loading />;
+
+  return (
     <>
+      {/* Header */}
       <div className="flex justify-between items-center mb-[20px]">
         <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
           Route Type
@@ -156,6 +160,7 @@ export default function RouteType() {
         </div>
       </div>
 
+      {/* Table */}
       <div className="h-[calc(100%-60px)]">
         <Table
           data={tableData}
@@ -190,7 +195,8 @@ export default function RouteType() {
                 icon: "lucide:trash-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
-                  setSelectedRow({ id: row.id });
+                  if (deletingId === String(row.id)) return;
+                  setSelectedRow({ id: String(row.id) });
                   setShowDeletePopup(true);
                 },
               },
@@ -200,6 +206,7 @@ export default function RouteType() {
         />
       </div>
 
+      {/* Delete popup */}
       {showDeletePopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <DeleteConfirmPopup

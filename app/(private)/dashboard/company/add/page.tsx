@@ -3,12 +3,8 @@
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
 import ContainerCard from "@/app/components/containerCard";
-import FormInputField from "@/app/components/formInputField";
-import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import InputFields from "@/app/components/inputFields";
-import IconButton from "@/app/components/iconButton";
-import SettingPopUp from "@/app/components/settingPopUp";
-import SearchableDropdown from "@/app/components/SearchableDropdown";
+import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -21,32 +17,35 @@ import {
 } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
 
-interface Country {
-  id: string | number;
-  name?: string;
-  country_name?: string;
-  currency?: string;
-}
 
-interface Region {
-  id: string | number;
-  name?: string;
-  region_name?: string;
-}
-
-interface SubRegion {
-  id: string | number;
-  name?: string;
-  area_name?: string;
-}
-
-export default function AddCompany() {
+export default function AddCustomer() {
   const [isOpen, setIsOpen] = useState(false);
   const [countries, setCountries] = useState<{ value: string; label: string }[]>([]);
   const [currency, setCurrency] = useState<{ value: string; label: string }[]>([]);
   const [regions, setRegions] = useState<{ value: string; label: string }[]>([]);
   const [subRegions, setSubRegions] = useState<{ value: string; label: string }[]>([]);
-  const router = useRouter();
+ 
+
+  type ApiCountry = {
+    id?: string;
+    code?: string;
+    name?: string;
+    country_name?: string;
+    currency?: string;
+  };
+
+  type ApiRegion = {
+    id?: string;
+    name?: string;
+    region_name?: string;
+  };
+
+  type ApiSubRegion = {
+    id?: string;
+    name?: string;
+    area_name?: string;
+  };
+
   const { showSnackbar } = useSnackbar();
 
   // Yup Validation
@@ -129,74 +128,101 @@ export default function AddCompany() {
 
         // Convert to FormData to support file upload
       const formData = new FormData();
-for (const key in payload) {
-  const typedKey = key as keyof typeof payload;
-  const value = payload[typedKey];
 
-  if (typedKey === "module_access") {
-    formData.append(typedKey, JSON.stringify(value));
-  } else if (typedKey === "logo" && value instanceof File) {
-    formData.append("logo", value);
-  } else if (value !== undefined && value !== null) {
-    // Convert numbers to strings
-    formData.append(typedKey, String(value));
-  }
-}
+      formData.append("company_code", values.companyCode);
+      formData.append("company_name", values.companyName);
+      formData.append("email", values.email);
+      formData.append("tin_number", values.tinNumber);
+      formData.append("vat", values.vatNo);
+      formData.append("country_id", values.country);
+      formData.append("selling_currency", values.sellingCurrency);
+      formData.append("purchase_currency", values.purchaseCurrency);
+      formData.append(
+        "toll_free_no",
+        `${values.tollFreeCode}${values.tollFreeNumber}`
+      );
+      formData.append("website", values.companyWebsite);
+      formData.append("service_type", values.serviceType);
+      formData.append("company_type", values.companyType);
+      formData.append("status", values.status);
+      formData.append("district", values.district);
+      formData.append("town", values.town);
+      formData.append("street", values.street);
+      formData.append("landmark", values.landmark);
+      formData.append("region", values.region);
+      formData.append("sub_region", values.subRegion);
+      formData.append(
+        "primary_contact",
+        `${values.primaryCode}${values.primaryContact}`
+      );
 
 
+      // ✅ Handle logo
+      // runtime guard: File is only available in browsers
+      // Avoid `instanceof File` at build-time: use duck-typing for a File-like object
+      const maybeFile = values.companyLogo as unknown;
+      if (maybeFile && typeof maybeFile === 'object' && 'name' in (maybeFile as Record<string, unknown>)) {
+        // treat as file-like
+        formData.append("logo", maybeFile as Blob);
+      } else if (typeof values.companyLogo === "boolean") {
+        formData.append("logo", String(values.companyLogo));
+      }
 
-        const res = await addCompany(formData);
-        if (res.error) {
-          showSnackbar(res.data.message || "Failed to add company!", "error");
-        } else {
-          showSnackbar("Company added successfully ✅", "success");
-          formik.resetForm();
-          router.push("/dashboard/company");
-        }
-      } catch (error) {
-        console.error(error);
-        showSnackbar("Unexpected error ❌", "error");
+      // ✅ Append modules as array
+      modulesArray.forEach((m, i) => {
+        formData.append(`module_access[${i}]`, m);
+      });
+
+      console.log("📦 Prepared payload:", [...formData.entries()]);
+
+
+      const res = await addCompany(formData); // API should handle multipart/form-data
+      console.log("🛢️ API response:", res);
+      if (res.error) {
+        showSnackbar(res.data.message || "Failed to add company!", "error");
+      } else {
+        showSnackbar("COMPANY added successfully ", "success");
+        formik.resetForm();
+       
       }
     },
   });
 
   // Fetch Dropdown Data
   useEffect(() => {
-    const fetchDropdowns = async () => {
+    const fetchCustomerTypes = async () => {
       try {
-        const countryRes = await countryList({ page: "1", limit: "200" });
-        const countryOptions = (countryRes.data as Country[]).map((c) => ({
-          value: String(c.id ?? ""),
-          label: c.name ?? c.country_name ?? "",
+        const listRes = await customerTypeList({ page: "1", limit: "200" });
+        const options = (listRes.data || []).map((c: ApiCustomerType) => ({
+          value: c.id,
+          label: c.name,
         }));
-        setCountries(countryOptions);
-
-        const currencyOptions = (countryRes.data as Country[]).map((c) => ({
-          value: c.currency ?? "",
-          label: c.currency ?? "",
-        }));
-        setCurrency(currencyOptions);
-
-        const regionRes = await regionList();
-        const regionOptions = (regionRes.data as Region[]).map((r) => ({
-          value: String(r.id ?? ""),
-          label: r.name ?? r.region_name ?? "",
-        }));
-        setRegions(regionOptions);
-
-        const subRegionRes = await getArea();
-        const subRegionOptions = (subRegionRes.data as SubRegion[]).map((sr) => ({
-          value: String(sr.id ?? ""),
-          label: sr.name ?? sr.area_name ?? "",
-        }));
-        setSubRegions(subRegionOptions);
+        setCustomerTypes(options);
       } catch (error) {
-        console.error("Failed to fetch dropdown data ❌", error);
+        console.error("Failed to fetch customer types ❌", error);
       }
     };
 
-    fetchDropdowns();
+    fetchCustomerTypes();
   }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await addCustomerType(formData);
+      console.log("✅ Customer Type Added:", res);
+      alert("Customer type added successfully!");
+      setFormData({ customerType: "", customerCode: "", status: "active" });
+    } catch (error) {
+      console.error("❌ Add Customer Type failed", error);
+      alert("Failed to add customer type");
+    }
+  };
 
   return (
     <>
@@ -207,15 +233,15 @@ for (const key in payload) {
             <Icon icon="lucide:arrow-left" width={24} />
           </Link>
           <h1 className="text-[20px] font-semibold text-[#181D27] flex items-center leading-[30px] mb-[5px]">
-            Add New Company
+            Add Customer Type
           </h1>
         </div>
       </div>
 
-      <form onSubmit={formik.handleSubmit}>
-        {/* Company Details */}
+      <form onSubmit={handleSubmit}>
+        {/* Customer Type Details */}
         <ContainerCard>
-          <h2 className="text-lg font-semibold mb-6">Company Details</h2>
+          <h2 className="text-lg font-semibold mb-6">Customer Type Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <InputFields
               name="companyName"
@@ -425,17 +451,28 @@ for (const key in payload) {
                 { value: "branch", label: "Branch" },
                 { value: "warehouse", label: "Warehouse" },
               ]}
+              error={
+                formik.touched.status && formik.errors.status
+                  ? formik.errors.status
+                  : ""
+              }
             />
             <InputFields
-              name="status"
               label="Status"
               type="select"
+              name="status"
               value={formik.values.status}
               onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
               options={[
                 { value: "1", label: "Active" },
                 { value: "0", label: "Inactive" },
               ]}
+              error={
+                formik.touched.status && formik.errors.status
+                  ? formik.errors.status
+                  : ""
+              }
             />
           </div>
         </ContainerCard>
@@ -445,7 +482,7 @@ for (const key in payload) {
           <button
             className="px-4 py-2 h-[40px] w-[80px] rounded-md font-semibold border border-gray-300 text-gray-700 hover:bg-gray-100"
             type="button"
-            onClick={() => router.back()}
+            onClick={() => setFormData({ customerType: "", customerCode: "", status: "active" })}
           >
             Cancel
           </button>

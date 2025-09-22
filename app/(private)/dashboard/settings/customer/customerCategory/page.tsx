@@ -124,18 +124,18 @@ export default function CustomerCategoryPage() {
         label: "Status",
         render: (row: TableDataType) => (
             <div className="flex items-center">
-                {Number(row.status) === 1 ? (
+                {row.status ? (
                     <span className="text-sm text-[#027A48] bg-[#ECFDF3] font-[500] p-1 px-4 rounded-xl text-[12px]">
                         Active
                     </span>
                 ) : (
                     <span className="text-sm text-red-700 bg-red-200 p-1 px-4 rounded-xl text-[12px]">
-                        In Active
+                        Inactive
                     </span>
                 )}
             </div>
-        ),
-    },
+        ),
+    },
   ];
 
   if (loading) return <Loading />;
