@@ -797,7 +797,7 @@ export const getArea = async () => {
 
 export const addArea = async (body:object) => {
   try {
-    const res = await API.post(`/api/master/area/add_area`);
+    const res = await API.post(`/api/master/area/add_area`,body);
 
     return res.data;
   } catch (error: unknown) {
@@ -1294,7 +1294,7 @@ export const updateVehicle = async (id: string, data: FormData | Record<string, 
 
 export const getVehicleById = async (id: string) => {
   try {
-    const res = await API.get(`/api/master/vehicle/${id}/update`);
+    const res = await API.get(`/api/master/vehicle/${id}`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

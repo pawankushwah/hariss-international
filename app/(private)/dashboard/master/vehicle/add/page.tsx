@@ -34,7 +34,6 @@ const VehicleSchema = Yup.object().shape({
   vehicleBrand: Yup.string().required("Vehicle Brand is required"),
   numberPlate: Yup.string().required("Number Plate is required"),
   chassisNumber: Yup.string().required("Chassis Number is required"),
-  description: Yup.string().required("Description is required"),
   vehicleType: Yup.string().required("Vehicle Type is required"),
   ownerType: Yup.string().required("Owner Type is required"),
   warehouseId: Yup.string().required("Warehouse is required"),
@@ -181,16 +180,16 @@ export default function AddVehicleWithStepper() {
           <ContainerCard>
             <h2 className="text-lg font-semibold mb-6">Vehicle Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <InputFields label="Vehicle Brand" value={form.vehicleBrand} onChange={handleChange} name="vehicleBrand" error={touched.vehicleBrand && errors.vehicleBrand} />
-              <InputFields label="Number Plate" value={form.numberPlate} onChange={handleChange} name="numberPlate" error={touched.numberPlate && errors.numberPlate} />
-              <InputFields label="Chassis Number" value={form.chassisNumber} onChange={handleChange} name="chassisNumber" error={touched.chassisNumber && errors.chassisNumber} />
-              <InputFields label="Vehicle Type" value={form.vehicleType} onChange={handleChange} name="vehicleType" error={touched.vehicleType && errors.vehicleType} options={[
+              <InputFields required label="Vehicle Brand" value={form.vehicleBrand} onChange={handleChange} name="vehicleBrand" error={touched.vehicleBrand && errors.vehicleBrand} />
+              <InputFields required label="Number Plate" value={form.numberPlate} onChange={handleChange} name="numberPlate" error={touched.numberPlate && errors.numberPlate} />
+              <InputFields required label="Chassis Number" value={form.chassisNumber} onChange={handleChange} name="chassisNumber" error={touched.chassisNumber && errors.chassisNumber} />
+              <InputFields required label="Vehicle Type" value={form.vehicleType} onChange={handleChange} name="vehicleType" error={touched.vehicleType && errors.vehicleType} options={[
                 { value: "1", label: "Truck" },
                 { value: "2", label: "Van" },
                 { value: "3", label: "Bike" },
                 { value: "4", label: "Tuktuk" },
               ]} />
-              <InputFields label="Description" value={form.description} onChange={handleChange} name="description" error={touched.description && errors.description} />
+              <InputFields label="Description" value={form.description} onChange={handleChange} name="description" />
             </div>
           </ContainerCard>
         );
@@ -199,11 +198,11 @@ export default function AddVehicleWithStepper() {
           <ContainerCard>
             <h2 className="text-lg font-semibold mb-6">Location Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <InputFields label="Owner Type" value={form.ownerType} onChange={handleChange} name="ownerType" error={touched.ownerType && errors.ownerType} options={[
+              <InputFields required label="Owner Type" value={form.ownerType} onChange={handleChange} name="ownerType" error={touched.ownerType && errors.ownerType} options={[
                 { value: "0", label: "Company Owned" },
                 { value: "1", label: "Contractor" },
               ]} />
-              <InputFields label="Warehouse" value={form.warehouseId} onChange={handleChange} name="warehouseId" error={touched.warehouseId && errors.warehouseId} options={warehouses.map((w) => ({ value: String(w.id), label: w.warehouse_name }))} />
+              <InputFields required label="Warehouse" value={form.warehouseId} onChange={handleChange} name="warehouseId" error={touched.warehouseId && errors.warehouseId} options={warehouses.map((w) => ({ value: String(w.id), label: w.warehouse_name }))} />
             </div>
           </ContainerCard>
         );
@@ -212,14 +211,14 @@ export default function AddVehicleWithStepper() {
           <ContainerCard>
             <h2 className="text-lg font-semibold mb-6">Additional Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <InputFields label="Odo Meter" value={form.odoMeter} onChange={handleChange} name="odoMeter" error={touched.odoMeter && errors.odoMeter} />
-              <InputFields label="Capacity" value={form.capacity} onChange={handleChange} name="capacity" error={touched.capacity && errors.capacity} />
-              <InputFields label="Status" value={form.status} onChange={handleChange} name="status" error={touched.status && errors.status} options={[
+              <InputFields required label="Odo Meter" value={form.odoMeter} onChange={handleChange} name="odoMeter" error={touched.odoMeter && errors.odoMeter} />
+              <InputFields required label="Capacity" value={form.capacity} onChange={handleChange} name="capacity" error={touched.capacity && errors.capacity} />
+              <InputFields required label="Status" value={form.status} onChange={handleChange} name="status" error={touched.status && errors.status} options={[
                 { value: "active", label: "Active" },
                 { value: "inactive", label: "Inactive" },
               ]} />
-              <InputFields label="Valid From" type="date" value={form.validFrom} onChange={handleChange} name="validFrom" error={touched.validFrom && errors.validFrom} />
-              <InputFields label="Valid To" type="date" value={form.validTo} onChange={handleChange} name="validTo" error={touched.validTo && errors.validTo} />
+              <InputFields required label="Valid From" type="date" value={form.validFrom} onChange={handleChange} name="validFrom" error={touched.validFrom && errors.validFrom} />
+              <InputFields required label="Valid To" type="date" value={form.validTo} onChange={handleChange} name="validTo" error={touched.validTo && errors.validTo} />
             </div>
           </ContainerCard>
         );
