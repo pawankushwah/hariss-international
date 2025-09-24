@@ -295,7 +295,7 @@ export const deleteRegion = async (id:string) => {
   try {
               const res = await API.delete(`/api/master/region/${id}`);
     return res.data;
-  } catch (error: unknown) {
+  } catch (error: unknown) {  
     return handleError(error);
   }
 };
