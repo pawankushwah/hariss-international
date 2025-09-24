@@ -80,6 +80,8 @@ import { addCompanyCustomers } from "@/app/services/allApi";
     guaranteeTo: Yup.date().required("Guarantee To is required."),
     town: Yup.string().required("Town is required."),
     roadStreet: Yup.string().required("Road/Street is required."),
+    contactNo2: Yup.string().required("Contact No 2 is required."),
+    whatsappNo: Yup.string().required("WhatsApp No is required."),  
     landmark: Yup.string().required("Landmark is required."),
     district: Yup.string().required("District is required."),
     region: Yup.string().required("Region is required."),
