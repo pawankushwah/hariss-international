@@ -27,16 +27,43 @@ const columns = [
   { key: "warehouseName", label: "Warehouse Name" },
   { key: "tin_no", label: "TIN No" },
   { key: "ownerName", label: "Owner Name" },
+  { key: "ownerContact", label: "Owner Contact No." },
+  { key: "owner_email", label: "Owner Email" },
   // { key: "depotName", label: "Depot Name" },
   { key: "depotLocation", label: "Warehouse Location" },
   { key: "company_customer_id", label: "Customer"},
   { key: "warehouse_manager", label: "Warehouse Manager"},
   { key: "warehouse_manager_contact", label: "Warehouse Manager Contact"},
-  { key: "region_id", label: "Region"},
-  { key: "sub_region_id", label: "Sub Region"},
-  { key: "phoneNumber", label: "Phone Number" },
-  { key: "address", label: "Address" },
+  { key: "warehouse_type", label: "Warehouse Type"},
+  { key: "business_type", label: "Business Type"},
+  // { key: "region_id", label: "Region"},
+   {
+  label: 'Region',
+  key: 'region_id',
+  render: (row: any) => row.region_id || '-',
+},
+   {
+  label: 'Sub Region',
+  key: 'area_name',
+  render: (row: any) => row.area_name || '-',
+},
+  // { key: "sub_region_id", label: "Sub Region"},
+  { key: "city", label: "City"},
   { key: "district", label: "District" },
+  { key: "location", label: "Location" },
+  { key: "address", label: "Address" },
+  { key: "town_village", label: "Town" },
+  { key: "street", label: "Street" },
+  { key: "landmark", label: "Landmark" },
+  { key: "latitude", label: "Latitude" },
+  { key: "longitude", label: "Longitude" },
+  { key: "threshold_radius", label: "Threshold Radius" },
+  { key: "stock_capital", label: "Stock Capital" },
+  { key: "deposite_amount", label: "Deposit Amount" },
+  { key: "device_no", label: "Device No." },
+  { key: "p12_file", label: "P12 File" },
+  { key: "branch_id", label: "Branch" },
+  { key: "is_efris", label: "EFRIS" },
    {
         key: "status",
         label: "Status",
@@ -69,14 +96,35 @@ export default function Warehouse() {
       warehouseName?: string;
       tin_no?: string;
       ownerName?: string;
+      owner_email?: string;
+      ownerContact?: string;
+      warehouse_type?: string;
+      business_type?: string;
       // depotName?: string;
       warehouse_manager?: string;
       warehouse_manager_contact?: string;
+      district?: string;
+      street?: string;
+      branch_id?: string;
+      town_village?: string;
+      region?: {region_name?:string;}
+      city?: string;
+      location?: string;
+      landmark?: string;
+      latitude?: string;
+      longitude?: string;
+      threshold_radius?: string;
+      device_no?: string;
+      is_branch?: string;
+      p12_file?: string;
+      is_efris?: string;
+      stock_capital?: string;
+      deposite_amount?: string;
       // depotLocation?: string;
       // depotLocation?: string;
       phoneNumber?: string;
       address?: string;
-      district?: string;
+      
       status?: string | boolean | number;
     };
 
@@ -94,16 +142,33 @@ export default function Warehouse() {
           tin_no?: string;
           warehouse_manager?: string;
       warehouse_manager_contact?: string;
-      sub_region_id?: string;
-      region_id?: string;
+      area?:{area_name:string;}
+      region?: {region_name?:string;};
           warehouse_name?: string;
+          business_type?: string;
           company_customer_id?: string;
+          district?: string;
+          is_efris?: string;
+          latitude?: string;
+          branch_id?: string;
+          p12_file?: string;
+          street?: string;
+          town_village?: string;
+          warehouse_type?: string;
           owner_name?: string;
-          branch_id?: string | number;
+          owner_email?: string;
+          threshold_radius?: string;
+          landmark?: string;
+          ownerContact?: string;
+          deposite_amount?: string;
+          stock_capital?: string;
+          
           location?: string;
           owner_number?: string;
           address?: string;
+          device_no?: string;
           city?: string;
+          longitude?: string;
           status?: number;
         }
 
@@ -113,17 +178,35 @@ export default function Warehouse() {
           code: item.warehouse_code ?? "",
           warehouseName: item.warehouse_name ?? "",
           tin_no: item.tin_no ?? "",
-          ownerName: item.owner_name ?? "",
+          ownerName: item.owner_name ?? "-",
+          ownerContact: item.owner_number ?? "-",
+          owner_email: item.owner_email ?? "-",
           // depotName: item.branch_id?.toString() ?? "",
           depotLocation: item.location ?? "",
           company_customer_id: item.company_customer_id ?? "",
-          region_id: item.region_id ?? "",
-          sub_region_id: item.sub_region_id ?? "",
+          warehouse_type: item.warehouse_type ?? "",
+          business_type: item.business_type ?? "",
+          region_id: item.region?.region_name ?? "",
+          area_name: item.area?.area_name ?? "",
           warehouse_manager: item.warehouse_manager ?? "",
           warehouse_manager_contact: item.warehouse_manager_contact ?? "",
           phoneNumber: item.owner_number ?? "",
           address: item.address ?? "",
-          district: item.city ?? "",
+          city: item.city ?? "",
+          district: item.district ?? "",
+          location: item.location ?? "",
+          town_village: item.town_village ?? "",
+          street: item.street ?? "",
+          landmark: item.landmark ?? "",
+          latitude: item.latitude ?? "",
+          longitude: item.longitude ?? "",
+          threshold_radius: item.threshold_radius ?? "",
+          stock_capital: item.stock_capital ?? "",
+          deposite_amount: item.deposite_amount ?? "",
+          device_no: item.device_no ?? "",
+          p12_file: item.p12_file ?? "",
+          branch_id: item.branch_id ?? "",
+          is_efris: item.is_efris ?? "",
           status: item.status === 1 ? "Active" : "Inactive",
         } as WarehouseRow));
         setWarehouses(mapped);
