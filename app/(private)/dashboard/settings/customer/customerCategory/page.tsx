@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect,useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType,searchReturnType,listReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import Loading from "@/app/components/Loading";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
-import { customerCategoryList, deleteCustomerCategory, channelList } from "@/app/services/allApi";
+import { customerCategoryList, deleteCustomerCategory, channelList ,customerCategoryGlobalSearch} from "@/app/services/allApi";
 import BorderIconButton from "@/app/components/borderIconButton";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import CustomDropdown from "@/app/components/customDropdown";
@@ -46,22 +46,47 @@ export default function CustomerCategoryPage() {
   const router = useRouter();
 
   // ✅ Fetch outlet channels to map id → code
-  useEffect(() => {
-    const fetchChannels = async () => {
-      try {
-        const res = await channelList();
-        const map: Record<string, string> = {};
-        (res.data || []).forEach((oc: OutletChannel) => {
-          map[oc.id] = oc.outlet_channel_code;
-        });
-        setOutletChannels(map);
-      } catch (error) {
-        console.error("Failed to fetch outlet channels ❌", error);
-      }
-    };
-    fetchChannels();
-  }, []);
+  // useEffect(() => {
+  //   const fetchChannels = async () => {
+  //     try {
+  //       const res = await channelList();
+  //       const map: Record<string, string> = {};
+  //       (res.data || []).forEach((oc: OutletChannel) => {
+  //         map[oc.id] = oc.outlet_channel_code;
+  //       });
+  //       setOutletChannels(map);
+  //     } catch (error) {
+  //       console.error("Failed to fetch outlet channels ❌", error);
+  //     }
+  //   };
+  //   fetchChannels();
+  // }, []);
 
+      const fetchCategories = useCallback(
+          async (
+              page: number = 1,
+              pageSize: number = 5
+          ): Promise<listReturnType> => {
+              try {
+                  const listRes = await customerCategoryList({
+                      limit: pageSize.toString(),
+                      page: page.toString(),
+                  });
+                  setLoading(false);
+                  return {
+                      data: listRes.data || [],
+                      total: listRes.pagination.totalPages ,
+                      currentPage: listRes.pagination.page ,
+                      pageSize: listRes.pagination.limit ,
+                  };
+              } catch (error: unknown) {
+                  console.error("API Error:", error);
+                  setLoading(false);
+                  throw error;
+              }
+          },
+          []
+      );
   // ✅ Fetch categories and map status & outlet code
   useEffect(() => {
     const fetchCategories = async () => {
@@ -90,6 +115,29 @@ export default function CustomerCategoryPage() {
     if (Object.keys(outletChannels).length > 0) fetchCategories(); // wait for channels
   }, [outletChannels, showSnackbar]);
 
+     const searchCustomerCategory = useCallback(
+          async (
+              searchQuery: string,
+              pageSize: number
+          ): Promise<searchReturnType> => {
+              setLoading(true);
+              const result = await customerCategoryGlobalSearch({
+                  query: searchQuery,
+                  per_page: pageSize.toString(),
+              });
+              setLoading(false);
+              if (result.error) throw new Error(result.data.message);
+              else {
+                  return {
+                      data: result.data || [],
+                      total: result.pagination.pagination.totalPages || 0,
+                      currentPage: result.pagination.pagination.current_page || 0,
+                      pageSize: result.pagination.pagination.limit || pageSize,
+                  };
+              }
+          },
+          []
+      );
   // ✅ Delete handler
   const handleDelete = async () => {
     if (!selectedCategory?.id) return;
@@ -177,8 +225,12 @@ export default function CustomerCategoryPage() {
       {/* Table */}
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={tableData}
+          // data={tableData}
           config={{
+            api: {
+                            list: fetchCategories,
+                            search: searchCustomerCategory,
+                        },
             header: {
               searchBar: true,
               columnFilter: true,

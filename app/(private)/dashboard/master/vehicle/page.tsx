@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect,useCallback } from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType,listReturnType,searchReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { vehicleList, deleteVehicle } from "@/app/services/allApi";
-import Loading from "@/app/components/Loading";
+import { vehicleList, deleteVehicle ,vehicleGlobalSearch} from "@/app/services/allApi";
+import { useLoading } from "@/app/services/loadingContext";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
@@ -26,7 +26,7 @@ interface Vehicle {
     vehicle_type?: string;
     capacity?: string;
     owner_type?: string;
-    warehouse?: { warehouse_name: string };
+    warehouse?: { id:string,warehouse_code:string,warehouse_name: string ,owner_name:string};
     owner_reference?: string;
     vehicle_route?: string;
     status?: number;
@@ -51,14 +51,14 @@ const dropdownDataList: DropdownItem[] = [
 // 🔹 Table columns
 const columns = [
   { key: "vehicle_code", label: "Vehicle Code" },
-  { key: "numberPlate", label: "Number Plate" },
-  { key: "chassisNumber", label: "Chassis Number" },
-  { key: "brand", label: "Brand" },
-  { key: "odoMeter", label: "Odo Meter" },
-  { key: "vehicleType", label: "Vehicle Type" },
+  { key: "number_plat", label: "Number Plate" },
+  { key: "vehicle_chesis_no", label: "Chassis Number" },
+  { key: "vehicle_brand", label: "Brand" },
+  { key: "opening_odometer", label: "Odo Meter" },
+  { key: "vehicle_type", label: "Vehicle Type" },
   { key: "capacity", label: "Capacity" },
-  { key: "ownerType", label: "Owner Type" },
-  { key: "depotLocation", label: "Depot Location" },
+  { key: "owner_type", label: "Owner Type" },
+  { key: "depotLocation", label: "Warehouse" },
   // { key: "ownerReference", label: "Owner Reference" },
   // { key: "vehicleRoute", label: "Vehicle Route" },
   { key: "description", label: "Description" },
@@ -75,7 +75,7 @@ const columns = [
 
 export default function VehiclePage() {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { setLoading} = useLoading();
     const [showDropdown, setShowDropdown] = useState(false);
     const [showDeletePopup, setShowDeletePopup] = useState(false);
     const [selectedRow, setSelectedRow] = useState<Vehicle | null>(null);
@@ -87,14 +87,14 @@ export default function VehiclePage() {
   const tableData: TableDataType[] = vehicles.map((v) => ({
     id: String(v.id ?? ""),
     vehicle_code: v.vehicle_code ?? "-",
-    brand: v.vehicle_brand !== undefined ? String(v.vehicle_brand) : "-",
-    numberPlate: v.number_plat ?? "-",
-    chassisNumber: v.vehicle_chesis_no ?? "-",
-    odoMeter: v.opening_odometer ?? "-",
-    vehicleType: v.vehicle_type ?? "-",
+    vehicle_brand: v.vehicle_brand !== undefined ? String(v.vehicle_brand) : "-",
+    number_plat: v.number_plat ?? "-",
+    vehicle_chesis_no: v.vehicle_chesis_no ?? "-",
+    opening_odometer: v.opening_odometer ?? "-",
+    vehicle_type: v.vehicle_type ?? "-",
     capacity: v.capacity ?? "-",
-    ownerType: v.owner_type ?? "-",
-    depotLocation: v.warehouse_id !== undefined ? String(v.warehouse_id) : "-",
+    owner_type: v.owner_type ?? "-",
+    warehouse: v.warehouse?.warehouse_name ?? "-",
     ownerReference: v.owner_reference ?? "-",
     vehicleRoute: v.vehicle_route ?? "-",
     description: v.description ?? "-",
@@ -103,20 +103,56 @@ export default function VehiclePage() {
     status: v.status === 1 ? "Active" : "Inactive",
   }));
 
-    const fetchVehicles = async () => {
-        const res = await vehicleList();
-        if (res.error) {
-            showSnackbar(res.data.message || "Failed to fetch vehicles ❌","error");
-            setVehicles([]);
-        } else {
-            setVehicles(res.data);
-        }
-        setLoading(false);
-    };
 
-    useEffect(() => {
-        fetchVehicles();
-    }, []);
+        const fetchVehicles = useCallback(
+            async (
+                page: number = 1,
+                pageSize: number = 5
+            ): Promise<listReturnType> => {
+                try {
+                  setLoading(true);
+                    const listRes = await vehicleList({
+                        limit: pageSize.toString(),
+                        page: page.toString(),
+                    });
+                    setLoading(false);
+                    return {
+                        data: listRes.data || [],
+                        total: listRes.pagination.totalPages ,
+                        currentPage: listRes.pagination.page ,
+                        pageSize: listRes.pagination.limit ,
+                    };
+                } catch (error: unknown) {
+                    console.error("API Error:", error);
+                    setLoading(false);
+                    throw error;
+                }
+            },
+            []
+        );
+        
+            const searchVehicle = useCallback(
+                async (
+                    searchQuery: string,
+                ): Promise<searchReturnType> => {
+                    setLoading(true);
+                    const result = await vehicleGlobalSearch({
+                        search: searchQuery,
+                        // per_page: pageSize.toString(),
+                    });
+                    setLoading(false);
+                    if (result.error) throw new Error(result.data.message);
+                    const pagination = result.pagination && result.pagination.pagination ? result.pagination.pagination : {};
+                    return {
+                        data: result.data || [],
+                        total: pagination.totalPages || 10,
+                        currentPage: pagination.current_page || 1,
+                        pageSize: pagination.limit || 10,
+                    };
+                },
+                []
+            );
+  
 
     const handleConfirmDelete = async () => {
         if (!selectedRow?.id) return;
@@ -126,13 +162,15 @@ export default function VehiclePage() {
             showSnackbar(res.data.message || "Failed to delete vehicle ❌","error");
         } else {
             showSnackbar(res.message || "Vehicle deleted successfully ✅", "success");
-            fetchVehicles();
+            // fetchVehicles();
+            setLoading(true);
         }
         setShowDeletePopup(false);
         setSelectedRow(null);
     };
-
-    if (loading) return <Loading />;
+  useEffect(() => {
+        setLoading(true);
+    }, []);
 
     return (
         <>
@@ -181,8 +219,12 @@ export default function VehiclePage() {
             {/* Table */}
             <div className="h-[calc(100%-60px)]">
                 <Table
-                    data={tableData}
+                    
                     config={{
+                      api:{
+                            list: fetchVehicles,
+                            search: searchVehicle,
+                      },
                         header: {
                             searchBar: true,
                             columnFilter: true,
@@ -219,7 +261,7 @@ export default function VehiclePage() {
                                 },
                             },
                         ],
-                        pageSize: 10,
+                        pageSize: 5,
                     }}
                 />
             </div>

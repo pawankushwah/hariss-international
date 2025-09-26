@@ -1,13 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useCallback} from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType ,listReturnType} from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { userList,userTypes, deleteUserType } from "@/app/services/allApi";
-import Loading from "@/app/components/Loading";
+import { userList, deleteUserType } from "@/app/services/allApi";
+import { useLoading } from "@/app/services/loadingContext";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext"; // ✅ import snackbar
@@ -40,7 +40,7 @@ export default function Country() {
   }
 
   const [countries, setCountries] = useState<CountryItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { setLoading} = useLoading();
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [selectedRow, setSelectedRow] = useState<CountryItem | null>(null);
@@ -56,39 +56,64 @@ export default function Country() {
    
   }));
 
-  const fetchCountries = async () => {
-  try {
-    setLoading(true);
-    const listRes = await userList({});
-    setCountries(listRes.data);
-    console.log("Fetched users:", listRes.data);
-  } catch (error: unknown) {
-    console.error("API Error:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+//   const fetchCountries = async () => {
+//   try {
+//     setLoading(true);
+//     const listRes = await userList({});
+//     setCountries(listRes.data);
+//     console.log("Fetched users:", listRes.data);
+//   } catch (error: unknown) {
+//     console.error("API Error:", error);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
 
-useEffect(() => {
-  fetchCountries();
-}, []);
 
-  useEffect(() => {
-    const fetchCountries = async () => {
-      try {
-        const listRes = await userTypes();
-        setCountries(listRes.data);
-        console.log("Fetched users:", listRes.data);
-      } catch (error: unknown) {
-        console.error("API Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchCountries();
-  }, []);
 
+  // useEffect(() => {
+  //   const fetchCountries = async () => {
+  //     try {
+  //       const listRes = await userTypes();
+  //       setCountries(listRes.data);
+  //       console.log("Fetched users:", listRes.data);
+  //     } catch (error: unknown) {
+  //       console.error("API Error:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchCountries();
+  // }, []);
+
+           const fetchUserType = useCallback(
+               async (
+                   page: number = 1,
+                   pageSize: number = 5
+               ): Promise<listReturnType> => {
+                   try {
+                     setLoading(true);
+                       const listRes = await userList({
+                           limit: pageSize.toString(),
+                           page: page.toString(),
+                       });
+                       setLoading(false);
+                       return {
+                           data: listRes.data || [],
+                           total: listRes.pagination.totalPages ,
+                           currentPage: listRes.pagination.page ,
+                           pageSize: listRes.pagination.limit ,
+                       };
+                   } catch (error: unknown) {
+                       console.error("API Error:", error);
+                       setLoading(false);
+                       throw error;
+                   }
+               },
+               []
+           );
  const handleConfirmDelete = async () => {
   if (!selectedRow?.id) {
     showSnackbar("No row selected ❌", "error");
@@ -97,9 +122,9 @@ useEffect(() => {
 
   try {
     await deleteUserType(String(selectedRow.id));
-
+    setLoading(true);
     // ✅ Update state immediately without full refresh
-    setCountries((prev) => prev.filter((c) => String(c.id) !== String(selectedRow.id)));
+    // setCountries((prev) => prev.filter((c) => String(c.id) !== String(selectedRow.id)));
 
     showSnackbar("User deleted successfully ✅", "success");
   } catch (error) {
@@ -111,9 +136,11 @@ useEffect(() => {
   }
 };
 
-  return loading ? (
-    <Loading />
-  ) : (
+useEffect(() => {
+  setLoading(true);
+}, []);
+
+  return (
     <>
       <div className="flex justify-between items-center mb-[20px]">
         <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
@@ -152,8 +179,11 @@ useEffect(() => {
       </div>
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={tableData}
+         
           config={{
+             api:{
+                list: fetchUserType,
+              },
             header: {
               searchBar: true,
               columnFilter: true,
@@ -190,7 +220,7 @@ useEffect(() => {
                 },
               },
             ],
-            pageSize: 10,
+            pageSize: 5,
           }}
         />
       </div>

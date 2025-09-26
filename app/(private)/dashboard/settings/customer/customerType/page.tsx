@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useCallback} from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType,listReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import Loading from "@/app/components/Loading";
+import { useLoading } from "@/app/services/loadingContext";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
@@ -54,7 +54,7 @@ const columns = [
 
 export default function CustomerPage() {
   const [customers, setCustomers] = useState<CustomerType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {setLoading} = useLoading();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [selectedRow, setSelectedRow] = useState<CustomerType | null>(null);
@@ -75,22 +75,50 @@ export default function CustomerPage() {
   }));
 
   // fetch list
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const res = await getCustomerType();
-        setCustomers(res?.data || []);
-      } catch (error) {
-        console.error("Failed to fetch customers ❌", error);
-        showSnackbar("Failed to fetch customers ❌", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCustomers();
-  }, [refresh]);
+  // useEffect(() => {
+  //   const fetchCustomers = async () => {
+  //     try {
+  //       const res = await getCustomerType();
+  //       setCustomers(res?.data || []);
+  //     } catch (error) {
+  //       console.error("Failed to fetch customers ❌", error);
+  //       showSnackbar("Failed to fetch customers ❌", "error");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchCustomers();
+  // }, [refresh]);
 
-  // delete handler
+          const fetchCustomerType = useCallback(
+              async (
+                  page: number = 1,
+                  pageSize: number = 1
+              ): Promise<listReturnType> => {
+                  try {
+                    setLoading(true);
+                      const listRes = await getCustomerType({
+                          per_page: pageSize.toString(),
+                          page: page.toString(),
+                      });
+                      setLoading(false);
+                      return {
+                          data: listRes.data || [],
+                          total: listRes.pagination.totalPages ,
+                          currentPage: listRes.pagination.page ,
+                          pageSize: listRes.pagination.limit ,
+                      };
+                  } catch (error: unknown) {
+                      console.error("API Error:", error);
+                      setLoading(false);
+                      throw error;
+                  }
+              },
+              []
+          );
+  //          useEffect(() => {
+  //   setLoading(true);
+  // });
  const handleConfirmDelete = async () => {
   if (!selectedRow?.id) return;
 
@@ -104,7 +132,6 @@ export default function CustomerPage() {
       );
 
       showSnackbar("Customer deleted successfully ✅", "success");
-setRefresh(!refresh);
       // optional: if list becomes empty after delete
       if (customers.length === 1) {
         // after deleting last item, customers will be []
@@ -123,7 +150,7 @@ setRefresh(!refresh);
 };
 
 
-  if (loading) return <Loading />;
+
 
   return (
     <>
@@ -169,8 +196,11 @@ setRefresh(!refresh);
       {/* Table */}
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={tableData}
+          
           config={{
+            api:{
+                            list: fetchCustomerType,
+            },
             header: {
               searchBar: true,
               columnFilter: true,
@@ -212,7 +242,7 @@ setRefresh(!refresh);
                 },
               },
             ],
-            pageSize: 10,
+            pageSize: 1,
           }}
         />
       </div>

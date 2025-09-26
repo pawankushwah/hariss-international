@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect,useCallback } from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType,listReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import { getExpenseTypeList, deleteExpenseType } from "@/app/services/allApi";
-import Loading from "@/app/components/Loading";
+import { useLoading } from "@/app/services/loadingContext";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext"; // ✅ import snackbar
@@ -67,7 +67,7 @@ export default function Expensetype() {
   }
 
   const [countries, setCountries] = useState<expenseTypeItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { setLoading} = useLoading();
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [selectedRow, setSelectedRow] = useState<expenseTypeItem | null>(null);
@@ -89,20 +89,45 @@ const tableData: TableDataType[] = countries.map((c) => ({
       : c.expense_type_status ?? "0",
 }));
   // Move fetchCountries outside useEffect so it can be reused
-  const fetchCountries = async () => {
-    try {
-      const listRes = await getExpenseTypeList();
-      setCountries(listRes.data);
-    } catch (error: unknown) {
-      console.error("API Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCountries();
-  }, []);
+  // const fetchCountries = async () => {
+  //   try {
+  //     const listRes = await getExpenseTypeList();
+  //     setCountries(listRes.data);
+  //   } catch (error: unknown) {
+  //     console.error("API Error:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+  const fetchExpenseType = useCallback(
+                async (
+                    page: number = 1,
+                    pageSize: number = 1
+                ): Promise<listReturnType> => {
+                    try {
+                      setLoading(true);
+                        const listRes = await getExpenseTypeList({
+                            per_page: pageSize.toString(),
+                            current_page: page.toString(),
+                        });
+                        setLoading(false);
+                        return {
+                            data: listRes.data || [],
+                            total: listRes.pagination.totalPages ,
+                            currentPage: listRes.pagination.page ,
+                            pageSize: listRes.pagination.limit ,
+                        };
+                    } catch (error: unknown) {
+                        console.error("API Error:", error);
+                        setLoading(false);
+                        throw error;
+                    }
+                },
+                []
+            );
+  // useEffect(() => {
+  //   fetchCountries();
+  // }, []);
 
 
   const handleConfirmDelete = async () => {
@@ -112,7 +137,7 @@ const tableData: TableDataType[] = countries.map((c) => ({
       if (!selectedRow?.id) throw new Error('Missing id');
       await deleteExpenseType(String(selectedRow.id)); // call API
       showSnackbar("Expense Type deleted successfully ", "success");
-      fetchCountries(); // Refresh the table data after successful delete
+      // fetchCountries(); // Refresh the table data after successful delete
     } catch (error) {
       console.error("Delete failed ❌:", error);
       showSnackbar("Failed to delete Expense Type", "error");
@@ -123,9 +148,7 @@ const tableData: TableDataType[] = countries.map((c) => ({
   };
   
 
-  return loading ? (
-    <Loading />
-  ) : (
+  return  (
     <>
       <div className="flex justify-between items-center mb-[20px]">
         <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
@@ -166,8 +189,9 @@ const tableData: TableDataType[] = countries.map((c) => ({
 
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={tableData}
+          
           config={{
+            api:{ list: fetchExpenseType, },
             header: {
               searchBar: true,
               columnFilter: true,
@@ -203,7 +227,7 @@ const tableData: TableDataType[] = countries.map((c) => ({
                 },
               },
             ],
-            pageSize: 10,
+            pageSize: 2,
           }}
         />
       </div>

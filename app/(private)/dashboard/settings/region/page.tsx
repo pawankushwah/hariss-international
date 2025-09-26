@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useCallback} from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import CustomDropdown from "@/app/components/customDropdown";
 import BorderIconButton from "@/app/components/borderIconButton";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType,listReturnType,searchReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { regionList, deleteRegion } from "@/app/services/allApi";
-import Loading from "@/app/components/Loading";
+import { regionList, deleteRegion,regionGlobalSearch } from "@/app/services/allApi";
+import { useLoading } from "@/app/services/loadingContext";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 
@@ -29,9 +29,9 @@ const dropdownDataList = [
 ];
 
 export default function Region() {
+  const { setLoading } = useLoading();
   const [regions, setRegions] = useState<RegionItem[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [loading, setLoading] = useState<boolean>(true);  
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RegionItem | null>(null);
 
@@ -48,19 +48,68 @@ export default function Region() {
     status: s.status === 1 || s.status === "Active" ? "Active" : "Inactive", // ✅ Correct mapping
   }));
 
-  async function fetchRegions() {
-      const listRes = await regionList();
-      if(listRes.error) {
-        showSnackbar("Failed to fetch Regions ❌", "error");
-      } else {
-        setRegions(listRes.data);
-      }
-      setLoading(false);
-    };
+  // async function fetchRegions() {
+  //     const listRes = await regionList();
+  //     if(listRes.error) {
+  //       showSnackbar("Failed to fetch Regions ❌", "error");
+  //     } else {
+  //       setRegions(listRes.data);
+  //     }
+  //     setLoading(false);
+  //   };
 
-  useEffect(() => {
-    fetchRegions();
-  }, []);
+
+
+   const fetchRegions = useCallback(
+          async (
+              page: number = 1,
+              pageSize: number = 5
+          ): Promise<listReturnType> => {
+              try {
+                setLoading(true);
+                  const listRes = await regionList({
+                      limit: pageSize.toString(),
+                      page: page.toString(),
+                  });
+                  setLoading(false);
+                  return {
+                      data: listRes.data || [],
+                      total: listRes.pagination.totalPages ,
+                      currentPage: listRes.pagination.page ,
+                      pageSize: listRes.pagination.limit ,
+                  };
+              } catch (error: unknown) {
+                  console.error("API Error:", error);
+                  setLoading(false);
+                  throw error;
+              }
+          },
+          []
+      );
+   
+      const searchRegions = useCallback(
+          async (
+              searchQuery: string,
+              pageSize: number
+          ): Promise<searchReturnType> => {
+              setLoading(true);
+              const result = await regionGlobalSearch({
+                  query: searchQuery,
+                  per_page: pageSize.toString(),
+              });
+              setLoading(false);
+              if (result.error) throw new Error(result.data.message);
+              else {
+                  return {
+                      data: result.data || [],
+                      total: result.pagination.pagination.totalPages || 0,
+                      currentPage: result.pagination.pagination.current_page || 0,
+                      pageSize: result.pagination.pagination.limit || pageSize,
+                  };
+              }
+          },
+          []
+      );
 
  const handleConfirmDelete = async () => {
   if (!selectedRow?.id) return;
@@ -70,13 +119,15 @@ export default function Region() {
     showSnackbar(res.data.message || "Failed to delete Region","error");
   } else {
     showSnackbar(res.message || "Region deleted successfully", "success");
-    fetchRegions();
+    setLoading(false);
   }
   setShowDeletePopup(false);
 };
 
+       useEffect(() => {
+    setLoading(true);
+  }, []);
 
-  if (loading) return <Loading />;
 
   return (
     <>
@@ -119,8 +170,12 @@ export default function Region() {
       {/* Table */}
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={tableData}
+          // data={tableData}
           config={{
+            api:{
+                            list: fetchRegions,
+                            search: searchRegions,
+            },
             header: {
                          searchBar: true,
                          columnFilter: true,
@@ -175,7 +230,7 @@ export default function Region() {
                 },
               },
             ],
-            pageSize: 10,
+            pageSize: 5,
           }}
         />
       </div>

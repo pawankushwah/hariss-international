@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect,useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify-icon/react";
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType,listReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import { getWarehouse ,deleteWarehouse} from "@/app/services/allApi";
-import Loading from "@/app/components/Loading";
+import { useLoading } from "@/app/services/loadingContext";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
@@ -62,20 +62,20 @@ type WarehouseRow = TableDataType & {
 
 const columns = [
   { key: "registation_no", label: "Registration No." },
-  { key: "code", label: "Warehouse Code" },
-  { key: "warehouseName", label: "Warehouse Name" },
+  { key: "warehouse_code", label: "Warehouse Code" },
+  { key: "warehouse_name", label: "Warehouse Name" },
   { key: "tin_no", label: "TIN No" },
-  { key: "ownerName", label: "Owner Name" },
-  { key: "ownerContact", label: "Owner Contact No." },
+  { key: "owner_name", label: "Owner Name" },
+  { key: "owner_number", label: "Owner Contact No." },
   { key: "owner_email", label: "Owner Email" },
   // { key: "depotName", label: "Depot Name" },
-  { key: "depotLocation", label: "Warehouse Location" },
+  { key: "location", label: "Warehouse Location" },
   { key: "company_customer_id", label: "Customer"},
-  {
-    label: 'Customer',
-    key: 'company_customer_id',
-    render: (row: WarehouseRow) => row.company_customer_id || '-',
-  },
+  // {
+  //   label: 'Customer',
+  //   key: 'company_customer_id',
+  //   render: (row: WarehouseRow) => row.company_customer_id || '-',
+  // },
   { key: "warehouse_manager", label: "Warehouse Manager"},
   { key: "warehouse_manager_contact", label: "Warehouse Manager Contact"},
   { key: "warehouse_type", label: "Warehouse Type"},
@@ -128,8 +128,8 @@ const columns = [
 ];
 
 export default function Warehouse() {
+  const {setLoading} = useLoading();
   const [warehouses, setWarehouses] = useState<TableDataType[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   type TableRow = TableDataType & { id?: string };
@@ -176,104 +176,127 @@ export default function Warehouse() {
     const [selectedRow, setSelectedRow] = useState<WarehouseRow | null>(null);
     const router = useRouter();
     const { showSnackbar } = useSnackbar();
- 
-    const fetchWarehouses = async () => {
-      try {
-        const res = await getWarehouse();
-        interface ApiWarehouse {
-          id?: number | string;
-          registation_no?: string;
-          warehouse_code?: string;
-          tin_no?: string;
-          warehouse_manager?: string;
-      warehouse_manager_contact?: string;
-      area?:{area_name:string;}
-      region?: {region_name?:string;};
-          warehouse_name?: string;
-          business_type?: string;
-          get_company_customer?: {owner_name?:string};
-          district?: string;
-          is_efris?: string;
-          latitude?: string;
-          branch_id?: string;
-          p12_file?: string;
-          street?: string;
-          town_village?: string;
-          warehouse_type?: string;
-          owner_name?: string;
-          owner_email?: string;
-          threshold_radius?: string;
-          landmark?: string;
-          ownerContact?: string;
-          deposite_amount?: string;
-          stock_capital?: string;
+         const fetchWarehouse = useCallback(
+             async (
+                 page: number = 1,
+                 pageSize: number = 5
+             ): Promise<listReturnType> => {
+                 try {
+                   setLoading(true);
+                     const listRes = await getWarehouse({
+                         limit: pageSize.toString(),
+                         page: page.toString(),
+                     });
+                     setLoading(false);
+                     return {
+                         data: listRes.data || [],
+                         total: listRes.pagination.totalPages ,
+                         currentPage: listRes.pagination.page ,
+                         pageSize: listRes.pagination.limit ,
+                     };
+                 } catch (error: unknown) {
+                     console.error("API Error:", error);
+                     setLoading(false);
+                     throw error;
+                 }
+             },
+             []
+         );
+    // const fetchWarehouses = async () => {
+    //   try {
+    //     const res = await getWarehouse();
+    //     interface ApiWarehouse {
+    //       id?: number | string;
+    //       registation_no?: string;
+    //       warehouse_code?: string;
+    //       tin_no?: string;
+    //       warehouse_manager?: string;
+    //   warehouse_manager_contact?: string;
+    //   area?:{area_name:string;}
+    //   region?: {region_name?:string;};
+    //       warehouse_name?: string;
+    //       business_type?: string;
+    //       get_company_customer?: {owner_name?:string};
+    //       district?: string;
+    //       is_efris?: string;
+    //       latitude?: string;
+    //       branch_id?: string;
+    //       p12_file?: string;
+    //       street?: string;
+    //       town_village?: string;
+    //       warehouse_type?: string;
+    //       owner_name?: string;
+    //       owner_email?: string;
+    //       threshold_radius?: string;
+    //       landmark?: string;
+    //       ownerContact?: string;
+    //       deposite_amount?: string;
+    //       stock_capital?: string;
           
-          location?: string;
-          owner_number?: string;
-          address?: string;
-          device_no?: string;
-          city?: string;
-          longitude?: string;
-          status?: number;
-        }
+    //       location?: string;
+    //       owner_number?: string;
+    //       address?: string;
+    //       device_no?: string;
+    //       city?: string;
+    //       longitude?: string;
+    //       status?: number;
+    //     }
 
-        const mapped = (res.data || []).map((item: ApiWarehouse) => {
-          let warehouseTypeLabel = "";
-          const warehouseTypeStr = item.warehouse_type != null ? String(item.warehouse_type) : "";
-          if (warehouseTypeStr === "0") warehouseTypeLabel = "Agent";
-          else if (warehouseTypeStr === "1") warehouseTypeLabel = "Hariss";
-          else if (warehouseTypeStr === "2") warehouseTypeLabel = "Outlet";
-          else warehouseTypeLabel = warehouseTypeStr;
-          return {
-            id: item.id,
-            registation_no: item.registation_no ?? "",
-            code: item.warehouse_code ?? "",
-            warehouseName: item.warehouse_name ?? "",
-            tin_no: item.tin_no ?? "",
-            ownerName: item.owner_name ?? "-",
-            ownerContact: item.owner_number ?? "-",
-            owner_email: item.owner_email ?? "-",
-            // depotName: item.branch_id?.toString() ?? "",
-            depotLocation: item.location ?? "",
-            company_customer_id: item.get_company_customer?.owner_name ?? "-",
-            warehouse_type: warehouseTypeLabel,
-            // business_type: item.business_type ?? "",
-            business_type:  "B2B",
-            region_id: item.region?.region_name ?? "",
-            area_name: item.area?.area_name ?? "",
-            warehouse_manager: item.warehouse_manager ?? "",
-            warehouse_manager_contact: item.warehouse_manager_contact ?? "",
-            phoneNumber: item.owner_number ?? "",
-            address: item.address ?? "",
-            city: item.city ?? "",
-            district: item.district ?? "",
-            location: item.location ?? "",
-            town_village: item.town_village ?? "",
-            street: item.street ?? "",
-            landmark: item.landmark ?? "",
-            latitude: item.latitude ?? "",
-            longitude: item.longitude ?? "",
-            threshold_radius: item.threshold_radius ?? "",
-            stock_capital: item.stock_capital ?? "",
-            deposite_amount: item.deposite_amount ?? "",
-            device_no: item.device_no ?? "",
-            p12_file: item.p12_file ?? "",
-            branch_id: item.branch_id ?? "",
-            is_efris: item.is_efris ?? "",
-            status: item.status === 1 ? "Active" : "Inactive",
-          } as WarehouseRow;
-        });
-        setWarehouses(mapped);
-      } catch {
-        // ignore error details here but ensure warehouses cleared
-        setWarehouses([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    useEffect(() => {
-      fetchWarehouses();
-    }, []);
+    //     const mapped = (res.data || []).map((item: ApiWarehouse) => {
+    //       let warehouseTypeLabel = "";
+    //       const warehouseTypeStr = item.warehouse_type != null ? String(item.warehouse_type) : "";
+    //       if (warehouseTypeStr === "0") warehouseTypeLabel = "Agent";
+    //       else if (warehouseTypeStr === "1") warehouseTypeLabel = "Hariss";
+    //       else if (warehouseTypeStr === "2") warehouseTypeLabel = "Outlet";
+    //       else warehouseTypeLabel = warehouseTypeStr;
+    //       return {
+    //         id: item.id,
+    //         registation_no: item.registation_no ?? "",
+    //         code: item.warehouse_code ?? "",
+    //         warehouseName: item.warehouse_name ?? "",
+    //         tin_no: item.tin_no ?? "",
+    //         ownerName: item.owner_name ?? "-",
+    //         ownerContact: item.owner_number ?? "-",
+    //         owner_email: item.owner_email ?? "-",
+    //         // depotName: item.branch_id?.toString() ?? "",
+    //         depotLocation: item.location ?? "",
+    //         company_customer_id: item.get_company_customer?.owner_name ?? "-",
+    //         warehouse_type: warehouseTypeLabel,
+    //         // business_type: item.business_type ?? "",
+    //         business_type:  "B2B",
+    //         region_id: item.region?.region_name ?? "",
+    //         area_name: item.area?.area_name ?? "",
+    //         warehouse_manager: item.warehouse_manager ?? "",
+    //         warehouse_manager_contact: item.warehouse_manager_contact ?? "",
+    //         phoneNumber: item.owner_number ?? "",
+    //         address: item.address ?? "",
+    //         city: item.city ?? "",
+    //         district: item.district ?? "",
+    //         location: item.location ?? "",
+    //         town_village: item.town_village ?? "",
+    //         street: item.street ?? "",
+    //         landmark: item.landmark ?? "",
+    //         latitude: item.latitude ?? "",
+    //         longitude: item.longitude ?? "",
+    //         threshold_radius: item.threshold_radius ?? "",
+    //         stock_capital: item.stock_capital ?? "",
+    //         deposite_amount: item.deposite_amount ?? "",
+    //         device_no: item.device_no ?? "",
+    //         p12_file: item.p12_file ?? "",
+    //         branch_id: item.branch_id ?? "",
+    //         is_efris: item.is_efris ?? "",
+    //         status: item.status === 1 ? "Active" : "Inactive",
+    //       } as WarehouseRow;
+    //     });
+    //     setWarehouses(mapped);
+    //   } catch {
+    //     // ignore error details here but ensure warehouses cleared
+    //     setWarehouses([]);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+
 
     const handleConfirmDelete = async () => {
       if (!selectedRow) return;
@@ -283,8 +306,9 @@ export default function Warehouse() {
         await deleteWarehouse(String(selectedRow.id)); // call API
         
         showSnackbar("Warehouse deleted successfully ", "success"); 
-        await fetchWarehouses();
-         setWarehouses((prev) => prev.filter((c) => String(c.id) !== String(selectedRow.id)));
+        setLoading(true);
+        // await fetchWarehouses();
+        //  setWarehouses((prev) => prev.filter((c) => String(c.id) !== String(selectedRow.id)));
       } catch (error) {
         console.error("Delete failed :", error);
         showSnackbar("Failed to delete Warehouse", "error"); 
@@ -293,8 +317,10 @@ export default function Warehouse() {
         setSelectedRow(null);
       }
     };
-
-  return loading ? <Loading /> : (
+    useEffect(() => {
+      setLoading(true);
+    }, []);
+  return (
     <>
       <div className="flex justify-between items-center mb-[20px]">
         <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
@@ -333,8 +359,11 @@ export default function Warehouse() {
       </div>
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={warehouses}
+          // data={warehouses}
           config={{
+            api:{
+              list: fetchWarehouse,
+            },
             header: {
               searchBar: true,
               columnFilter: true,
@@ -373,7 +402,7 @@ export default function Warehouse() {
                 },
               },
             ],
-            pageSize: 10,
+            pageSize: 5,
           }}
         />
       </div>

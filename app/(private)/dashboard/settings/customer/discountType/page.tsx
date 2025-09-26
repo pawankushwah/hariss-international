@@ -2,13 +2,13 @@
 
 import BorderIconButton from "@/app/components/borderIconButton";
 import { Icon } from "@iconify-icon/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useCallback} from "react";
 import { useRouter } from "next/navigation";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType,listReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import { getDiscountTypeList,deleteDiscountType } from "@/app/services/allApi";
-import Loading from "@/app/components/Loading";
+import { useLoading } from "@/app/services/loadingContext";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 
@@ -77,7 +77,7 @@ export default function DiscountType() {
     const [selectedRow, setSelectedRow] = useState<DiscountTypeItem | null>(null);
       const [showDeletePopup, setShowDeletePopup] = useState(false);
         const [showDropdown, setShowDropdown] = useState(false);
-        const [loading, setLoading] = useState(true);
+        const { setLoading} = useLoading();
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
   type TableRow = TableDataType & { id?: string };
@@ -91,25 +91,50 @@ export default function DiscountType() {
   }));
 
 
-        const fetchDiscountType = async () => {
-            try {
-                setLoading(true);
-                const listRes = await getDiscountTypeList();
-                // routeList returns response shape similar to other list endpoints: { data: [...] }
-                setDiscountType(listRes?.data ?? []);
-            } catch (error: unknown) {
-                console.error("API Error:", error);
-                setDiscountType([]);
-            } finally {
-                setLoading(false);
-            }
-        };
+        // const fetchDiscountType = async () => {
+        //     try {
+        //         setLoading(true);
+        //         const listRes = await getDiscountTypeList();
+        //         // routeList returns response shape similar to other list endpoints: { data: [...] }
+        //         setDiscountType(listRes?.data ?? []);
+        //     } catch (error: unknown) {
+        //         console.error("API Error:", error);
+        //         setDiscountType([]);
+        //     } finally {
+        //         setLoading(false);
+        //     }
+        // };
 
+          const fetchCustomerType = useCallback(
+              async (
+                  page: number = 1,
+                  pageSize: number = 1
+              ): Promise<listReturnType> => {
+                  try {
+                    setLoading(true);
+                      const listRes = await getDiscountTypeList({
+                          per_page: pageSize.toString(),
+                          page: page.toString(),
+                      });
+                      setLoading(false);
+                      return {
+                          data: listRes.data || [],
+                          total: listRes.pagination.totalPages ,
+                          currentPage: listRes.pagination.page ,
+                          pageSize: listRes.pagination.limit ,
+                      };
+                  } catch (error: unknown) {
+                      console.error("API Error:", error);
+                      setLoading(false);
+                      throw error;
+                  }
+              },
+              []
+          );
 
-
-  useEffect(() => {
-    fetchDiscountType();
-  }, []);
+//   useEffect(() => {
+//     fetchDiscountType();
+//   }, []);
    const handleConfirmDelete = async () => {
       if (!selectedRow) return;
   
@@ -118,7 +143,7 @@ export default function DiscountType() {
     await deleteDiscountType(String(selectedRow.id)); // call API
         
         showSnackbar("Discount Type deleted successfully ", "success"); 
-        await fetchDiscountType();
+        // await fetchDiscountType();
 
     // ✅ Update state immediately without full refresh
     setDiscountType((prev) => prev.filter((c) => String(c.id) !== String(selectedRow.id)));
@@ -132,7 +157,7 @@ export default function DiscountType() {
       }
     };
 
-    if (loading) return <Loading />;
+
 
     return (
         <>
@@ -182,9 +207,13 @@ export default function DiscountType() {
             {/* Table */}
             <div className="h-[calc(100%-60px)]">
                 <Table
-                    data={tableData}
+                    
                     config={{
+                        api:{
+                            list: fetchCustomerType,
+                        },
                         header: {
+
                             searchBar: true,
                             columnFilter: true,
                             actions: [
@@ -222,7 +251,7 @@ export default function DiscountType() {
                             },
                         },
                         ],
-                        pageSize: 10,
+                        pageSize: 2,
                     }}
                 />
             </div>
