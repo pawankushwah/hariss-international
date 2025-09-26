@@ -366,18 +366,18 @@ export const deleteRoute = async (id:string) => {
   }
 };
 
-export const warehouseListGlobalSearch = async (params: Params) => {
+export const warehouseListGlobalSearch = async (params?: Params) => {
   try{
-    const res = await API.get(`/api/master/warehouse/global_search`, {params})
+    const res = await API.get(`/api/master/warehouse/global_search`, {params: params})
     return res.data;
   }catch (error: unknown){
     return handleError(error)
   }
 }
 
-export const warehouseList = async () => {
+export const warehouseList = async (params?: Params) => {
   try {
-    const res = await API.get("/api/master/warehouse/list");
+    const res = await API.get("/api/master/warehouse/list", {params: params});
 
     return res.data;
   } catch (error: unknown) {
@@ -594,9 +594,9 @@ export const itemSubCategory = async () => {
   }
 };
 
-export const channelList = async () => {
+export const channelList = async (params?: Params) => {
   try {
-  const res = await API.get("/api/settings/outlet-channels/list");
+  const res = await API.get("/api/settings/outlet-channels/list", {params: params});
 
     return res.data;
   } catch (error: unknown) {

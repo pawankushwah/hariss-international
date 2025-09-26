@@ -129,6 +129,7 @@ const CompanyPage = () => {
     [showSnackbar, setLoading]
   );
 
+  
   const searchCompanies = useCallback(
   async (
     searchQuery: string,
