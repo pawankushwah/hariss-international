@@ -148,7 +148,7 @@ export default function Category() {
                                     />,
                                 ],
                             },
-                            pageSize: 5,
+                            pageSize: 10,
                             footer: { nextPrevBtn: true, pagination: true },
                             columns,
                             rowSelection: true,

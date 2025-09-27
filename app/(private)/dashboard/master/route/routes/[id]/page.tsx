@@ -222,9 +222,9 @@ required
                                     label="Route Type"
                                     name="route_type"
                                     value={routeType}
-                                    onChange={handleRouteTypeChange}
+                                    onChange={(e)=>e.target.value}
                                     options={routeTypeOptions}
-                                    isSingle={false}
+                                    
                                   />
                 {errors.route_type && (
                   <p className="text-red-500 text-sm mt-1">{errors.route_type}</p>

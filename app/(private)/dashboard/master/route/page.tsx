@@ -21,11 +21,11 @@ const columns = [
         label: "Route Code",
         render: (data: TableDataType) => (
             <span className="font-semibold text-[#181D27] text-[14px]">
-                {data.route_code}
+                {data.route_code ? data.route_code : "-"}
             </span>
         ),
     },
-    { key: "route_name", label: "Route Name", isSortable: true },
+    { key: "route_name", label: "Route Name", isSortable: true, render: (data: TableDataType) => data.route_name ? data.route_name : "-" },
     {
         key: "route_Type",
         label: "Route Type",
@@ -76,15 +76,15 @@ const columns = [
         key: "status",
         label: "Status",
         render: (row: TableDataType) => (
-            <StatusBtn isActive={row.status.toString() === "1" ? true : false} />
+            <StatusBtn isActive={row.status && row.status.toString() === "1" ? true : false} />
         ),
     },
 ];
 
 const dropdownDataList = [
-    { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
-    { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
-    { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
+    // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
+    // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
+    // { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
     { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
     { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];

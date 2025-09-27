@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Table, { listReturnType, searchReturnType, TableDataType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
-import { customerCategoryList, deleteCustomerCategory, channelList, customerCategoryListGlobalSearch } from "@/app/services/allApi";
+import { customerCategoryList, deleteCustomerCategory, customerCategoryListGlobalSearch, customerCategoryGlobalSearch } from "@/app/services/allApi";
 import BorderIconButton from "@/app/components/borderIconButton";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import CustomDropdown from "@/app/components/customDropdown";
 import StatusBtn from "@/app/components/statusBtn2";
 import { useLoading } from "@/app/services/loadingContext";
-import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
 // ✅ API types
 interface OutletChannel {
@@ -89,6 +88,29 @@ export default function CustomerCategoryPage() {
       }
   };
 
+     const searchCustomerCategory = useCallback(
+          async (
+              searchQuery: string,
+              pageSize: number
+          ): Promise<searchReturnType> => {
+              setLoading(true);
+              const result = await customerCategoryGlobalSearch({
+                  query: searchQuery,
+                  per_page: pageSize.toString(),
+              });
+              setLoading(false);
+              if (result.error) throw new Error(result.data.message);
+              else {
+                  return {
+                      data: result.data || [],
+                      total: result.pagination.pagination.totalPages || 0,
+                      currentPage: result.pagination.pagination.current_page || 0,
+                      pageSize: result.pagination.pagination.limit || pageSize,
+                  };
+              }
+          },
+          []
+      );
   // ✅ Delete handler
   const handleDelete = async () => {
     if (!selectedCategory?.id) return;

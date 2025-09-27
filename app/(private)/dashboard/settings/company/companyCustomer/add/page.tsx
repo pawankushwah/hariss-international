@@ -35,7 +35,7 @@ interface CompanyCustomerPayload {
   region_id: number;
   area_id: number;
   balance: number;
-  payment_type: number;
+  payment_type: string;
   bank_name: string;
   bank_account_number: string;
   creditday: string;
@@ -220,7 +220,7 @@ export default function AddCompanyCustomer() {
     region: "",
     area: "",
     balance: "",
-    paymentType: "1",
+    paymentType: "",
     bankName: "",
     bankAccountNumber: "",
     creditDay: "",
@@ -299,7 +299,7 @@ export default function AddCompanyCustomer() {
         region_id: Number(values.region),
         area_id: Number(values.area),
         balance: Number(values.balance),
-        payment_type: Number(values.paymentType),
+        payment_type: values.paymentType,
         bank_name: values.bankName,
         bank_account_number: values.bankAccountNumber,
         creditday: String(values.creditDay),

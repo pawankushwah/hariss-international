@@ -14,8 +14,8 @@ import Table, {
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import {
     companyList,
-    deleteCompany,
     companyListGlobalSearch,
+    deleteCompany,
 } from "@/app/services/allApi";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
