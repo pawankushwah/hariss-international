@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
-
+import StatusBtn from "@/app/components/statusBtn2";
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
 import Table, {
@@ -40,6 +40,13 @@ const columns = [
     { key: "country_code", label: "Country Code" },
     { key: "country_name", label: "Country Name" },
     { key: "currency", label: "Currency" },
+    {
+            key: "status",
+            label: "Status",
+            render: (row: TableDataType) => (
+                <StatusBtn isActive={row.status === "Active" ? true : false} />
+            ),
+        },
 ];
 
 export default function Country() {

@@ -21,29 +21,35 @@ const columns = [
         label: "Route Code",
         render: (data: TableDataType) => (
             <span className="font-semibold text-[#181D27] text-[14px]">
-                {data.route_code}
+                {data.route_code ? data.route_code : "-"}
             </span>
         ),
     },
-    { key: "route_name", label: "Route Name", isSortable: true },
+    { key: "route_name", label: "Route Name", isSortable: true, render: (data: TableDataType) => data.route_name ? data.route_name : "-" },
     {
         key: "route_Type",
         label: "Route Type",
-        render: (data: TableDataType) => JSON.parse(JSON.stringify(data.route_Type))?.route_type_name,
+        render: (data: TableDataType) => {
+            const typeObj = JSON.parse(JSON.stringify(data.route_Type));
+            return typeObj?.route_type_name ? typeObj.route_type_name : "-";
+        },
         filter: {
             isFilterable: true,
             render: (data: TableDataType[]) => (
                 <>
-                    {data.map((row, index) => (
-                        <div
-                            key={index}
-                            className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
-                        >
-                            <span className="font-[500] text-[#181D27]">
-                                {JSON.parse(JSON.stringify(row.route_Type))?.route_type_name}
-                            </span>
-                        </div>
-                    ))}
+                    {data.map((row, index) => {
+                        const typeObj = JSON.parse(JSON.stringify(row.route_Type));
+                        return (
+                            <div
+                                key={index}
+                                className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
+                            >
+                                <span className="font-[500] text-[#181D27]">
+                                    {typeObj?.route_type_name ? typeObj.route_type_name : "-"}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </>
             ),
         },
@@ -53,21 +59,31 @@ const columns = [
         key: "warehouse",
         label: "Warehouse",
         width: 218,
-        render: (data: TableDataType) => JSON.parse(JSON.stringify(data.warehouse))?.warehouse_name,
+        render: (data: TableDataType) => {
+            const warehouseObj = typeof data.warehouse === "string"
+                ? JSON.parse(data.warehouse)
+                : data.warehouse;
+            return warehouseObj?.warehouse_name ? warehouseObj.warehouse_name : "-";
+        },
         filter: {
             isFilterable: true,
             render: (data: TableDataType[]) => (
                 <>
-                    {data.map((row, index) => (
-                        <div
-                            key={index}
-                            className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
-                        >
-                            <span className="font-[500] text-[#181D27]">
-                                {JSON.parse(JSON.stringify(row.warehouse))?.warehouse_name}
-                            </span>
-                        </div>
-                    ))}
+                    {data.map((row, index) => {
+                        const warehouseObj = typeof row.warehouse === "string"
+                            ? JSON.parse(row.warehouse)
+                            : row.warehouse;
+                        return (
+                            <div
+                                key={index}
+                                className="flex items-center gap-[8px] px-[14px] py-[10px] hover:bg-[#FAFAFA] text-[14px]"
+                            >
+                                <span className="font-[500] text-[#181D27]">
+                                    {warehouseObj?.warehouse_name ? warehouseObj.warehouse_name : "-"}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </>
             ),
         },
@@ -76,15 +92,15 @@ const columns = [
         key: "status",
         label: "Status",
         render: (row: TableDataType) => (
-            <StatusBtn isActive={row.status.toString() === "1" ? true : false} />
+            <StatusBtn isActive={row.status && row.status.toString() === "1" ? true : false} />
         ),
     },
 ];
 
 const dropdownDataList = [
-    { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
-    { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
-    { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
+    // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
+    // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
+    // { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
     { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
     { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];

@@ -58,9 +58,9 @@ const columns = [
 ];
 
 const dropdownDataList = [
-    { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
-    { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
-    { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
+    // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
+    // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
+    // { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
     { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
     { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
@@ -161,48 +161,7 @@ export default function DiscountType() {
 
     return (
         <>
-            {/* header */}
-            <div className="flex justify-between items-center mb-[20px]">
-                <h1 className="text-[20px] font-semibold text-[#181D27] h-[30px] flex items-center leading-[30px] mb-[1px]">
-                    Discount Type
-                </h1>
-
-                {/* top bar action buttons */}
-                <div className="flex gap-[12px] relative">
-                    <BorderIconButton
-                        icon="gala:file-document"
-                        label="Export CSV"
-                        labelTw="text-[12px] hidden sm:block"
-                    />
-                    <BorderIconButton icon="mage:upload" />
-                    <BorderIconButton
-                        icon="ic:sharp-more-vert"
-                        onClick={() => setShowDropdown(!showDropdown)}
-                    />
-
-                    {showDropdown && (
-                        <div className="w-[226px] absolute top-[40px] right-0 z-30">
-                            <CustomDropdown>
-                                {dropdownDataList.map((link, index: number) => (
-                                    <div
-                                        key={index}
-                                        className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
-                                    >
-                                        <Icon
-                                            icon={link.icon}
-                                            width={link.iconWidth}
-                                            className="text-[#717680]"
-                                        />
-                                        <span className="text-[#181D27] font-[500] text-[16px]">
-                                            {link.label}
-                                        </span>
-                                    </div>
-                                ))}
-                            </CustomDropdown>
-                        </div>
-                    )}
-                </div>
-            </div>
+            
 
             {/* Table */}
             <div className="h-[calc(100%-60px)]">
@@ -213,7 +172,48 @@ export default function DiscountType() {
                             list: fetchCustomerType,
                         },
                         header: {
-
+                            title: "Discount Type",
+                                          wholeTableActions: [
+                                            <div key={0} className="flex gap-[12px] relative">
+                                              <BorderIconButton
+                                                icon="ic:sharp-more-vert"
+                                                onClick={() =>
+                                                  setShowDropdown(!showDropdown)
+                                                }
+                                              />
+                            
+                                              {showDropdown && (
+                                                <div className="w-[226px] absolute top-[40px] right-0 z-30">
+                                                  <CustomDropdown>
+                                                    {dropdownDataList.map(
+                                                      (
+                                                        link,
+                                                        index: number
+                                                      ) => (
+                                                        <div
+                                                          key={index}
+                                                          className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
+                                                        >
+                                                          <Icon
+                                                            icon={
+                                                              link.icon
+                                                            }
+                                                            width={
+                                                              link.iconWidth
+                                                            }
+                                                            className="text-[#717680]"
+                                                          />
+                                                          <span className="text-[#181D27] font-[500] text-[16px]">
+                                                            {link.label}
+                                                          </span>
+                                                        </div>
+                                                      )
+                                                    )}
+                                                  </CustomDropdown>
+                                                </div>
+                                              )}
+                                            </div>
+                                          ],
                             searchBar: true,
                             columnFilter: true,
                             actions: [

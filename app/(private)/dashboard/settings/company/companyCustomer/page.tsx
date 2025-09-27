@@ -24,7 +24,7 @@ interface CustomerItem {
   customer_type: string;
   owner_name: string;
   owner_no: string;
- 
+
   whatsapp_no: string;
   email: string;
   language: string;
@@ -61,9 +61,9 @@ interface CustomerItem {
 }
 
 const dropdownDataList = [
-  { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
-  { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
-  { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
+  // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
+  // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
+  // { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
   { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
@@ -79,20 +79,20 @@ export default function CompanyCustomers() {
   const { showSnackbar } = useSnackbar();
 
   // Fetch customers
-useEffect(() => {
-  const fetchCompanyCustomers = async () => {
-    try {
-      const data = await getCompanyCustomers();
-      const customersData = Array.isArray(data) ? data : [data]; // Wrap single object
-      setCustomers(customersData);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchCompanyCustomers();
-}, []); // 🔴 Use empty dependency array, NOT showSnackbar
+  useEffect(() => {
+    const fetchCompanyCustomers = async () => {
+      try {
+        const data = await getCompanyCustomers();
+        const customersData = Array.isArray(data) ? data : [data]; // Wrap single object
+        setCustomers(customersData);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCompanyCustomers();
+  }, []); // 🔴 Use empty dependency array, NOT showSnackbar
 
   // Map all fields into TableDataType (convert numbers to strings)
   const tableData: TableDataType[] = customers.map((c) => ({
@@ -100,10 +100,10 @@ useEffect(() => {
     sap_code: c.sap_code,
     customer_code: c.customer_code,
     business_name: c.business_name,
-  
+
     owner_name: c.owner_name,
     owner_no: c.owner_no,
-   
+
     whatsapp_no: c.whatsapp_no,
     email: c.email,
     language: c.language,
@@ -138,68 +138,31 @@ useEffect(() => {
     updated_at: c.updated_at,
   }));
   // Delete handler
-const handleConfirmDelete = async () => {
-  if (!selectedRow) return;
+  const handleConfirmDelete = async () => {
+    if (!selectedRow) return;
 
-  // Optimistically remove row first
-  setCustomers((prev) => prev.filter((c) => c.id !== selectedRow.id));
-  setShowDeletePopup(false);
+    // Optimistically remove row first
+    setCustomers((prev) => prev.filter((c) => c.id !== selectedRow.id));
+    setShowDeletePopup(false);
 
-  try {
-    await deleteCompanyCustomer(selectedRow.id.toString());
-    showSnackbar("Customer deleted successfully ✅", "success");
-  } catch (error) {
-    // If API fails, re-add the row
-    setCustomers((prev) => [...prev, selectedRow]);
-    showSnackbar("Failed to delete Customer ❌", "error");
-  } finally {
-    setSelectedRow(null);
-  }
-};
+    try {
+      await deleteCompanyCustomer(selectedRow.id.toString());
+      showSnackbar("Customer deleted successfully ✅", "success");
+    } catch (error) {
+      // If API fails, re-add the row
+      setCustomers((prev) => [...prev, selectedRow]);
+      showSnackbar("Failed to delete Customer ❌", "error");
+    } finally {
+      setSelectedRow(null);
+    }
+  };
 
 
   if (loading) return <Loading />;
 
   return (
     <>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-[20px]">
-        <h1 className="text-[20px] font-semibold text-[#181D27]">
-          Company Customer
-        </h1>
 
-        <div className="flex gap-[12px] relative">
-          <BorderIconButton icon="gala:file-document" label="Export CSV" />
-          <BorderIconButton icon="mage:upload" />
-
-          <DismissibleDropdown
-            isOpen={showDropdown}
-            setIsOpen={setShowDropdown}
-            button={<BorderIconButton icon="ic:sharp-more-vert" />}
-            dropdown={
-              <div className="absolute top-[40px] right-0 z-30 w-[226px]">
-                <CustomDropdown>
-                  {dropdownDataList.map((link, idx) => (
-                    <div
-                      key={idx}
-                      className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
-                    >
-                      <Icon
-                        icon={link.icon}
-                        width={link.iconWidth}
-                        className="text-[#717680]"
-                      />
-                      <span className="text-[#181D27] font-[500] text-[16px]">
-                        {link.label}
-                      </span>
-                    </div>
-                  ))}
-                </CustomDropdown>
-              </div>
-            }
-          />
-        </div>
-      </div>
 
       {/* Table */}
       <div className="h-[calc(100%-60px)]">
@@ -207,6 +170,48 @@ const handleConfirmDelete = async () => {
           data={tableData}
           config={{
             header: {
+              title: "Company Customer",
+              wholeTableActions: [
+                <div key={0} className="flex gap-[12px] relative">
+                  <BorderIconButton
+                    icon="ic:sharp-more-vert"
+                    onClick={() =>
+                      setShowDropdown(!showDropdown)
+                    }
+                  />
+
+                  {showDropdown && (
+                    <div className="w-[226px] absolute top-[40px] right-0 z-30">
+                      <CustomDropdown>
+                        {dropdownDataList.map(
+                          (
+                            link,
+                            index: number
+                          ) => (
+                            <div
+                              key={index}
+                              className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
+                            >
+                              <Icon
+                                icon={
+                                  link.icon
+                                }
+                                width={
+                                  link.iconWidth
+                                }
+                                className="text-[#717680]"
+                              />
+                              <span className="text-[#181D27] font-[500] text-[16px]">
+                                {link.label}
+                              </span>
+                            </div>
+                          )
+                        )}
+                      </CustomDropdown>
+                    </div>
+                  )}
+                </div>
+              ],
               searchBar: true,
               columnFilter: true,
               actions: [
@@ -227,16 +232,15 @@ const handleConfirmDelete = async () => {
               render:
                 key === "status"
                   ? (row: TableDataType) => (
-                      <span
-                        className={`text-sm p-1 px-4 rounded-xl text-[12px] font-[500] ${
-                          row.status === "Active"
-                            ? "text-[#027A48] bg-[#ECFDF3]"
-                            : "text-red-700 bg-red-200"
+                    <span
+                      className={`text-sm p-1 px-4 rounded-xl text-[12px] font-[500] ${row.status === "Active"
+                          ? "text-[#027A48] bg-[#ECFDF3]"
+                          : "text-red-700 bg-red-200"
                         }`}
-                      >
-                        {row.status}
-                      </span>
-                    )
+                    >
+                      {row.status}
+                    </span>
+                  )
                   : undefined,
             })),
             rowSelection: true,

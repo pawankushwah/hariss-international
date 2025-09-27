@@ -25,7 +25,6 @@ interface Company {
   tin_number?: string;
   vat?: string;
   country?: {
-    
     country_name?: string;
     selling_currency?: string;
     purchase_currency?: string;
@@ -50,9 +49,9 @@ interface Company {
 
 // 🔹 Dropdown menu data
 const dropdownDataList = [
-  { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
-  { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
-  { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
+  // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
+  // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
+  // { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
   { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
@@ -70,13 +69,23 @@ const columns = [
   {
     key: 'region_name',
     label: 'Region',
-    render: (row: TableDataType) => row.region_name ,
+    render: (data: TableDataType) => {
+            const warehouseObj = typeof data.region === "string"
+                ? JSON.parse(data.region)
+                : data.region;
+            return warehouseObj?.region_name || "-";
+        },
   },
   // { key: "subregion_name", label: "Sub Region" },
   {
     key: 'subregion_name',
     label: 'Sub Region',
-    render: (row: TableDataType) => row.subregion_name ,
+    render: (row: TableDataType) => {
+            const warehouseObj = typeof row.sub_region === "string"
+                ? JSON.parse(row.sub_region)
+                : row.sub_region;
+            return warehouseObj?.subregion_name || "-";
+        } ,
   },
   { key: "street", label: "Street" },
   { key: "landmark", label: "Landmark" },
@@ -86,7 +95,20 @@ const columns = [
   {
     key: 'country_name',
     label: 'Country',
-    render: (row: TableDataType) => row.country_name ,
+    render: (row: TableDataType) => {
+      if (
+        row.country &&
+        typeof row.country === "object" &&
+        "country_name" in row.country &&
+        typeof (row.country as { country_name?: string }).country_name === "string"
+      ) {
+        return (row.country as { country_name?: string }).country_name || "-";
+      }
+      if (typeof row.country_name === "string") {
+        return row.country_name || "-";
+      }
+      return "-";
+    },
   },
   { key: "tin_number", label: "TIN Number" },
   { key: "purchase_currency", label: "Purchase Currency" },
@@ -186,42 +208,7 @@ const CompanyPage = () => {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-[20px]">
-        <h1 className="text-[20px] font-semibold text-[#181D27]">Company</h1>
-
-        <div className="flex gap-[12px] relative">
-          <BorderIconButton icon="gala:file-document" label="Export CSV" />
-          <BorderIconButton icon="mage:upload" />
-
-          <DismissibleDropdown
-            isOpen={showDropdown}
-            setIsOpen={setShowDropdown}
-            button={<BorderIconButton icon="ic:sharp-more-vert" />}
-            dropdown={
-              <div className="absolute top-[40px] right-0 z-30 w-[226px]">
-                <CustomDropdown>
-                  {dropdownDataList.map((link, idx) => (
-                    <div
-                      key={idx}
-                      className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
-                    >
-                      <Icon
-                        icon={link.icon}
-                        width={link.iconWidth}
-                        className="text-[#717680]"
-                      />
-                      <span className="text-[#181D27] font-[500] text-[16px]">
-                        {link.label}
-                      </span>
-                    </div>
-                  ))}
-                </CustomDropdown>
-              </div>
-            }
-          />
-        </div>
-      </div>
+     
 
       {/* Table */}
       <div className="h-[calc(100%-60px)]">
@@ -232,6 +219,48 @@ const CompanyPage = () => {
               list: fetchCompanies,
             },
             header: {
+              title: "Company",
+              wholeTableActions: [
+                                                  <div key={0} className="flex gap-[12px] relative">
+                                                      <BorderIconButton
+                                                          icon="ic:sharp-more-vert"
+                                                          onClick={() =>
+                                                              setShowDropdown(!showDropdown)
+                                                          }
+                                                      />
+              
+                                                      {showDropdown && (
+                                                          <div className="w-[226px] absolute top-[40px] right-0 z-30">
+                                                              <CustomDropdown>
+                                                                  {dropdownDataList.map(
+                                                                      (
+                                                                          link,
+                                                                          index: number
+                                                                      ) => (
+                                                                          <div
+                                                                              key={index}
+                                                                              className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
+                                                                          >
+                                                                              <Icon
+                                                                                  icon={
+                                                                                      link.icon
+                                                                                  }
+                                                                                  width={
+                                                                                      link.iconWidth
+                                                                                  }
+                                                                                  className="text-[#717680]"
+                                                                              />
+                                                                              <span className="text-[#181D27] font-[500] text-[16px]">
+                                                                                  {link.label}
+                                                                              </span>
+                                                                          </div>
+                                                                      )
+                                                                  )}
+                                                              </CustomDropdown>
+                                                          </div>
+                                                      )}
+                                                  </div>
+                                              ],
               searchBar: true,
               columnFilter: true,
               actions: [

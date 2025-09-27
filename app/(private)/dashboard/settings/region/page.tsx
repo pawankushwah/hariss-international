@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect ,useCallback} from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import CustomDropdown from "@/app/components/customDropdown";
 import BorderIconButton from "@/app/components/borderIconButton";
-import Table, { TableDataType,listReturnType,searchReturnType } from "@/app/components/customTable";
+import Table, { TableDataType, listReturnType, searchReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { regionList, deleteRegion,regionGlobalSearch } from "@/app/services/allApi";
+import { regionList, deleteRegion, regionGlobalSearch } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
@@ -21,9 +21,9 @@ interface RegionItem {
 }
 
 const dropdownDataList = [
-  { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
-  { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
-  { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
+  // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
+  // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
+  // { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
   { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
@@ -60,136 +60,142 @@ export default function Region() {
 
 
 
-   const fetchRegions = useCallback(
-          async (
-              page: number = 1,
-              pageSize: number = 5
-          ): Promise<listReturnType> => {
-              try {
-                setLoading(true);
-                  const listRes = await regionList({
-                      limit: pageSize.toString(),
-                      page: page.toString(),
-                  });
-                  setLoading(false);
-                  return {
-                      data: listRes.data || [],
-                      total: listRes.pagination.totalPages ,
-                      currentPage: listRes.pagination.page ,
-                      pageSize: listRes.pagination.limit ,
-                  };
-              } catch (error: unknown) {
-                  console.error("API Error:", error);
-                  setLoading(false);
-                  throw error;
-              }
-          },
-          []
-      );
-   
-      const searchRegions = useCallback(
-          async (
-              searchQuery: string,
-              pageSize: number
-          ): Promise<searchReturnType> => {
-              setLoading(true);
-              const result = await regionGlobalSearch({
-                  query: searchQuery,
-                  per_page: pageSize.toString(),
-              });
-              setLoading(false);
-              if (result.error) throw new Error(result.data.message);
-              else {
-                  return {
-                      data: result.data || [],
-                      total: result.pagination.pagination.totalPages || 0,
-                      currentPage: result.pagination.pagination.current_page || 0,
-                      pageSize: result.pagination.pagination.limit || pageSize,
-                  };
-              }
-          },
-          []
-      );
+  const fetchRegions = useCallback(
+    async (
+      page: number = 1,
+      pageSize: number = 5
+    ): Promise<listReturnType> => {
+      try {
+        setLoading(true);
+        const listRes = await regionList({
+          limit: pageSize.toString(),
+          page: page.toString(),
+        });
+        setLoading(false);
+        return {
+          data: listRes.data || [],
+          total: listRes.pagination.totalPages,
+          currentPage: listRes.pagination.page,
+          pageSize: listRes.pagination.limit,
+        };
+      } catch (error: unknown) {
+        console.error("API Error:", error);
+        setLoading(false);
+        throw error;
+      }
+    },
+    []
+  );
 
- const handleConfirmDelete = async () => {
-  if (!selectedRow?.id) return;
+  const searchRegions = useCallback(
+    async (
+      searchQuery: string,
+      pageSize: number
+    ): Promise<searchReturnType> => {
+      setLoading(true);
+      const result = await regionGlobalSearch({
+        query: searchQuery,
+        per_page: pageSize.toString(),
+      });
+      setLoading(false);
+      if (result.error) throw new Error(result.data.message);
+      else {
+        return {
+          data: result.data || [],
+          total: result.pagination.pagination.totalPages || 0,
+          currentPage: result.pagination.pagination.current_page || 0,
+          pageSize: result.pagination.pagination.limit || pageSize,
+        };
+      }
+    },
+    []
+  );
 
-  const res = await deleteRegion(String(selectedRow.id));
-  if(res.error) {
-    showSnackbar(res.data.message || "Failed to delete Region","error");
-  } else {
-    showSnackbar(res.message || "Region deleted successfully", "success");
-    setLoading(false);
-  }
-  setShowDeletePopup(false);
-};
+  const handleConfirmDelete = async () => {
+    if (!selectedRow?.id) return;
 
-       useEffect(() => {
+    const res = await deleteRegion(String(selectedRow.id));
+    if (res.error) {
+      showSnackbar(res.data.message || "Failed to delete Region", "error");
+    } else {
+      showSnackbar(res.message || "Region deleted successfully", "success");
+      setLoading(false);
+    }
+    setShowDeletePopup(false);
+  };
+
+  useEffect(() => {
     setLoading(true);
   }, []);
 
 
   return (
     <>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="text-[20px] font-semibold text-[#181D27]">Region</h1>
-      <div className="flex gap-[12px] relative">
-                <BorderIconButton icon="gala:file-document" label="Export CSV" />
-                <BorderIconButton icon="mage:upload" />
-      
-                <DismissibleDropdown
-                  isOpen={showDropdown}
-                  setIsOpen={setShowDropdown}
-                  button={<BorderIconButton icon="ic:sharp-more-vert" />}
-                  dropdown={
-                    <div className="absolute top-[40px] right-0 z-30 w-[226px]">
-                      <CustomDropdown>
-                        {dropdownDataList.map((link, idx) => (
-                          <div
-                            key={idx}
-                            className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
-                          >
-                            <Icon
-                              icon={link.icon}
-                              width={link.iconWidth}
-                              className="text-[#717680]"
-                            />
-                            <span className="text-[#181D27] font-[500] text-[16px]">
-                              {link.label}
-                            </span>
-                          </div>
-                        ))}
-                      </CustomDropdown>
-                    </div>
-                  }
-                />
-              </div>
-      </div>
 
-      {/* Table */}
+
       <div className="h-[calc(100%-60px)]">
         <Table
-          // data={tableData}
           config={{
-            api:{
-                            list: fetchRegions,
-                            search: searchRegions,
+            api: {
+              list: fetchRegions,
+              search: searchRegions,
             },
             header: {
-                         searchBar: true,
-                         columnFilter: true,
-                         actions: [
-                           <SidebarBtn
-                             key="add-region"
-                             href="/dashboard/settings/region/add"
-                             leadingIcon="lucide:plus"
-                             label="Add Region"
-                             labelTw="hidden sm:block"
-                             isActive
-                           />,
-                         ],
-                       },
+              title: "Region",
+              wholeTableActions: [
+                <div key={0} className="flex gap-[12px] relative">
+                  <BorderIconButton
+                    icon="ic:sharp-more-vert"
+                    onClick={() =>
+                      setShowDropdown(!showDropdown)
+                    }
+                  />
+
+                  {showDropdown && (
+                    <div className="w-[226px] absolute top-[40px] right-0 z-30">
+                      <CustomDropdown>
+                        {dropdownDataList.map(
+                          (
+                            link,
+                            index: number
+                          ) => (
+                            <div
+                              key={index}
+                              className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
+                            >
+                              <Icon
+                                icon={
+                                  link.icon
+                                }
+                                width={
+                                  link.iconWidth
+                                }
+                                className="text-[#717680]"
+                              />
+                              <span className="text-[#181D27] font-[500] text-[16px]">
+                                {link.label}
+                              </span>
+                            </div>
+                          )
+                        )}
+                      </CustomDropdown>
+                    </div>
+                  )}
+                </div>
+              ],
+              searchBar: true,
+              columnFilter: true,
+              actions: [
+                <SidebarBtn
+                  key="add-region"
+                  href="/dashboard/settings/region/add"
+                  leadingIcon="lucide:plus"
+                  label="Add Region"
+                  labelTw="hidden sm:block"
+                  isActive
+                />,
+              ],
+            },
             footer: { nextPrevBtn: true, pagination: true },
             columns: [
               { key: "region_code", label: "Region Code" },
