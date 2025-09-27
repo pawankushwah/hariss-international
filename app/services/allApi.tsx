@@ -1406,3 +1406,117 @@ export const addCustomerSubCategory = async (body:object) => {
     return handleError(error);
   }
 };
+export const planogramList = async () => {
+  try {
+              const res = await API.get("/api/merchendisher/planogram/list");
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const deletePlanogram = async (id:string) => {
+  try {
+              const res = await API.delete(`/api/merchendisher/planogram/delete/${id}`);
+    return res.data;
+  } catch (error: unknown) {  
+    return handleError(error);
+  }
+};
+
+type Payloadplanogram = {
+  name: string;
+  valid_from: string;
+  valid_to: string;
+  status: number;
+};
+export const addPlanogram = async (payload: Payloadplanogram) => {
+  try {
+    const res = await API.post("/api/merchendisher/planogram/create", payload);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+type updatePayload = {
+  name: string;
+  valid_from: string;
+  valid_to: string;
+  status: number;
+};
+
+export const updatePlanogram = async (id: string, payload: updatePayload) => {
+  try {
+    // ✅ Send payload directly
+    const res = await API.put(`/api/merchendisher/planogram/update/${id}`, payload);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const getPlanogramById = async (id:string) => {
+  try {
+              const res = await API.get(`/api/merchendisher/planogram/show/${id}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const SurveyList = async () => {
+  try {
+              const res = await API.get("/api/merchendisher/survey/list");
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const deleteSurvey = async (id:string) => {
+  try {
+              const res = await API.delete(`/api/merchendisher/survey/${id}`);  
+    return res.data;
+  } catch (error: unknown) {  
+    return handleError(error);
+  }
+};
+type PayloadSurvey= {
+  survey_code: string;
+  survey_name: string;
+  start_date: string;
+  end_date: string;
+  status: number;
+};
+export const addSurvey = async (payload: PayloadSurvey) => {
+  try {
+    const res = await API.post("/api/merchendisher/survey/add", payload);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+}
+
+
+type updateSurvey = {
+  survey_code: string;
+  survey_name: string;
+  start_date: string;
+  end_date: string;
+  status: number;
+};
+
+export const updateSurvey = async (id: string, payload: updateSurvey) => {
+  try {
+    // ✅ Send payload directly
+    const res = await API.put(`/api/merchendisher/survey/${id}`, payload);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const getSurveyById = async (id:string) => {
+  try {
+              const res = await API.get(`/api/merchendisher/survey/${id}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};

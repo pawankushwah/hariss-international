@@ -236,7 +236,6 @@ export default function AddCompanyCustomer() {
     dChannelId: "",
     status: "1",
   };
-
   const handleNext = async (
     values: CompanyCustomerFormValues,
     actions: FormikHelpers<CompanyCustomerFormValues>
