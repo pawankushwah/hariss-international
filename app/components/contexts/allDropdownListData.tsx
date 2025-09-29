@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import SalesmanType from '../../(private)/dashboard/settings/salesman-type/add/page';
 import {
   companyList,
   countryList,
@@ -14,7 +15,8 @@ import {
   itemSubCategory,
   channelList,
   userTypes,
-  getCustomerType
+  getCustomerType,
+  salesmanTypeList,
 } from '@/app/services/allApi';
 
 interface DropdownDataContextType {
@@ -32,6 +34,7 @@ interface DropdownDataContextType {
   channelList: ChannelItem[];
   customerType: CustomerType[];
   userTypes: UserTypeItem[];
+  salesmanType: SalesmanType[];
   // mapped dropdown options
   companyOptions: { value: string; label: string }[];
   countryOptions: { value: string; label: string }[];
@@ -49,6 +52,7 @@ interface DropdownDataContextType {
   channelOptions: { value: string; label: string }[];
   customerTypeOptions: { value: string; label: string }[];
   userTypeOptions: { value: string; label: string }[];
+  salesmanTypeOptions: { value: string; label: string }[];
   refreshDropdowns: () => Promise<void>;
   loading: boolean;
 }
@@ -136,6 +140,12 @@ interface UserTypeItem {
   name?: string;
 }
 
+interface SalesmanType {
+  id?: number | string;
+  salesman_type_code?: string;
+  salesman_type_name?: string;
+}
+
 const AllDropdownListDataContext = createContext<DropdownDataContextType | undefined>(undefined);
 
 export const useAllDropdownListData = () => {
@@ -162,6 +172,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
   const [channelListData, setChannelListData] = useState<ChannelItem[]>([]);
   const [customerTypeData, setCustomerTypeData] = useState<CustomerType[]>([]);
   const [userTypesData, setUserTypesData] = useState<UserTypeItem[]>([]);
+  const [salesmanTypesData, setSalesmanTypesData] = useState<SalesmanType[]>([]);
   const [loading, setLoading] = useState(false);
 
   // mapped dropdown options (explicit typed mappings)
@@ -243,6 +254,12 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
     label: c.code && c.name ? `${c.code} - ${c.name}` : (c.name ?? '')
   }));
 
+  const salesmanTypeOptions = (Array.isArray(salesmanTypesData) ? salesmanTypesData : []).map((c: SalesmanType) => ({
+    value: String(c.id ?? ''),
+    label: c.salesman_type_code && c.salesman_type_name ? `${c.salesman_type_code} - ${c.salesman_type_name}` : (c.salesman_type_name ?? '')
+  }));
+  console.log("jfghdbsidflghsndiflgsf",salesmanTypeOptions)
+
 
 
   const refreshDropdowns = async () => {
@@ -263,6 +280,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         channelList(),
         getCustomerType(),
         userTypes(),
+        salesmanTypeList({}),
       ]);
 
       // normalize: accept unknown response and extract array of items from `.data` when present
@@ -289,6 +307,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
       setChannelListData(normalize(res[11]) as ChannelItem[]);
       setCustomerTypeData(normalize(res[12]) as CustomerType[]);
       setUserTypesData(normalize(res[13]) as UserTypeItem[]);
+      setSalesmanTypesData(normalize(res[14]) as SalesmanType[]);
     } catch (error) {
       console.error('Error loading dropdown data:', error);
       // on error clear to empty arrays
@@ -306,6 +325,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
       setChannelListData([]);
       setCustomerTypeData([]);
       setUserTypesData([]);
+      setSalesmanTypesData([]);
     } finally {
       setLoading(false);
     }
@@ -334,6 +354,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         channelList: Array.isArray(channelListData) ? channelListData : [],
         customerType: customerTypeData,
         userTypes: userTypesData,
+        salesmanType: salesmanTypesData,
         companyOptions,
         countryOptions,
         onlyCountryOptions,
@@ -350,6 +371,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         channelOptions,
         customerTypeOptions,
         userTypeOptions,
+        salesmanTypeOptions,
         refreshDropdowns,
         loading
       }}

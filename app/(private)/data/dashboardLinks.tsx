@@ -47,14 +47,28 @@ export const initialLinkData: SidebarDataType[] = [
                 iconColor: "text-yellow-400",
                 children: [ 
                    
-                    // {
-                    //     isActive: false,
-                    //     href: "/dashboard/master/customer",
-                    //     label: "Customer",
-                    //     leadingIcon: "lucide:user",
-                    //     iconColor: "text-green-500"
-                    // },
-            //         {
+                    {
+                        isActive: false,
+                        href: "/dashboard/master/company",
+                        label: "Company",
+                        leadingIcon: "lucide:user",
+                        iconColor: "text-green-500"
+                    },
+                    {
+                isActive: false,
+                href: "/dashboard/master/salesman",
+                label: "Salesman",
+                leadingIcon: "mdi:package-variant",
+                iconColor: "text-cyan-500"
+            },
+            {
+                isActive: false,
+                href: "/dashboard/master/discount",
+                label: "Discount",
+                leadingIcon: "mdi:package-variant",
+                iconColor: "text-cyan-500"
+            },
+            // {
             //     isActive: false,
             //     href: "/dashboard/master/item",
             //     label: "Items",

@@ -1469,3 +1469,97 @@ export const vehicleGlobalSearch = async (params?:Params) => {
     return handleError(error);
   }
 };
+
+export const salesmanList = async (params?:Params) => {
+  try {
+    const res = await API.get(`/api/master/salesmen/list`, { params: params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const addSalesmen = async (body:object) => {
+  try{
+    const res = await API.post(`/api/master/salesmen/add`,body)
+    return res.data;
+  }catch (error: unknown) {
+    return handleError(error)
+  }
+}
+
+export const deleteSalesman = async (uuid:string) => {
+  try {
+    const res = await API.delete(`/api/master/salesmen/${uuid}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const updateSalesman = async (uuid:string, body:object) => {
+  try {
+    const res = await API.put(`/api/master/salesmen/update/${uuid}`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getSalesmanById = async (uuid:string) => {
+  try {
+    const res = await API.get(`/api/master/salesmen/${uuid}`);
+    console.log("Daya",res)
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const discountList = async (params?:Params) => {
+  try {
+    const res = await API.get(`/api/master/discount/list`, { params: params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const addDiscount = async (body:object) => {
+  try{
+    const res = await API.post(`/api/master/discount/create`,body)
+    return res.data;
+  }catch (error: unknown) {
+    return handleError(error)
+  }
+}
+
+export const deleteDiscount = async (uuid:string) => {
+  try {
+    const res = await API.delete(`/api/master/discount/delete/${uuid}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const updateDiscount = async (uuid:string, body:object) => {
+  try {
+    const res = await API.put(`/api/master/discount/update/${uuid}`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getDiscountById = async (uuid:string) => {
+  try {
+    const res = await API.get(`/api/master/discount/discount/${uuid}`);
+    console.log("Daya",res)
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
