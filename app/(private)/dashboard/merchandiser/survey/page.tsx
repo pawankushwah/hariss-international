@@ -46,9 +46,12 @@ const tableData: TableDataType[] = surveys.map((s) => ({
   id: s.id?.toString() ?? "",
   survey_code: s.survey_code ?? "",
   survey_name: s.survey_name ?? "",
-  start_date: s.start_date ?? "", 
-  end_date: s.end_date ?? "", 
-  status: s.status === 1 || s.status === "Active" ? "Active" : "Inactive",
+  start_date: s.start_date ?? "",
+  end_date: s.end_date ?? "",
+  status:
+    String(s.status).toLowerCase() === "active" || s.status === 1
+      ? "Active"
+      : "Inactive",
 }));
 
   async function fetchPlanograms() {

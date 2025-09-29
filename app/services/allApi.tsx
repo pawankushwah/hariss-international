@@ -1483,7 +1483,7 @@ type PayloadSurvey= {
   survey_name: string;
   start_date: string;
   end_date: string;
-  status: number;
+  status: string;
 };
 export const addSurvey = async (payload: PayloadSurvey) => {
   try {
@@ -1493,14 +1493,12 @@ export const addSurvey = async (payload: PayloadSurvey) => {
     return handleError(error);
   }
 }
-
-
 type updateSurvey = {
-  survey_code: string;
+
   survey_name: string;
   start_date: string;
   end_date: string;
-  status: number;
+  status: string;
 };
 
 export const updateSurvey = async (id: string, payload: updateSurvey) => {
@@ -1517,6 +1515,24 @@ export const getSurveyById = async (id:string) => {
               const res = await API.get(`/api/merchendisher/survey/${id}`);
     return res.data;
   } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const SurveyQuestionList = async () => {
+  try {
+              const res = await API.get("/api/merchendisher/survey-questions/list");
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const deleteSurveyQuestion = async (id:string) => {
+  try {
+              const res = await API.delete(`/api/merchendisher/survey-questions/${id}`);  
+    return res.data;
+  } catch (error: unknown) {  
     return handleError(error);
   }
 };

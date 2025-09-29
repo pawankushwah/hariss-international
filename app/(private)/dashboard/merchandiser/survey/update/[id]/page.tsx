@@ -18,62 +18,65 @@ import { getSurveyById, updateSurvey } from "@/app/services/allApi";
 // 🔹 Validation schema
 const SurveySchema = Yup.object().shape({
   surveyName: Yup.string().required("Survey Name is required."),
-  surveyCode: Yup.string().required("Survey Code is required."),
   startDate: Yup.date()
     .required("Field is required.")
     .typeError("Please enter a valid date"),
   endDate: Yup.date()
     .required("Field is required.")
     .typeError("Please enter a valid date")
-    .min(Yup.ref("startDate"), "Valid To date cannot be before Valid From date"),
+    .min(Yup.ref("startDate"), "End Date cannot be before Start Date"),
   status: Yup.string().required("Please select a status."),
 });
 
-// 🔹 Form values (string for form, number conversion before API)
+// 🔹 Form value types
 type SurveyEditFormValues = {
-  surveyCode: string;
+
   surveyName: string;
   startDate: string;
   endDate: string;
-  status: string;
+  status: string; // "active" | "inactive"
 };
 
 export default function EditSurveyPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
+
   const [initialValues, setInitialValues] = useState<SurveyEditFormValues | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  // 🔹 Fetch survey by ID
- useEffect(() => {
-  const fetchSurvey = async () => {
-    try {
-      const res = await getSurveyById(id);
-      const s = res?.data ?? res;
-
-      const formatDate = (dateStr: string) => {
-        if (!dateStr) return "";
-        const d = new Date(dateStr);
-        const month = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-        return `${d.getFullYear()}-${month}-${day}`;
-      };
-
-      setInitialValues({
-        surveyCode: s?.survey_code ?? "",
-        surveyName: s?.survey_name ?? "",
-        startDate: formatDate(s?.start_date),
-        endDate: formatDate(s?.end_date),
-        status: String(s?.status ?? "1"), // or Number(s?.status ?? 1) depending on InputFields
-      });
-    } catch (err) {
-      console.error(err);
-      showSnackbar("Failed to load survey details ❌", "error");
-    }
+  // 🔹 Format API date → yyyy-mm-dd
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${month}-${day}`;
   };
-  if (id) fetchSurvey();
-}, [id, showSnackbar]);
+
+  // 🔹 Fetch survey by ID
+  useEffect(() => {
+    const fetchSurvey = async () => {
+      try {
+        const res = await getSurveyById(id);
+        const s = res?.data ?? res;
+
+        setInitialValues({
+ 
+          surveyName: s?.survey_name ?? "",
+          startDate: formatDate(s?.start_date),
+          endDate: formatDate(s?.end_date),
+          // ✅ normalise backend value to "active" | "inactive"
+          status: s?.status === "inactive" ? "inactive" : "active",
+        });
+      } catch (err) {
+        console.error(err);
+        showSnackbar("Failed to load survey details ❌", "error");
+      }
+    };
+
+    if (id) fetchSurvey();
+  }, [id, showSnackbar]);
 
   // 🔹 Submit handler
   const handleSubmit = async (
@@ -82,11 +85,10 @@ export default function EditSurveyPage() {
   ) => {
     try {
       const payload = {
-        survey_code: values.surveyCode.trim(),
         survey_name: values.surveyName.trim(),
         start_date: values.startDate,
         end_date: values.endDate,
-        status: Number(values.status),
+        status: values.status, // directly "active" or "inactive"
       };
 
       const res = await updateSurvey(id, payload);
@@ -114,7 +116,10 @@ export default function EditSurveyPage() {
   return (
     <div className="w-full h-full p-4">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard/merchandiser/survey" className="text-gray-600 hover:text-gray-800">
+        <Link
+          href="/dashboard/merchandiser/survey"
+          className="text-gray-600 hover:text-gray-800"
+        >
           <Icon icon="lucide:arrow-left" width={24} />
         </Link>
         <h1 className="text-xl font-semibold">Edit Survey</h1>
@@ -131,31 +136,7 @@ export default function EditSurveyPage() {
             <ContainerCard>
               <h2 className="text-lg font-semibold mb-6">Survey Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* Survey Code */}
-                <div className="flex items-end gap-2 max-w-[406px]">
-                  <InputFields
-                    label="Survey Code"
-                    name="surveyCode"
-                    value={values.surveyCode}
-                    onChange={(e) => setFieldValue("surveyCode", e.target.value)}
-                  />
-                  <ErrorMessage
-                    name="surveyCode"
-                    component="span"
-                    className="text-xs text-red-500"
-                  />
-                  <IconButton
-                    bgClass="white"
-                    className="mb-2 cursor-pointer text-[#252B37]"
-                    icon="mi:settings"
-                    onClick={() => setIsOpen(true)}
-                  />
-                  <SettingPopUp
-                    isOpen={isOpen}
-                    onClose={() => setIsOpen(false)}
-                    title="Survey Code"
-                  />
-                </div>
+             
 
                 {/* Survey Name */}
                 <div>
@@ -212,8 +193,8 @@ export default function EditSurveyPage() {
                     value={values.status}
                     onChange={(e) => setFieldValue("status", e.target.value)}
                     options={[
-                      { value: "1", label: "Active" },
-                      { value: "2", label: "Inactive" },
+                      { value: "active", label: "Active" },
+                      { value: "inactive", label: "Inactive" },
                     ]}
                   />
                   <ErrorMessage

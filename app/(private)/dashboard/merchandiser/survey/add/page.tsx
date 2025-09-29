@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Formik, Form, ErrorMessage, type FormikHelpers } from "formik";
 import * as Yup from "yup";
+
 import ContainerCard from "@/app/components/containerCard";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import InputFields from "@/app/components/inputFields";
@@ -13,6 +14,7 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import { addSurvey } from "@/app/services/allApi";
 import SettingPopUp from "@/app/components/settingPopUp";
 import IconButton from "@/app/components/iconButton";
+
 const SurveySchema = Yup.object().shape({
   surveyName: Yup.string().required("Survey Name is required."),
   surveyCode: Yup.string().required("Survey Code is required."),
@@ -26,17 +28,15 @@ const SurveySchema = Yup.object().shape({
       Yup.ref("startDate"),
       "Valid To date cannot be before Valid From date"
     ),
-
-
   status: Yup.string().required("Please select a status."),
 });
 
 type SurveyFormValues = {
-    surveyCode: string;
+  surveyCode: string;
   surveyName: string;
   startDate: string;
   endDate: string;
-  status: string;
+  status: string; // "active" | "inactive"
 };
 
 export default function AddSurvey() {
@@ -45,26 +45,25 @@ export default function AddSurvey() {
   const router = useRouter();
 
   const initialValues: SurveyFormValues = {
-      surveyCode: "",
+    surveyCode: "",
     surveyName: "",
     startDate: "",
     endDate: "",
     status: "",
-    
   };
 
-  // ✅ Local submit handler (no API)
   const handleSubmit = async (
     values: SurveyFormValues,
     { setSubmitting }: FormikHelpers<SurveyFormValues>
   ) => {
     try {
+      // ✅ send backend-friendly keys
       const payload = {
         survey_code: values.surveyCode.trim(),
         survey_name: values.surveyName.trim(),
         start_date: values.startDate,
         end_date: values.endDate,
-        status: Number(values.status), // send as number
+        status: values.status, // <-- directly "active" or "inactive"
       };
 
       console.log("Payload ->", payload);
@@ -79,7 +78,7 @@ export default function AddSurvey() {
       }
 
       showSnackbar("Survey added successfully ✅", "success");
-      router.push("/dashboard/merchandiser/survey");  
+      router.push("/dashboard/merchandiser/survey");
     } catch (error) {
       console.error(error);
       showSnackbar("Failed to add Survey ❌", "error");
@@ -88,11 +87,13 @@ export default function AddSurvey() {
     }
   };
 
-
   return (
     <div className="w-full h-full p-4">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard/merchandiser/survey" className="text-gray-600 hover:text-gray-800">
+        <Link
+          href="/dashboard/merchandiser/survey"
+          className="text-gray-600 hover:text-gray-800"
+        >
           <Icon icon="lucide:arrow-left" width={24} />
         </Link>
         <h1 className="text-xl font-semibold">Add New Survey</h1>
@@ -106,32 +107,41 @@ export default function AddSurvey() {
         {({ values, setFieldValue, isSubmitting }) => (
           <Form>
             <ContainerCard>
-              <h2 className="text-lg font-semibold mb-6">
-                Survey Details
-              </h2>
+              <h2 className="text-lg font-semibold mb-6">Survey Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                   <div className="flex items-end gap-2 max-w-[406px]">
-                  <InputFields
-                    label="Survey Code"
-                    name="surveyCode"
-                    value={values.surveyCode}
-                    onChange={(e) => setFieldValue("surveyCode", e.target.value)}
-                  />
-                  <ErrorMessage
-                    name="surveyCode"
-                    component="span"
-                    className="text-xs text-red-500"
-                  />
-                    <IconButton
-                                    bgClass="white"
-                                    className="mb-2 cursor-pointer text-[#252B37]"
-                                    icon="mi:settings"
-                                    onClick={() => setIsOpen(true)}
-                                />
-                                    <SettingPopUp isOpen={isOpen} onClose={() => setIsOpen(false)} title="Survey Code" />
-                </div>
-                
-                              
+                {/* Survey Code */}
+              {/* Survey Code */}
+<div className="flex flex-col gap-1 max-w-[406px]">
+  <div className="flex items-end gap-2">
+    <InputFields
+      label="Survey Code"
+      name="surveyCode"
+      value={values.surveyCode}
+      onChange={(e) => setFieldValue("surveyCode", e.target.value)}
+    />
+    <IconButton
+      bgClass="white"
+      className="mb-2 cursor-pointer text-[#252B37]"
+      icon="mi:settings"
+      onClick={() => setIsOpen(true)}
+    />
+    <SettingPopUp
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+      title="Survey Code"
+    />
+  </div>
+
+  {/* Error message below the input */}
+  <ErrorMessage
+    name="surveyCode"
+    component="span"
+    className="text-xs text-red-500"
+  />
+</div>
+
+
+                {/* Survey Name */}
                 <div>
                   <InputFields
                     label="Survey Name"
@@ -145,8 +155,8 @@ export default function AddSurvey() {
                     className="text-xs text-red-500"
                   />
                 </div>
-               
 
+                {/* Dates */}
                 <div>
                   <InputFields
                     label="Start Date"
@@ -173,18 +183,19 @@ export default function AddSurvey() {
                     name="endDate"
                     component="span"
                     className="text-xs text-red-500"
-                  />    
+                  />
                 </div>
-                  <div>
+
+                {/* Status */}
+                <div>
                   <InputFields
                     label="Status"
                     name="status"
                     value={values.status}
                     onChange={(e) => setFieldValue("status", e.target.value)}
                     options={[
-                      { value: "1", label: "Active" },
-                      { value: "2", label: "Inactive" },
-               
+                      { value: "active", label: "Active" },
+                      { value: "inactive", label: "Inactive" },
                     ]}
                   />
                   <ErrorMessage
@@ -193,7 +204,6 @@ export default function AddSurvey() {
                     className="text-xs text-red-500"
                   />
                 </div>
-                    
               </div>
             </ContainerCard>
 

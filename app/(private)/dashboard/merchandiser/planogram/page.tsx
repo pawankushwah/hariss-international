@@ -85,8 +85,7 @@ const tableData: TableDataType[] = planograms.map((s) => ({
       <div className="flex justify-between items-center mb-5">
         <h1 className="text-[20px] font-semibold text-[#181D27]">Planogram</h1>
       <div className="flex gap-[12px] relative">
-                <BorderIconButton icon="gala:file-document" label="Export CSV" />
-                <BorderIconButton icon="mage:upload" />
+                
       
                 <DismissibleDropdown
                   isOpen={showDropdown}
