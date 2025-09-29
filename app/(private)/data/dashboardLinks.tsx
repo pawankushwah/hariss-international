@@ -62,13 +62,13 @@ export const initialLinkData: SidebarDataType[] = [
                 iconColor: "text-yellow-400",
                 children: [ 
                    
-                    {
-                        isActive: false,
-                        href: "/dashboard/master/customer",
-                        label: "Customer",
-                        leadingIcon: "lucide:user",
-                        iconColor: "text-green-500"
-                    },
+                    // {
+                    //     isActive: false,
+                    //     href: "/dashboard/master/customer",
+                    //     label: "Customer",
+                    //     leadingIcon: "lucide:user",
+                    //     iconColor: "text-green-500"
+                    // },
             //         {
             //     isActive: false,
             //     href: "/dashboard/master/item",
@@ -106,7 +106,47 @@ export const initialLinkData: SidebarDataType[] = [
             },
                 ],
             },
+                {
+                isActive: false,
+                href: "#",
+                label: "Merchandisers",
+                leadingIcon: "hugeicons:workflow-square-06",
+                trailingIcon: "mdi-light:chevron-right",
+                iconColor: "text-yellow-400",
+                children: [ 
+                   
+                    {
+                        isActive: false,
+                        href: "/dashboard/merchandiser/planogram",
+                        label: "Planogram",
+                        leadingIcon: "lucide:user",
+                        iconColor: "text-green-500"
+                    },
+                     {
+                isActive: false,
+                href: "/dashboard/merchandiser/planogramImage",
+                label: "Planogram Image",
+                leadingIcon: "mdi:map",
+                iconColor: "text-yellow-400"
+            },
+                    {
+                isActive: false,
+                href: "/dashboard/merchandiser/shelfDisplay",
+                label: "Shelf Display",
+                leadingIcon: "mdi:map",
+                iconColor: "text-yellow-400"
+            },
+                {
+                isActive: false,
+                href: "/dashboard/merchandiser/survey",
+                label: "Survey",
+                leadingIcon: "mdi:map",
+                iconColor: "text-yellow-400"
+            },
             
+         
+                ],
+            },
             // {
             //     isActive: false,
             //     href: "/dashboard/report",
