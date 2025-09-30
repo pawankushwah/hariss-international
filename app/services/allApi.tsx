@@ -1705,6 +1705,14 @@ export const getSurveyById = async (id:string) => {
   }
 };
 
+export const SurveyListGlobalSearch = async (params?: Params) => {
+  try{
+    const res = await API.get(`/api/merchendisher/survey/global-search`, {params: params})
+    return res.data;
+  }catch (error: unknown){
+    return handleError(error)
+  }
+}
 export const SurveyQuestionList = async () => {
   try {
               const res = await API.get("/api/merchendisher/survey-questions/list");
@@ -1722,3 +1730,5 @@ export const deleteSurveyQuestion = async (id:string) => {
     return handleError(error);
   }
 };
+
+
