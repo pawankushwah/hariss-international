@@ -10,6 +10,7 @@ import * as Yup from "yup";
 import { Formik, Form, FormikHelpers, FormikErrors, FormikTouched } from "formik";
 import Link from "next/link";
 import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
+import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
 
 interface DiscountFormValues {
@@ -51,6 +52,10 @@ const stepSchemas = [
 ];
 
 export default function AddDiscountWithStepper() {
+
+  const { itemCategoryOptions } = useAllDropdownListData();
+
+
   const steps: StepperStep[] = [
     { id: 1, label: "General Information" },
     { id: 2, label: "Discount Details" },
@@ -139,28 +144,29 @@ export default function AddDiscountWithStepper() {
           <ContainerCard>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputFields
-                label="Item ID"
+                label="Item"
                 name="item_id"
                 value={values.item_id}
                 onChange={(e) => setFieldValue("item_id", e.target.value)}
                 error={touched.item_id && errors.item_id}
               />
               <InputFields
-                label="Category ID"
+                label="Item Category"
                 name="category_id"
                 value={values.category_id}
                 onChange={(e) => setFieldValue("category_id", e.target.value)}
                 error={touched.category_id && errors.category_id}
+                options={itemCategoryOptions}
               />
               <InputFields
-                label="Customer ID"
+                label="Customer"
                 name="customer_id"
                 value={values.customer_id}
                 onChange={(e) => setFieldValue("customer_id", e.target.value)}
                 error={touched.customer_id && errors.customer_id}
               />
               <InputFields
-                label="Customer Channel ID"
+                label="Customer Channel"
                 name="customer_channel_id"
                 value={values.customer_channel_id}
                 onChange={(e) => setFieldValue("customer_channel_id", e.target.value)}
