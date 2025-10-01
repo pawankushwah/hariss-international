@@ -53,7 +53,7 @@ const stepSchemas = [
 
 export default function AddDiscountWithStepper() {
 
-  const { itemCategoryOptions } = useAllDropdownListData();
+  const { itemCategoryOptions, itemOptions, discountTypeOptions } = useAllDropdownListData();
 
 
   const steps: StepperStep[] = [
@@ -149,6 +149,7 @@ export default function AddDiscountWithStepper() {
                 value={values.item_id}
                 onChange={(e) => setFieldValue("item_id", e.target.value)}
                 error={touched.item_id && errors.item_id}
+                options={itemOptions}
               />
               <InputFields
                 label="Item Category"
@@ -164,6 +165,11 @@ export default function AddDiscountWithStepper() {
                 value={values.customer_id}
                 onChange={(e) => setFieldValue("customer_id", e.target.value)}
                 error={touched.customer_id && errors.customer_id}
+                options={[
+                  { value: "0", label: "Aman" },
+                  { value: "1", label: "Amit" },
+                  { value: "2", label: "Raghu" },
+                ]}
               />
               <InputFields
                 label="Customer Channel"
@@ -171,6 +177,10 @@ export default function AddDiscountWithStepper() {
                 value={values.customer_channel_id}
                 onChange={(e) => setFieldValue("customer_channel_id", e.target.value)}
                 error={touched.customer_channel_id && errors.customer_channel_id}
+                 options={[
+                   { value: "0", label: "Aman" },
+                  { value: "1", label: "Abcd" },
+                ]}
               />
             </div>
           </ContainerCard>
@@ -184,10 +194,7 @@ export default function AddDiscountWithStepper() {
                 name="discount_type"
                 value={values.discount_type}
                 onChange={(e) => setFieldValue("discount_type", e.target.value)}
-                options={[
-                  { value: "1", label: "Percentage" },
-                  { value: "2", label: "Fixed Amount" },
-                ]}
+                options={discountTypeOptions}
                 error={touched.discount_type && errors.discount_type}
               />
               <InputFields

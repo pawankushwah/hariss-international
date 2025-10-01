@@ -233,7 +233,7 @@ export default function EditCompany() {
           const res = await getCompanyById(queryId as string);
           const company = res?.data?.data || res?.data || res;
           console.log(company)
-          const Daya = {
+          const Company = {
             companyType: company.company_type,
             companyCode: company.company_code,
             companyName: company.company_name,
@@ -258,8 +258,8 @@ export default function EditCompany() {
             serviceType: company.service_type,
             status: company.status,
           };
-          formik.setValues(Daya)
-          console.log("sjdkfrbg",Daya)
+          formik.setValues(Company)
+        console.log("ghseiugsdj",Company)
        }
        console.log(fetchCompany)
           
@@ -337,8 +337,8 @@ export default function EditCompany() {
               <InputFields name="street" label="Street" value={values.street} onChange={formik.handleChange} />
               <InputFields name="landmark" label="Landmark" value={values.landmark} onChange={formik.handleChange} />
               <InputFields name="region" label="Region" value={String(values.region)} onChange={formik.handleChange} options={regionOptions} />
-              <InputFields name="subRegion" label="Sub Region" value={values.subRegion} onChange={formik.handleChange} options={areaOptions} />
-              <InputFields name="country" label="Country" value={values.country} onChange={formik.handleChange} options={onlyCountryOptions} />
+              <InputFields name="subRegion" label="Sub Region" value={String(values.subRegion)} onChange={formik.handleChange} options={areaOptions} />
+              <InputFields name="country" label="Country" value={String(values.country)} onChange={formik.handleChange} options={onlyCountryOptions} />
               <InputFields name="tinNumber" label="TIN Number" value={values.tinNumber} onChange={formik.handleChange} />
             </div>
           </ContainerCard>
