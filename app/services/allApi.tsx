@@ -1133,14 +1133,12 @@ export const updateUser = async (id:string,payload:object) => {
 
 
 // outlet channel APIs
-export const outletChannelList = async (data: Record<string, string>) => {
+export const outletChannelList = async (params?: Params) => {
   try {
-    const res = await API.get("/api/settings/outlet-channels/list", data);
-   
+    const res = await API.get("/api/settings/outlet-channels/list", { params });
     return res.data;
   } catch (error) {
-    console.error("User List failed ❌", error);
-    throw error;
+    return handleError(error);
   }
 };
 

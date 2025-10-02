@@ -199,6 +199,13 @@ export const initialLinkData: SidebarDataType[] = [
                     },
                     {
                         isActive: false,
+                        href: "/dashboard/assets/chillerRequest",
+                        label: "Chiller Request",
+                        leadingIcon: "mdi:package-variant",
+                        iconColor: "text-cyan-500"
+                    },
+                    {
+                        isActive: false,
                         href: "/dashboard/assets/vendor",
                         label: "Vendor",
                         leadingIcon: "mdi:package-variant",

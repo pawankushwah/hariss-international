@@ -227,7 +227,7 @@ export default function AddCompanyWithStepper() {
     is_assign: chiller?.is_assign || 1,
     customer_id: chiller?.customer_id || 1,
     agreement_id: chiller?.agreement_id || 1,
-    document_type: chiller?.document_type || "",
+    document_type: chiller?.document_type || "ACF",
     document_id: chiller?.document_id || 1,
   };
 
@@ -284,7 +284,7 @@ export default function AddCompanyWithStepper() {
         is_assign: values.is_assign,
         customer_id: Number(values.customer_id),
         agreement_id: Number(values.agreement_id),
-        document_type: values.document_type,
+        document_type: values.document_type || "ACF",
         document_id: values.document_id,
       };
 
@@ -486,11 +486,7 @@ export default function AddCompanyWithStepper() {
                 value={values.document_id.toString()}
                 onChange={(e) => setFieldValue("document_id", e.target.value)}
                 options={[
-                    { value: "1", label: "Document 1" },
-                    { value: "2001", label: "Document 2" },
-                    { value: "3", label: "Document 3" },
-                    { value: "4", label: "Document 4" },
-                    { value: "5", label: "Document 5" }
+                    { value: "ACF", label: "ACF" }
                 ]}
             />
             </div>
