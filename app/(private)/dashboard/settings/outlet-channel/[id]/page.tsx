@@ -11,50 +11,52 @@ import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import ContainerCard from "@/app/components/containerCard";
 import InputFields from "@/app/components/inputFields";
 import Loading from "@/app/components/Loading";
-import { updateUser, addUser, getUserById } from "@/app/services/allApi";
+import {
+  updateOutletChannel,
+  addOutletChannel,
+  getOutletChannelById,
+} from "@/app/services/allApi";
 
 import { useSnackbar } from "@/app/services/snackbarContext";
 
-type CountryFormValues = {
-  code: string;
-  name: string;
-  status: string;
+type OutletChannel = {
+  outlet_channel: string;
+  status: string; // "active" | "inactive"
 };
 
-export default function AddOrEditUserType() {
+export default function AddOrEditOutletChannel() {
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const params = useParams();
-  console.log("Params:", params);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // ✅ Formik setup
-  const formik = useFormik<CountryFormValues>({
+  const formik = useFormik<OutletChannel>({
     initialValues: {
-      code: "",
-      name: "",
-      status: "active",
+      outlet_channel: "",
+      status: "active", // default
     },
     validationSchema: Yup.object({
-      name: Yup.string().required("Name is required"),
-      code: Yup.string().required("Code is required"),
-      status: Yup.string().required("Status is required"),
+      outlet_channel: Yup.string().required("Outlet Channel Code is required."),
+      status: Yup.string().required("Status is required."),
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
+        console.log("Submitting form with values:", values);
         const payload = {
-          code: values.code,
-          name: values.name,
+          outlet_channel: values.outlet_channel,
           status: values.status === "active" ? 1 : 0,
         };
 
+        console.log("Payload to submit:", payload);
+
         let res;
         if (isEditMode && params?.id && params.id !== "add") {
-          res = await updateUser(String(params.id), payload);
+          res = await updateOutletChannel(String(params.id), payload);
         } else {
-          res = await addUser(payload);
+          res = await addOutletChannel(payload);
         }
 
         if (res.error) {
@@ -63,11 +65,11 @@ export default function AddOrEditUserType() {
           showSnackbar(
             res.message ||
               (isEditMode
-                ? "User Type Updated Successfully"
-                : "User Type Created Successfully"),
+                ? "Channel Updated Successfully"
+                : "Channel Created Successfully"),
             "success"
           );
-          router.push("/dashboard/settings/user-types");
+          router.push("/dashboard/settings/outlet-channel");
         }
       } catch (error) {
         showSnackbar("Something went wrong", "error");
@@ -85,11 +87,11 @@ export default function AddOrEditUserType() {
       (async () => {
         console.log("Fetching data for ID:", params.id);
         try {
-          const res = await getUserById(String(params.id));
+          const res = await getOutletChannelById(String(params.id));
           if (res?.data) {
+            console.log(res.data);
             formik.setValues({
-              name: res.data.name || "",
-              code: res.data.code || "",
+              outlet_channel: res.data.outlet_channel || "",
               status: res.data.status === 1 ? "active" : "inactive",
             });
           }
@@ -108,11 +110,11 @@ export default function AddOrEditUserType() {
       {/* Header */}
       <div className="flex justify-between items-center mb-[20px]">
         <div className="flex items-center gap-[16px]">
-          <Link href="/dashboard/settings/user-types">
+          <Link href="/dashboard/settings/outlet-channel">
             <Icon icon="lucide:arrow-left" width={24} />
           </Link>
           <h1 className="text-[20px] font-semibold text-[#181D27] flex items-center leading-[30px] mb-[5px]">
-            {isEditMode ? "Edit User Type" : "Add User Type"}
+            {isEditMode ? "Edit Channel" : "Add New Channel"}
           </h1>
         </div>
       </div>
@@ -123,28 +125,21 @@ export default function AddOrEditUserType() {
       ) : (
         <form onSubmit={formik.handleSubmit}>
           <ContainerCard>
-            <h2 className="text-lg font-semibold mb-6">User Type Details</h2>
+            <h2 className="text-lg font-semibold mb-6">
+              Outlet Channel Details
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Name */}
               <InputFields
                 type="text"
-                name="name"
-                label="User Name"
-                value={formik.values.name}
+                name="outlet_channel"
+                label="Outlet Channel"
+                value={formik.values.outlet_channel}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                error={formik.touched.name && formik.errors.name}
-              />
-
-              {/* Code */}
-              <InputFields
-                type="text"
-                name="code"
-                label="Code"
-                value={formik.values.code}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.code && formik.errors.code}
+                error={
+                  formik.touched.outlet_channel && formik.errors.outlet_channel
+                }
               />
 
               {/* Status */}
