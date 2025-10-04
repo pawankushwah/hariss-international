@@ -58,6 +58,7 @@ const columns = [
 ];
 
 export default function SubRegion() {
+  const [refreshKey, setRefreshKey] = useState(0);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [deleteRowId, setDeleteRowId] = useState<number | string | null>(null);
@@ -105,6 +106,7 @@ export default function SubRegion() {
     try {
       await deleteArea(String(deleteRowId));
       showSnackbar("SubRegion deleted successfully ✅", "success");
+      setRefreshKey((prev) => prev + 1);
       router.refresh();
     } catch (error) {
       console.error("Delete failed ❌:", error);
@@ -121,6 +123,7 @@ export default function SubRegion() {
 
       <div className="h-[calc(100%-60px)]">
         <Table
+          key={refreshKey}
           config={{
             api: {
               list: fetchSubRegions,
@@ -190,7 +193,7 @@ export default function SubRegion() {
                 onClick: (data: Record<string, string>) => {
                   const id = data.id;
                   router.push(
-                    `/dashboard/settings/company/subRegion/update/${id}`
+                    `/dashboard/settings/company/subRegion/${id}`
                   );
                 },
               },

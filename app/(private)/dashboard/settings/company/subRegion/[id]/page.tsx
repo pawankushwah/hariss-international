@@ -11,6 +11,8 @@ import { ErrorMessage, Form, Formik, type FormikHelpers } from "formik";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
+import { useParams } from "next/navigation";
+import { useEffect } from "react";
 import * as Yup from "yup";
 
 // ✅ Validation schema (use same field names as API: area_code, area_name, region_id)
@@ -29,21 +31,24 @@ type SubRegionFormValues = {
 export default function AddSubRegion() {
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
+  const params = useParams();
   const { regionOptions, loading } = useAllDropdownListData();
 
   // Try to read id from URL path or query param. Next's useParams/useSearchParams cannot be used in file at times, so try fallback to window.
   // If this page is rendered as client component, window is available.
   let routeId = "";
   try {
-    const pathParts = typeof window !== "undefined" ? window.location.pathname.split("/") : [];
+    const pathParts =
+      typeof window !== "undefined" ? window.location.pathname.split("/") : [];
     routeId = pathParts[pathParts.length - 1] || "";
     // if last segment is 'add' or empty, ignore
-    if (routeId === "" || routeId === "add" || routeId === "subRegion") routeId = "";
+    if (routeId === "" || routeId === "add" || routeId === "subRegion")
+      routeId = "";
   } catch {
     routeId = "";
   }
 
-  const queryId = (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("id")) || routeId || "";
+  const queryId = params?.id && params.id !== "add" ? params.id : routeId;
 
   const [fetched, setFetched] = React.useState<null | {
     area_name?: string;
@@ -58,30 +63,27 @@ export default function AddSubRegion() {
     region_id: fetched?.region_id?.toString() ?? "",
   };
 
-  // Fetch when queryId present (edit mode)
-  React.useEffect(() => {
-    if (!queryId) return;
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await getAreaById(String(queryId));
-        if (!mounted) return;
-        setFetched({
-          area_name: res?.data?.area_name,
-          status: res?.data?.status,
-          region_id: res?.data?.region_id,
-        });
-      } catch (err) {
-        console.error("Failed to fetch SubRegion by id", err);
-        showSnackbar("Failed to load SubRegion", "error");
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [queryId, showSnackbar]);
-
+  useEffect(() => {
+    if (params?.id && params.id !== "add") {
+      (async () => {
+        console.log("Fetching data for ID:", params.id);
+        try {
+          const res = await getAreaById(String(params.id));
+          if (res?.data) {
+            console.log(res.data);
+            setFetched({
+              area_name: res?.data?.area_name,
+              status: res?.data?.status,
+              region_id: res?.data?.region_id,
+            });
+          }
+        } catch (error) {
+          console.error("Failed to fetch user type", error);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params?.id]);
 
   const handleSubmit = async (
     values: SubRegionFormValues,
@@ -151,9 +153,9 @@ export default function AddSubRegion() {
           <Link href="/dashboard/settings/company/subRegion">
             <Icon icon="lucide:arrow-left" width={24} />
           </Link>
-              <h1 className="text-xl font-semibold text-gray-900">
-                {queryId ? "Edit Sub Region" : "Add New Sub Region"}
-              </h1>
+          <h1 className="text-xl font-semibold text-gray-900">
+            {queryId ? "Edit Sub Region" : "Add New Sub Region"}
+          </h1>
         </div>
       </div>
 
@@ -169,7 +171,6 @@ export default function AddSubRegion() {
             <ContainerCard>
               <h2 className="text-lg font-semibold mb-6">Sub Region Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
                 {/* SubRegion Name */}
                 <div>
                   <InputFields
@@ -186,13 +187,13 @@ export default function AddSubRegion() {
                 </div>
                 {/* Region */}
                 <div>
-                   <InputFields
-                      label="Region"
-                      name="region_id"
-                      value={values.region_id}
-                      onChange={(e) => setFieldValue("region_id", e.target.value)}
-                      options={regionOptions}
-                    />
+                  <InputFields
+                    label="Region"
+                    name="region_id"
+                    value={values.region_id}
+                    onChange={(e) => setFieldValue("region_id", e.target.value)}
+                    options={regionOptions}
+                  />
                   <ErrorMessage
                     name="region_id"
                     component="span"
@@ -202,25 +203,23 @@ export default function AddSubRegion() {
 
                 {/* Status */}
                 <div>
-                   <InputFields
-                      label="Status"
-                      name="status"
-                      type="radio"
-                      value={values.status}
-                      onChange={(e) => setFieldValue("status", e.target.value)}
-                      options={[
-                        { value: "1", label: "Active" },
-                        { value: "0", label: "Inactive" },
-                      ]}
-                    />
+                  <InputFields
+                    label="Status"
+                    name="status"
+                    type="radio"
+                    value={values.status}
+                    onChange={(e) => setFieldValue("status", e.target.value)}
+                    options={[
+                      { value: "1", label: "Active" },
+                      { value: "0", label: "Inactive" },
+                    ]}
+                  />
                   <ErrorMessage
                     name="status"
                     component="span"
                     className="text-xs text-red-500"
                   />
                 </div>
-
-                
               </div>
             </ContainerCard>
 
@@ -233,7 +232,15 @@ export default function AddSubRegion() {
                 Cancel
               </button>
               <SidebarBtn
-                label={isSubmitting ? (queryId ? "Updating..." : "Submitting...") : (queryId ? "Update" : "Submit")}
+                label={
+                  isSubmitting
+                    ? queryId
+                      ? "Updating..."
+                      : "Submitting..."
+                    : queryId
+                    ? "Update"
+                    : "Submit"
+                }
                 isActive={!isSubmitting}
                 leadingIcon="mdi:check"
                 type="submit"
