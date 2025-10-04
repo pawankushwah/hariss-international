@@ -1,21 +1,26 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
-
+import StatusBtn from "@/app/components/statusBtn2";
 import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, {
+  listReturnType,
+  searchReturnType,
+  TableDataType,
+} from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { getArea, deleteArea } from "@/app/services/allApi";
-import Loading from "@/app/components/Loading";
+import {
+  getArea,
+  subRegionListGlobalSearch,
+  deleteArea,
+} from "@/app/services/allApi";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
-import Popup from "@/app/components/popUp";
 import { useLoading } from "@/app/services/loadingContext";
-import StatusBtn from "@/app/components/statusBtn2";
 
 interface DropdownItem {
   icon: string;
@@ -26,16 +31,18 @@ interface DropdownItem {
 interface SubRegionItem {
   id?: number | string;
   area_code?: string;
+  area_name?: string;
   region?: {
     region_name?: string;
   };
-  region_name?: string;
-  area_name?: string;
-  status?: number | string;
+
+  // region_name?: string;
+  status?: number;
 }
 
 const dropdownDataList: DropdownItem[] = [
-  
+  { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
+  { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
   { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
@@ -43,135 +50,158 @@ const dropdownDataList: DropdownItem[] = [
 const columns = [
   { key: "area_code", label: "SubRegion Code" },
   { key: "area_name", label: "SubRegion Name" },
+  // { key: "region_name", label: "Region" },
   {
     key: "region_name",
     label: "Region",
-    render: (row: SubRegionItem) => row.region_name || "-",
+    render: (data: TableDataType) => {
+      const typeObj = data.region
+        ? JSON.parse(JSON.stringify(data.region))
+        : null;
+      return typeObj?.region_name ? typeObj.region_name : "-";
+    },
+    // render: (row: SubRegionItem) => row.region.region_name || "-",
   },
   {
-          key: "status",
-          label: "Status",
-          render: (row: TableDataType) => (
-              <StatusBtn isActive={row.status === "1" ? true : false} />
-          ),
-      },
+    key: "status",
+    label: "Status",
+    render: (row: TableDataType) => (
+      <StatusBtn isActive={row.status ? true : false} />
+    ),
+  },
 ];
 
 export default function SubRegion() {
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { setLoading } = useLoading();
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [deleteRowId, setDeleteRowId] = useState<number | string | null>(null);
-
-  const { showSnackbar } = useSnackbar();
-  const { setLoading } = useLoading();
+  const [selectedRow, setSelectedRow] = useState<SubRegionItem | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const router = useRouter();
+  const { showSnackbar } = useSnackbar();
+  type TableRow = TableDataType & { id?: string };
 
-  // API fetch with pagination
+  // ✅ Fetch SubRegions
   const fetchSubRegions = useCallback(
-    async (pageNo: number = 1, pageSize: number = 10) => {
+    async (page: number = 1, pageSize: number = 5): Promise<listReturnType> => {
+      try {
+        setLoading(true);
+        const listRes = await getArea({
+          limit: pageSize.toString(),
+          page: page.toString(),
+        });
+        setLoading(false);
+        return {
+          data: listRes.data || [],
+          total: listRes.pagination.totalPages,
+          currentPage: listRes.pagination.page,
+          pageSize: listRes.pagination.limit,
+        };
+      } catch (error: unknown) {
+        console.error("API Error:", error);
+        setLoading(false);
+        throw error;
+      }
+    },
+    []
+  );
+
+  // ✅ Search SubRegions
+  const searchSubRegions = useCallback(
+    async (
+      searchQuery: string,
+      pageSize: number
+    ): Promise<searchReturnType> => {
       setLoading(true);
-      const result = await getArea({
-        page: pageNo.toString(),
+      const result = await subRegionListGlobalSearch({
+        search: searchQuery,
         per_page: pageSize.toString(),
       });
       setLoading(false);
-
-      if (result.error) {
-        showSnackbar(result.data.message, "error");
-        throw new Error("Error fetching SubRegions");
-      } else {
-        const rows: TableDataType[] =
-          result.data?.map((s: SubRegionItem) => ({
-            id: s.id?.toString() ?? "",
-            area_code: s.area_code ?? "",
-            area_name: s.area_name ?? "",
-            region_name: s.region?.region_name ?? "",
-            status: s.status?.toString() ?? "0",
-          })) || [];
-
+      if (result.error) throw new Error(result.data.message);
+      else {
+        const pagination =
+          result.pagination && result.pagination.pagination
+            ? result.pagination.pagination
+            : {};
         return {
-          data: rows,
-          currentPage: result.pagination.page || 1,
-          pageSize: result.pagination.limit || 10,
-          total: result.pagination.totalPages || 0,
+          data: result.data || [],
+          total: pagination.totalPages || 10,
+          currentPage: pagination.current_page || 1,
+          pageSize: pagination.limit || pageSize,
         };
       }
     },
     []
   );
 
-  async function handleConfirmDelete() {
-    if (!deleteRowId) return;
-    try {
-      await deleteArea(String(deleteRowId));
+  // ✅ Delete SubRegion
+  const handleConfirmDelete = async () => {
+    if (!selectedRow) return;
+
+    if (!selectedRow?.id) throw new Error("Missing id");
+    const res = await deleteArea(String(selectedRow.id));
+    if (res.error)
+      return showSnackbar(
+        res.data.message || "Failed to delete SubRegion",
+        "error"
+      );
+    else {
       showSnackbar("SubRegion deleted successfully ✅", "success");
-      setRefreshKey((prev) => prev + 1);
-      router.refresh();
-    } catch (error) {
-      console.error("Delete failed ❌:", error);
-      showSnackbar("Failed to delete SubRegion ❌", "error");
-    } finally {
-      setShowDeletePopup(false);
-      setDeleteRowId(null);
+      setRefreshKey(refreshKey + 1);
     }
-  }
+    setLoading(false);
+    setShowDeletePopup(false);
+    setSelectedRow(null);
+  };
+
+  useEffect(() => {
+    setLoading(true);
+  }, []);
 
   return (
     <>
-      
-
-      <div className="h-[calc(100%-60px)]">
+      <div className="h-[calc(100%-60px)] pb-[22px]">
         <Table
-          key={refreshKey}
+          refreshKey={refreshKey}
           config={{
             api: {
               list: fetchSubRegions,
+              search: searchSubRegions,
             },
             header: {
-              title: "Sub Region",
-                            wholeTableActions: [
-                              <div key={0} className="flex gap-[12px] relative">
-                                <BorderIconButton
-                                  icon="ic:sharp-more-vert"
-                                  onClick={() =>
-                                    setShowDropdown(!showDropdown)
-                                  }
-                                />
-              
-                                {showDropdown && (
-                                  <div className="w-[226px] absolute top-[40px] right-0 z-30">
-                                    <CustomDropdown>
-                                      {dropdownDataList.map(
-                                        (
-                                          link,
-                                          index: number
-                                        ) => (
-                                          <div
-                                            key={index}
-                                            className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
-                                          >
-                                            <Icon
-                                              icon={
-                                                link.icon
-                                              }
-                                              width={
-                                                link.iconWidth
-                                              }
-                                              className="text-[#717680]"
-                                            />
-                                            <span className="text-[#181D27] font-[500] text-[16px]">
-                                              {link.label}
-                                            </span>
-                                          </div>
-                                        )
-                                      )}
-                                    </CustomDropdown>
-                                  </div>
-                                )}
-                              </div>
-                            ],
-              searchBar: false,
+              title: "SubRegion",
+              wholeTableActions: [
+                <div key={0} className="flex gap-[12px] relative">
+                  <DismissibleDropdown
+                    isOpen={showDropdown}
+                    setIsOpen={setShowDropdown}
+                    button={<BorderIconButton icon="ic:sharp-more-vert" />}
+                    dropdown={
+                      <div className="absolute top-[40px] right-0 z-30 w-[226px]">
+                        <CustomDropdown>
+                          {dropdownDataList.map((link, idx) => (
+                            <div
+                              key={idx}
+                              className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
+                            >
+                              <Icon
+                                icon={link.icon}
+                                width={link.iconWidth}
+                                className="text-[#717680]"
+                              />
+                              <span className="text-[#181D27] font-[500] text-[16px]">
+                                {link.label}
+                              </span>
+                            </div>
+                          ))}
+                        </CustomDropdown>
+                      </div>
+                    }
+                  />
+                </div>,
+              ],
+              searchBar: true,
               columnFilter: true,
               actions: [
                 <SidebarBtn
@@ -179,7 +209,7 @@ export default function SubRegion() {
                   href="/dashboard/settings/company/subRegion/add"
                   isActive
                   leadingIcon="lucide:plus"
-                  label="Add Sub Region"
+                  label="Add SubRegion"
                   labelTw="hidden sm:block"
                 />,
               ],
@@ -190,34 +220,35 @@ export default function SubRegion() {
             rowActions: [
               {
                 icon: "lucide:edit-2",
-                onClick: (data: Record<string, string>) => {
-                  const id = data.id;
+                onClick: (data: object) => {
+                  const row = data as TableRow;
                   router.push(
-                    `/dashboard/settings/company/subRegion/${id}`
+                    `/dashboard/settings/company/subRegion/${row.id}`
                   );
                 },
               },
               {
                 icon: "lucide:trash-2",
-                onClick: (data: Record<string, string>) => {
-                  setDeleteRowId(data.id);
+                onClick: (data: object) => {
+                  const row = data as TableRow;
+                  setSelectedRow({ id: row.id });
                   setShowDeletePopup(true);
                 },
               },
             ],
-            pageSize: 10,
+            pageSize: 5,
           }}
         />
       </div>
 
       {showDeletePopup && (
-        <Popup isOpen={true} onClose={() => setShowDeletePopup(false)}>
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <DeleteConfirmPopup
-            title="Delete SubRegion"
+            title="SubRegion"
             onClose={() => setShowDeletePopup(false)}
             onConfirm={handleConfirmDelete}
           />
-        </Popup>
+        </div>
       )}
     </>
   );
