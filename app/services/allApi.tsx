@@ -1905,37 +1905,33 @@ export const roleList = async (params?: Params) => {
 
 export const addRoles = async (payload:object) => {
   try {
-         const res = await API.post("/api/settings/roles/create", payload);
-
+    const res = await API.post("/api/setting/roles/add", payload);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
   }
 };
 
-export const getRoleById = async (uuid: string) => {
+export const getRoleById = async (id: string) => {
   try {
-       const res = await API.get(`/api/settings/roles/get/${uuid}`);
-
+    const res = await API.get(`/api/setting/roles/${id}`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
   }
 };
 
-export const editRoles = async (uuid:string,payload:object) => {
+export const editRoles = async (id:string,payload:object) => {
   try {
-           const res = await API.put(`/api/settings/roles/update/${uuid}`,payload);
-
-
+    const res = await API.put(`/api/setting/roles/${id}`,payload);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
   }
 };
-export const deleteRole = async (uuid:string) => {
+export const deleteRole = async (id:string) => {
   try {
-           const res = await API.delete(`/api/settings/roles/delete/${uuid}`);
+    const res = await API.delete(`/api/setting/roles/${id}`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -1953,9 +1949,9 @@ export const getMenuList = async () => {
 
 
 
-export const permissionList = async () => {
+export const permissionList = async (params: Params) => {
   try {
-     const res = await API.get("/web/setting/permissions/list");
+     const res = await API.get("/web/setting/permissions/list", { params });
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
