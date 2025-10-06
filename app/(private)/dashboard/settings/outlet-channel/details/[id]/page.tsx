@@ -27,7 +27,7 @@ export default function ViewPage() {
 
   const { showSnackbar } = useSnackbar();
   const { setLoading } = useLoading();
-  const [userType, setUSerType] = useState<OutletChannel | null>(null);
+  const [outletChannel, setOutletChannel] = useState<OutletChannel | null>(null);
 
   useEffect(() => {
     const fetchOutletChannelDetails = async () => {
@@ -43,12 +43,12 @@ export default function ViewPage() {
         );
         return;
       }
-      setUSerType(res.data);
+      setOutletChannel(res.data);
     };
     fetchOutletChannelDetails();
   }, []);
 
-  console.log("OutletChannel state:", userType); // Debug log
+  console.log("OutletChannel state:", outletChannel); // Debug log
 
   return (
     <>
@@ -66,15 +66,15 @@ export default function ViewPage() {
           <KeyValueData
             data={[
               {
-                value: userType?.outlet_channel_code ?? "-",
+                value: outletChannel?.outlet_channel_code ?? "-",
                 key: "Code",
               },
               {
-                value: userType?.outlet_channel ?? "-",
+                value: outletChannel?.outlet_channel ?? "-",
                 key: "Name",
               },
               {
-                value: userType?.status === 1 ? "Active" : "Inactive",
+                value: outletChannel?.status === 1 ? "Active" : "Inactive",
                 key: "Status",
               },
             ]}

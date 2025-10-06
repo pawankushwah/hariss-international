@@ -27,7 +27,7 @@ export default function ViewPage() {
 
   const { showSnackbar } = useSnackbar();
   const { setLoading } = useLoading();
-  const [userType, setUSerType] = useState<Region | null>(null);
+  const [regionType, setRegionType] = useState<Region | null>(null);
 
   useEffect(() => {
     const fetchRegionDetails = async () => {
@@ -42,7 +42,7 @@ export default function ViewPage() {
         );
         return;
       }
-      setUSerType(res.data);
+      setRegionType(res.data);
     };
     fetchRegionDetails();
   }, []);
@@ -63,15 +63,15 @@ export default function ViewPage() {
           <KeyValueData
             data={[
               {
-                value: userType?.region_code ?? "-",
+                value: regionType?.region_code ?? "-",
                 key: "Code",
               },
               {
-                value: userType?.region_name ?? "-",
+                value: regionType?.region_name ?? "-",
                 key: "Name",
               },
               {
-                value: userType?.status === 1 ? "Active" : "Inactive",
+                value: regionType?.status === 1 ? "Active" : "Inactive",
                 key: "Status",
               },
             ]}
