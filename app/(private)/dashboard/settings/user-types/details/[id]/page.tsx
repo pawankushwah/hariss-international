@@ -74,7 +74,7 @@ export default function ViewPage() {
                 key: "Name",
               },
               {
-                value: userType?.status ?? "-",
+                value: userType?.status === 1 ? "Active" : "Inactive",
                 key: "Status",
               },
             ]}

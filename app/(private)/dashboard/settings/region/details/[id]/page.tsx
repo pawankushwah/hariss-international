@@ -2,7 +2,7 @@
 
 import KeyValueData from "@/app/(private)/dashboard/master/customer/[customerId]/keyValueData";
 import ContainerCard from "@/app/components/containerCard";
-import { getOutletChannelById } from "@/app/services/allApi";
+import { getRegionById } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { Icon } from "@iconify-icon/react";
@@ -10,13 +10,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type OutletChannel = {
-  outlet_channel_code: string;
-  outlet_channel: string;
-  status: number; // 1 or 0
+type Region = {
+  region_code: string;
+  region_name: string;
+  status: number | "Active" | "Inactive";
 };
 
-const TITLE = "Outlet channel Details";
+const TITLE = "Region Details";
 
 export default function ViewPage() {
   const params = useParams();
@@ -27,34 +27,31 @@ export default function ViewPage() {
 
   const { showSnackbar } = useSnackbar();
   const { setLoading } = useLoading();
-  const [userType, setUSerType] = useState<OutletChannel | null>(null);
+  const [userType, setUSerType] = useState<Region | null>(null);
 
   useEffect(() => {
-    const fetchOutletChannelDetails = async () => {
+    const fetchRegionDetails = async () => {
       setLoading(true);
-      const res = await getOutletChannelById(id);
-      console.log("Outlet Channel details response:", res); // Debug log
+      const res = await getRegionById(id);
       setLoading(false);
 
       if (res.error) {
         showSnackbar(
-          res.data.message || "Unable to fetch OutletChannel Details",
+          res.data.message || "Unable to fetch Region Details",
           "error"
         );
         return;
       }
       setUSerType(res.data);
     };
-    fetchOutletChannelDetails();
+    fetchRegionDetails();
   }, []);
-
-  console.log("OutletChannel state:", userType); // Debug log
 
   return (
     <>
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard/settings/outlet-channel">
+        <Link href="/dashboard/settings/region">
           <Icon icon="lucide:arrow-left" width={24} />
         </Link>
         <h1 className="text-xl font-semibold mb-1">{TITLE}</h1>
@@ -66,11 +63,11 @@ export default function ViewPage() {
           <KeyValueData
             data={[
               {
-                value: userType?.outlet_channel_code ?? "-",
+                value: userType?.region_code ?? "-",
                 key: "Code",
               },
               {
-                value: userType?.outlet_channel ?? "-",
+                value: userType?.region_name ?? "-",
                 key: "Name",
               },
               {
