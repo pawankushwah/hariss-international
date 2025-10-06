@@ -33,7 +33,7 @@ export default function ViewPage() {
   const [userType, setUSerType] = useState<Usertype | null>(null);
 
   useEffect(() => {
-    const fetchVehicleDetails = async () => {
+    const fetchUserTypeDetails = async () => {
       setLoading(true);
       const res = await getUserTypeById(id);
       setLoading(false);
@@ -47,7 +47,7 @@ export default function ViewPage() {
       }
       setUSerType(res.data);
     };
-    fetchVehicleDetails();
+    fetchUserTypeDetails();
   }, []);
 
   return (
