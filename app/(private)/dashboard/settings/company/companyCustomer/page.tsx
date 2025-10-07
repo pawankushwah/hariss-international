@@ -83,7 +83,10 @@ export default function CompanyCustomers() {
     const fetchCompanyCustomers = async () => {
       try {
         const data = await getCompanyCustomers();
-        const customersData = data.data;
+
+        const customersData = data.data // Wrap single object
+        console.log("Fetched Customers:", data);
+
         setCustomers(customersData);
       } catch (error) {
         console.error(error);
@@ -167,6 +170,8 @@ export default function CompanyCustomers() {
     },
   ];
 
+  console.log(customers);
+
   /* ---------- Render ---------- */
   return (
     <>
@@ -245,10 +250,12 @@ export default function CompanyCustomers() {
               },
               {
                 icon: "lucide:edit-2",
-                onClick: (row: TableDataType) =>
+                onClick: (row: TableDataType) => {
+                  console.log(row)
                   router.push(
                     `/dashboard/settings/company/companyCustomer/${row.id}`
-                  ),
+                  )
+                }
               },
               {
                 icon: "lucide:trash-2",
