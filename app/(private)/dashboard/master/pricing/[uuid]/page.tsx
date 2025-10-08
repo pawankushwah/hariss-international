@@ -214,7 +214,7 @@ export default function AddPricing() {
       case 3:
         return (
           <ContainerCard className="bg-[#fff] p-6 rounded-xl border border-[#E5E7EB]">
-            <h2 className="text-xl font-semibold mb-6">Promotion</h2>
+            <h2 className="text-xl font-semibold mb-6">Pricing</h2>
             {/* ...existing promotion fields and tables... */}
             {/* Action Buttons Row */}
                         {/* Promotion Fields */}

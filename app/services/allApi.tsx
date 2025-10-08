@@ -1994,7 +1994,6 @@ export const getRoleById = async (id: string, params?: Params) => {
 
 type roletype = {
   name: string;
-  guard_name: string;
   permissions: number[];
 };
 
