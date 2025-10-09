@@ -137,13 +137,13 @@ export default function ShelfDisplay() {
                   router.push(`/dashboard/settings/company/serviceType/${data.uuid}`);
                 },
               },
-              {
-                icon: "lucide:trash-2",
-                onClick: (data: TableDataType) => {
-                  setDeleteSelectedRow(data?.uuid ? String(data.uuid) : data.uuid);
-                  setShowDeletePopup(true);
-                },
-              },
+              // {
+              //   icon: "lucide:trash-2",
+              //   onClick: (data: TableDataType) => {
+              //     setDeleteSelectedRow(data?.uuid ? String(data.uuid) : data.uuid);
+              //     setShowDeletePopup(true);
+              //   },
+              // },
             ],
             pageSize: 10,
           }}

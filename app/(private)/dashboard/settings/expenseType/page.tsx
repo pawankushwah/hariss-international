@@ -224,16 +224,16 @@ const tableData: TableDataType[] = countries.map((c) => ({
                   router.push(`/dashboard/settings/expenseType/${row.id}`);
                 },
               },
-              {
-                icon: "lucide:trash-2",
-                onClick: (data: object) => {
-                  const row = data as TableRow;
-                  setSelectedRow({ id: row.id });
-                  setShowDeletePopup(true);
-                },
-              },
+              // {
+              //   icon: "lucide:trash-2",
+              //   onClick: (data: object) => {
+              //     const row = data as TableRow;
+              //     setSelectedRow({ id: row.id });
+              //     setShowDeletePopup(true);
+              //   },
+              // },
             ],
-            pageSize: 2,
+            pageSize: 10,
           }}
         />
       </div>

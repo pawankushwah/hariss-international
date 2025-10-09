@@ -231,19 +231,19 @@ export default function CustomerPage() {
                   );
                 },
               },
-              {
-                icon: "lucide:trash",
-                onClick: (row: object) => {
-                  const r = row as TableDataType;
-                  setSelectedRow({
-                    id: r.id,
-                    code: r.code,
-                    name: r.name,
-                    status: Number(r.status) === 1 ? 1 : 0,
-                  });
-                  setShowDeletePopup(true);
-                },
-              },
+              // {
+              //   icon: "lucide:trash",
+              //   onClick: (row: object) => {
+              //     const r = row as TableDataType;
+              //     setSelectedRow({
+              //       id: r.id,
+              //       code: r.code,
+              //       name: r.name,
+              //       status: Number(r.status) === 1 ? 1 : 0,
+              //     });
+              //     setShowDeletePopup(true);
+              //   },
+              // },
             ],
             pageSize: 5,
           }}

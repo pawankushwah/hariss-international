@@ -231,15 +231,15 @@ const tableData: TableDataType[] = routeType.map((s) => ({
                   router.push(`/dashboard/settings/routetype/${row.id}`);
                 },
               },
-              {
-                icon: "lucide:trash-2",
-                onClick: (data: object) => {
-                  const row = data as TableRow;
-                  if (deletingId === String(row.id)) return;
-                  setSelectedRow({ id: String(row.id) });
-                  setShowDeletePopup(true);
-                },
-              },
+              // {
+              //   icon: "lucide:trash-2",
+              //   onClick: (data: object) => {
+              //     const row = data as TableRow;
+              //     if (deletingId === String(row.id)) return;
+              //     setSelectedRow({ id: String(row.id) });
+              //     setShowDeletePopup(true);
+              //   },
+              // },
             ],
             pageSize: 10,
           }}

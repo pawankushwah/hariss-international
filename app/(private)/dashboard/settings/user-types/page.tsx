@@ -185,20 +185,20 @@ export default function UserType() {
                   router.push(`/dashboard/settings/user-types/${row.id}`);
                 },
               },
-              {
-                icon: "lucide:trash-2",
-                onClick: (data: object) => {
-                  const row = data as TableRow;
-                  setSelectedRow({
-                    id: row.id,
-                    code: row.code,
-                    name: row.name,
-                  });
-                  setShowDeletePopup(true);
-                },
-              },
+              // {
+              //   icon: "lucide:trash-2",
+              //   onClick: (data: object) => {
+              //     const row = data as TableRow;
+              //     setSelectedRow({
+              //       id: row.id,
+              //       code: row.code,
+              //       name: row.name,
+              //     });
+              //     setShowDeletePopup(true);
+              //   },
+              // },
             ],
-            pageSize: 5,
+            pageSize: 10,
           }}
         />
       </div>

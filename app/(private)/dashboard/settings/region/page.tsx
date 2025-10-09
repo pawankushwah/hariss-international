@@ -223,16 +223,16 @@ const tableData: TableDataType[] = regions.map((s) => ({
                   router.push(`/dashboard/settings/region/${row.id}`);
                 },
               },
-              {
-                icon: "lucide:trash-2",
-                onClick: (data: object) => {
-                  const row = data as TableRow;
-                  setSelectedRow({ id: row.id });
-                  setShowDeletePopup(true);
-                },
-              },
+              // {
+              //   icon: "lucide:trash-2",
+              //   onClick: (data: object) => {
+              //     const row = data as TableRow;
+              //     setSelectedRow({ id: row.id });
+              //     setShowDeletePopup(true);
+              //   },
+              // },
             ],
-            pageSize: 5,
+            pageSize: 10,
           }}
         />
       </div>

@@ -308,14 +308,14 @@ export default function Item() {
                                     );
                                 },
                             },
-                            {
-                                icon: "lucide:trash-2",
-                                onClick: (data: object) => {
-                                    const row = data as TableRow;
-                                    setSelectedRow({ id: row.id });
-                                    setShowDeletePopup(true);
-                                },
-                            },
+                            // {
+                            //     icon: "lucide:trash-2",
+                            //     onClick: (data: object) => {
+                            //         const row = data as TableRow;
+                            //         setSelectedRow({ id: row.id });
+                            //         setShowDeletePopup(true);
+                            //     },
+                            // },
                         ],
                         pageSize: 10,
                     }}

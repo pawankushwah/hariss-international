@@ -268,13 +268,13 @@ export default function Route() {
                                     );
                                 },
                             },
-                            {
-                                icon: "lucide:trash-2",
-                                onClick: (data: TableDataType) => {
-                                    setSelectedRowId(parseInt(data.id));
-                                    setShowDeletePopup(true);
-                                },
-                            },
+                            // {
+                            //     icon: "lucide:trash-2",
+                            //     onClick: (data: TableDataType) => {
+                            //         setSelectedRowId(parseInt(data.id));
+                            //         setShowDeletePopup(true);
+                            //     },
+                            // },
                         ],
                         pageSize: 10,
                     }}

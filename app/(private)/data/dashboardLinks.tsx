@@ -109,13 +109,13 @@ export const initialLinkData: SidebarDataType[] = [
                         iconColor: "text-green-500"
                     },
                    
-                    {
-                        isActive: false,
-                        href: "/dashboard/master/customer",
-                        label: "Customer",
-                        leadingIcon: "lucide:user",
-                        iconColor: "text-green-500"
-                    },
+                    // {
+                    //     isActive: false,
+                    //     href: "/dashboard/master/customer",
+                    //     label: "Customer",
+                    //     leadingIcon: "lucide:user",
+                    //     iconColor: "text-green-500"
+                    // },
                    
             // {
             //     isActive: false,
@@ -152,13 +152,13 @@ export const initialLinkData: SidebarDataType[] = [
                 trailingIcon: "mdi-light:chevron-right",
                 iconColor: "text-yellow-400",
                 children: [ 
-                       {
-                        isActive: false,
-                        href: "/dashboard/master/pricing",
-                        label: "Pricing",
-                        leadingIcon: "mdi:currency-usd",
-                        iconColor: "text-yellow-400"
-                    },
+                    //    {
+                    //     isActive: false,
+                    //     href: "/dashboard/master/pricing",
+                    //     label: "Pricing",
+                    //     leadingIcon: "mdi:currency-usd",
+                    //     iconColor: "text-yellow-400"
+                    // },
                    
             {
                 isActive: false,
