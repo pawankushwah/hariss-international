@@ -406,7 +406,7 @@ export default function AddOrEditCompanyWithStepper() {
               <div>
                 <InputFields
                   required
-                  label="description"
+                  label="Description"
                   name="description"
                   value={values.description}
                   onChange={(e) => setFieldValue("description", e.target.value)}
