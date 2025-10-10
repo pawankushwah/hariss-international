@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import DiscountType from '../../(private)/dashboard/settings/customer/discountType/page';
+import DiscountType from '../../(private)/(dashboard)/settings/customer/discountType/page';
 import {
   companyList,
   countryList,
