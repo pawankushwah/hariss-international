@@ -75,7 +75,7 @@ export default function ShelfDisplay() {
   return (
     <>
       {/* Table */}
-      <div className="h-[calc(100%-60px)]">
+      <div className="flex flex-col h-full">
         <Table
         refreshKey={refreshKey}
           config={{

@@ -130,7 +130,7 @@ const searchPlanogram = useCallback(
   ];
 
   return (
-    <div className="h-[calc(100%-60px)] pb-[22px]">
+    <div className="flex flex-col h-full">
       <Table
         refreshKey={refreshKey}
         config={{
