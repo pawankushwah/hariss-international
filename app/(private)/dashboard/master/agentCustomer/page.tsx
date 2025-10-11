@@ -33,16 +33,14 @@ const dropdownDataList: DropdownItem[] = [
     { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
     { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
-const paymentTypeeMapping: Record<string | number, string> = {
-  0: "Cash",
-  1: "Credit",
-  3: "TC-Bill to Bill",
- 
+const paymentTypeMapping: Record<number | string, string> = {
+  1: "Cash",
+  2: "Credit",
+  3: "TC - Bill to Bill",
 };
 const buyerTypeeMapping: Record<string | number, string> = {
     0: "B2B",
   1: "B2C",
-
 };
 const languageTypeeMapping: Record<string | number, string> = {
   0: "English",
@@ -158,54 +156,29 @@ const columns = [
 //   { key: "buyertype", label: "Buyer Type" },
 //   { key: "payment_type", label: "Payment Type" },
   { key: "creditday", label: "Credit Day" },
-   {
-  key: "buyertype",
-  label: "Buyer Type",
+{
+  key: "payment_type",
+  label: "Payment Type",
   render: (row: TableDataType) => {
-    const value = row.language;
+    const value = row.payment_type;
 
-    // Agar JSON string hai ("{id:1,name:'Merchandiser'}"), to parse karo
-    if (typeof value === "string" && value.startsWith("{")) {
-      try {
-        const obj = JSON.parse(value);
-        return obj.name || buyerTypeeMapping[obj.id] || "-";
-      } catch {
-        return buyerTypeeMapping[value] || "-";
+    // Agar nested object aata hai (jaise { id: 1, name: "Cash" })
+    if (value && typeof value === "object") {
+      if (typeof value === "object" && value !== null && "name" in value) {
+        return (value as { name?: string; id?: number | string }).name || paymentTypeMapping[(value as { id?: number | string }).id!] || "-";
       }
+      return "-";
     }
 
-    // Agar number ya string hai, to mapping se text lao
+    // Agar sirf number ya string aata hai
     if (typeof value === "number" || typeof value === "string") {
-      return buyerTypeeMapping[value] || "-";
+      return paymentTypeMapping[value] || "-";
     }
 
     return "-";
   },
 },
- {
-  key: "payment_type",
-  label: "Payment Type",
-  render: (row: TableDataType) => {
-    const value = row.paymentTypeeMapping;
-
-    // Agar JSON string hai ("{id:1,name:'Merchandiser'}"), to parse karo
-    if (typeof value === "string" && value.startsWith("{")) {
-      try {
-        const obj = JSON.parse(value);
-        return obj.name || paymentTypeeMapping[obj.id] || "-";
-      } catch {
-        return paymentTypeeMapping[value] || "-";
-      }
-    }
-
-    // Agar number ya string hai, to mapping se text lao
-    if (typeof value === "number" || typeof value === "string") {
-      return paymentTypeeMapping[value] || "-";
-    }
-
-    return "-";
-  },
-}, 
+ 
   { key: "threshold_radius", label: "Threshold Radius" },
  {
   key: "language",
