@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect ,useCallback} from "react";
+import { useState ,useCallback} from "react";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 import BorderIconButton from "@/app/components/borderIconButton";
@@ -8,8 +8,6 @@ import Table, { TableDataType,listReturnType } from "@/app/components/customTabl
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import { salesmanTypeList, deleteSalesmanType } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
-import DismissibleDropdown from "@/app/components/dismissibleDropdown";
-import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 
 interface DropdownItem {
@@ -53,25 +51,13 @@ export default function SalesmanTypeList() {
     salesman_type_status: string | number; // ✅ allow both
   }
 
-  const [refreshKey, setRefreshKey] = useState(0); // Forcing Table refresh
-  const [countries, setCountries] = useState<SalesmanTypeForm[]>([]);
   const { setLoading} = useLoading();
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
-  const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<SalesmanTypeForm | null>(null);
+
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
   type TableRow = TableDataType & { id?: string };
 
-  // ✅ Normalize countries to TableDataType for the Table component
-  const tableData: TableDataType[] = countries.map((c) => ({
-    id: String(c.id ?? ""),
-    salesman_type_code: c.salesman_type_code ?? "",
-    salesman_type_name: c.salesman_type_name ?? "",
-    // ✅ Convert numeric/string status to readable text
-    salesman_type_status:
-      Number(c.salesman_type_status) === 1 ? "Active" : "Inactive",
-  }));
 
   // const fetchCountries = async () => {
   //   try {
@@ -116,40 +102,12 @@ export default function SalesmanTypeList() {
   //   fetchCountries();
   // }, []);
 
-  const handleConfirmDelete = async () => {
-    if (!selectedRow?.id) {
-      showSnackbar("No row selected ❌", "error");
-      return;
-    }
-
-    try {
-      // ✅ Only ID is numeric here; status is not touched
-      await deleteSalesmanType(String(selectedRow.id));
-      // await fetchCountries();
-
-      // ✅ Update UI without full refresh
-      setCountries((prev) =>
-        prev.filter((c) => String(c.id) !== String(selectedRow.id))
-      );
-
-      showSnackbar("Salesman Type deleted successfully ✅", "success");
-      setRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error("Delete failed:", error);
-      showSnackbar("Failed to delete salesman type ❌", "error");
-    } finally {
-      setShowDeletePopup(false);
-      setSelectedRow(null);
-    }
-  };
-
   return  (
     <>
 
 
       <div className="h-[calc(100%-60px)]">
         <Table
-          key={refreshKey} 
           config={{
             api:{
               list: fetchSalesmanType,
@@ -205,7 +163,7 @@ export default function SalesmanTypeList() {
                   href="/dashboard/settings/salesman-type/add"
                   isActive
                   leadingIcon="lucide:plus"
-                  label="Add New"
+                  label="Add"
                   labelTw="hidden lg:block"
                 />,
               ],
@@ -216,14 +174,6 @@ export default function SalesmanTypeList() {
             rowSelection: true,
             rowActions: [
               {
-                icon: "lucide:eye",
-                onClick: (data: TableDataType) => {
-                  router.push(
-                    `/dashboard/settings/salesman-type/details/${data.id}`
-                  );
-                },
-              },
-              {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
@@ -232,37 +182,11 @@ export default function SalesmanTypeList() {
                   );
                 },
               },
-              {
-                icon: "lucide:trash-2",
-                onClick: (data: object) => {
-                  const row = data as TableRow;
-                  setSelectedRow({
-                    id: String(row.id),
-                    salesman_type_code: row.salesman_type_code ?? "",
-                    salesman_type_name: row.salesman_type_name ?? "",
-                    salesman_type_status: row.salesman_type_status ?? "",
-                  });
-                  setShowDeletePopup(true);
-                },
-              },
             ],
-            pageSize: 10,
+            pageSize: 50,
           }}
         />
       </div>
-
-      {showDeletePopup && selectedRow && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <DeleteConfirmPopup
-            title={`Delete User: ${selectedRow.salesman_type_name}?`}
-            onClose={() => {
-              setShowDeletePopup(false);
-              setSelectedRow(null);
-            }}
-            onConfirm={handleConfirmDelete}
-          />
-        </div>
-      )}
     </>
   );
 }

@@ -9,11 +9,11 @@ import Table, {
   listReturnType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { userList, deleteUserType } from "@/app/services/allApi";
+import { userList } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
-import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext"; // ✅ import snackbar
 import StatusBtn from "@/app/components/statusBtn2";
+import { userTypeGlobalSearch } from "@/app/services/allApi";
 
 interface DropdownItem {
   icon: string;
@@ -49,25 +49,17 @@ const columns = [
 ];
 
 export default function UserType() {
-  const [countries, setCountries] = useState<UserType[]>([]);
+  const { showSnackbar } = useSnackbar();
   const { setLoading } = useLoading();
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
-  const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<UserType | null>(null);
   const router = useRouter();
-  const { showSnackbar } = useSnackbar(); // ✅ snackbar hook
   type TableRow = TableDataType & { id?: string };
 
-  // normalize countries to TableDataType for the Table component
-  const tableData: TableDataType[] = countries.map((c) => ({
-    id: c.id?.toString() ?? "",
-    code: c.code ?? "",
-    name: c.name ?? "",
-    status: c.status?.toString() ?? "0",
-  }));
-
   const fetchUserType = useCallback(
-    async (page: number = 1, pageSize: number = 5): Promise<listReturnType> => {
+    async (
+      page: number = 1,
+      pageSize: number = 50
+    ): Promise<listReturnType> => {
       try {
         setLoading(true);
         const listRes = await userList({
@@ -89,25 +81,29 @@ export default function UserType() {
     },
     []
   );
-  const handleConfirmDelete = async () => {
-    if (!selectedRow?.id) {
-      showSnackbar("No row selected ❌", "error");
-      return;
-    }
 
-    try {
-      await deleteUserType(String(selectedRow.id));
-      // setLoading(true);
-      showSnackbar("User deleted successfully ✅", "success");
-      fetchUserType();
-    } catch (error) {
-      console.error("Delete failed:", error);
-      showSnackbar("Failed to delete user ❌", "error");
-    } finally {
-      setShowDeletePopup(false);
-      setSelectedRow(null);
-    }
-  };
+  const searchList = useCallback(
+    async (search: string, pageSize: number = 5): Promise<listReturnType> => {
+      setLoading(true);
+      const listRes = await userTypeGlobalSearch({
+        search,
+        per_page: pageSize.toString(),
+      });
+      setLoading(false);
+      if (listRes.error) {
+        showSnackbar(listRes.data.message || "Failed to Search", "error");
+        throw new Error("Failed to Search");
+      } else {
+        return {
+          data: listRes.data || [],
+          total: listRes.pagination.totalPages || 1,
+          currentPage: listRes.pagination.page || 1,
+          pageSize: listRes.pagination.limit || pageSize,
+        };
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -120,6 +116,7 @@ export default function UserType() {
           config={{
             api: {
               list: fetchUserType,
+              search: searchList,
             },
             header: {
               title: "User Types",
@@ -161,7 +158,7 @@ export default function UserType() {
                   href="/dashboard/settings/user-types/add"
                   isActive
                   leadingIcon="lucide:plus"
-                  label="Add User"
+                  label="Add"
                   labelTw="hidden sm:block"
                 />,
               ],
@@ -172,50 +169,17 @@ export default function UserType() {
             rowSelection: true,
             rowActions: [
               {
-                icon: "lucide:eye",
-                onClick: (data: TableDataType) => {
-                  router.push(
-                    `/dashboard/settings/user-types/details/${data.id}`
-                  );
-                },
-              },
-              {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
                   router.push(`/dashboard/settings/user-types/${row.id}`);
                 },
               },
-              {
-                icon: "lucide:trash-2",
-                onClick: (data: object) => {
-                  const row = data as TableRow;
-                  setSelectedRow({
-                    id: row.id,
-                    code: row.code,
-                    name: row.name,
-                  });
-                  setShowDeletePopup(true);
-                },
-              },
             ],
-            pageSize: 5,
+            pageSize: 50,
           }}
         />
       </div>
-
-      {showDeletePopup && selectedRow && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <DeleteConfirmPopup
-            title={`Delete User: ${selectedRow.name}?`}
-            onClose={() => {
-              setShowDeletePopup(false);
-              setSelectedRow(null);
-            }}
-            onConfirm={handleConfirmDelete}
-          />
-        </div>
-      )}
     </>
   );
 }
