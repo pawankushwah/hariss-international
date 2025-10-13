@@ -81,7 +81,7 @@ export default function WarehouseContactDetails({ values, errors, touched, handl
       {/* Email */}
       <div>
         <InputFields
-          label="Email"
+          label="Owner Email"
           required
           name="owner_email"
           value={values.owner_email}
@@ -90,6 +90,19 @@ export default function WarehouseContactDetails({ values, errors, touched, handl
         />
         {errors?.owner_email && touched?.owner_email && (
           <span className="text-xs text-red-500 mt-1">{errors.owner_email}</span>
+        )}
+      </div>
+      <div>
+        <InputFields
+          label="Warehouse Email"
+          required
+          name="warehouse_email"
+          value={values.warehouse_email}
+          onChange={handleChange}
+          error={errors?.warehouse_email && touched?.warehouse_email ? errors.warehouse_email : false}
+        />
+        {errors?.warehouse_email && touched?.warehouse_email && (
+          <span className="text-xs text-red-500 mt-1">{errors.warehouse_email}</span>
         )}
       </div>
     </div>

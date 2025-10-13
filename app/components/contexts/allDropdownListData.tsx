@@ -6,7 +6,7 @@ import {
   countryList,
   regionList,
   routeList,
-  warehouseType,
+  warehouseList,
   routeType,
   subRegionList,
   getCompanyCustomers,
@@ -210,7 +210,7 @@ interface CustomerSubCategory {
 
 interface Item {
   id?: number | string;
-  code?: string;
+  item_code?: string;
   name?: string;
 }
 
@@ -247,7 +247,7 @@ interface AgentCustomerList {
     id: number,
     uuid: string,
     osa_code: string,
-    name: string,
+    owner_name: string,
     status: number
 }
 
@@ -414,7 +414,7 @@ const customerCategoryOptions = (Array.isArray(customerCategory) ? customerCateg
 
   const itemOptions = (Array.isArray(item) ? item : []).map((c: Item) => ({
     value: String(c.id ?? ''),
-    label: c.code && c.name ? `${c.code} - ${c.name}` : (c.name ?? '')
+    label: c.item_code && c.name ? `${c.item_code} - ${c.name}` : (c.name ?? '')
   }));
 
   const discountTypeOptions = (Array.isArray(discountType) ? discountType : []).map((c: DiscountType) => ({
@@ -439,7 +439,7 @@ const customerCategoryOptions = (Array.isArray(customerCategory) ? customerCateg
 
   const agentCustomerOptions = (Array.isArray(agentCustomer) ? agentCustomer : []).map((c: AgentCustomerList) => ({
     value: String(c.id ?? ''),
-    label: c.osa_code && c.name ? `${c.osa_code} - ${c.name}` : (c.name ?? '')
+    label: c.osa_code && c.owner_name ? `${c.osa_code} - ${c.owner_name}` : (c.owner_name ?? '')
   }));
 
   const shelvesOptions = (Array.isArray(shelves) ? shelves : []).map((c: ShelvesList) => ({
@@ -530,7 +530,7 @@ const customerCategoryOptions = (Array.isArray(customerCategory) ? customerCateg
         regionList(),
         SurveyList(),
         routeList({}),
-        warehouseType(1),
+        warehouseList(),
         routeType(),
         subRegionList(),
         getCompanyCustomers(),
