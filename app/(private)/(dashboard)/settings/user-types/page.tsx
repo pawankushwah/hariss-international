@@ -95,25 +95,6 @@ export default function UserType() {
     },
     []
   );
-  const handleConfirmDelete = async () => {
-    if (!selectedRow?.id) {
-      showSnackbar("No row selected ❌", "error");
-      return;
-    }
-
-    try {
-      await deleteUserType(String(selectedRow.id));
-      // setLoading(true);
-      showSnackbar("User deleted successfully ✅", "success");
-      fetchUserType();
-    } catch (error) {
-      console.error("Delete failed:", error);
-      showSnackbar("Failed to delete user ❌", "error");
-    } finally {
-      setShowDeletePopup(false);
-      setSelectedRow(null);
-    }
-  };
 
   useEffect(() => {
     setLoading(true);
@@ -178,50 +159,17 @@ export default function UserType() {
             rowSelection: true,
             rowActions: [
               {
-                icon: "lucide:eye",
-                onClick: (data: TableDataType) => {
-                  router.push(
-                    `/settings/user-types/details/${data.id}`
-                  );
-                },
-              },
-              {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
                   router.push(`/settings/user-types/${row.id}`);
                 },
               },
-              // {
-              //   icon: "lucide:trash-2",
-              //   onClick: (data: object) => {
-              //     const row = data as TableRow;
-              //     setSelectedRow({
-              //       id: row.id,
-              //       code: row.code,
-              //       name: row.name,
-              //     });
-              //     setShowDeletePopup(true);
-              //   },
-              // },
             ],
             pageSize: 10,
           }}
         />
       </div>
-
-      {showDeletePopup && selectedRow && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <DeleteConfirmPopup
-            title={`Delete User: ${selectedRow.name}?`}
-            onClose={() => {
-              setShowDeletePopup(false);
-              setSelectedRow(null);
-            }}
-            onConfirm={handleConfirmDelete}
-          />
-        </div>
-      )}
     </>
   );
 }
