@@ -28,7 +28,6 @@ import {
   submenuList,
   permissionList,
   SurveyList,
-  warehouseList
 } from '@/app/services/allApi';
 import { vendorList } from '@/app/services/assetsApi';
 import { shelvesList } from '@/app/services/merchandiserApi';
