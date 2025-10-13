@@ -196,7 +196,7 @@ export default function AddEditWarehouse() {
                         company: String(data?.get_company?.id || ''),
                         agreed_stock_capital: String(data?.agreed_stock_capital || ''),
                         vat_no: String(data?.vat_no || ''),
-                        agent_customer: data?.agent_customer || '',
+                        agent_customer: String(data?.get_company_customer?.id )|| '',
                         warehouse_manager: data?.warehouse_manager || '',
                         ownerContactCountry: data?.ownerContactCountry || '',
                         owner_number: data?.owner_number || '',
