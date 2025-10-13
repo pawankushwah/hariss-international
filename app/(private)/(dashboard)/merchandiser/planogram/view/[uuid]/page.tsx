@@ -125,7 +125,7 @@ export default function Page() {
 
       {/* Tabs */}
       <ContainerCard
-        className="w-full flex font-inter   items-center   border-r border-gray-300 opacity-100"
+        className="w-full flex font-inter   items-center p-1  border-r border-gray-3"
         padding="4px"
       >
         {tabs.map((tab, index) => (
@@ -134,7 +134,7 @@ export default function Page() {
               label={tab.name}
               isActive={activeTab === index} 
               onClick={() => onTabClick(index)}
-            />
+            />a
           </div>
         ))}
       </ContainerCard>

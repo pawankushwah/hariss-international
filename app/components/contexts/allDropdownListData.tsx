@@ -29,7 +29,7 @@ import {
   SurveyList
 } from "@/app/services/allApi";
 import { vendorList } from "@/app/services/assetsApi";
-import { shelvesList } from "@/app/services/merchandiserApi";
+import { shelvesList,merchandiserList} from "@/app/services/merchandiserApi";
 
 export type Option = { value: string; label: string };
 
@@ -62,6 +62,7 @@ interface Item extends BaseItem { code?: string; name?: string; }
 interface DiscountType extends BaseItem { discount_code?: string; discount_name?: string; }
 interface MenuList extends BaseItem { osa_code?: string; name?: string; }
 interface VendorList extends BaseItem { code?: string; name?: string; }
+interface MerchandiserList extends BaseItem { code?: string; name?: string; }
 interface SalesmanList extends BaseItem { osa_code?: string; name?: string; }
 interface AgentCustomerList extends BaseItem { osa_code?: string; name?: string; }
 interface ShelvesList extends BaseItem { shelf_name?: string; }
@@ -93,6 +94,7 @@ interface ListsType {
   discountType: DiscountType[];
   menuList: MenuList[];
   vendor: VendorList[];
+  merchandiser: MerchandiserList[];
   salesman: SalesmanList[];
   agentCustomer: AgentCustomerList[];
   shelves: ShelvesList[];
@@ -133,6 +135,7 @@ export interface DropdownDataContextType {
   discountType: DiscountType[];
   menuList: MenuList[];
   vendor: VendorList[];
+  merchandiser: MerchandiserList[];
   salesman: SalesmanList[];
   agentCustomer: AgentCustomerList[];
   shelves: ShelvesList[];
@@ -164,6 +167,7 @@ export interface DropdownDataContextType {
   discountTypeOptions: Option[];
   menuOptions: Option[];
   vendorOptions: Option[];
+  merchandiserOptions: Option[];
   salesmanOptions: Option[];
   agentCustomerOptions: Option[];
   shelvesOptions: Option[];
@@ -198,6 +202,7 @@ const defaultLists: ListsType = {
   discountType: [],
   menuList: [],
   vendor: [],
+  merchandiser: [],
   salesman: [],
   agentCustomer: [],
   shelves: [],
@@ -260,6 +265,7 @@ const descriptors: { key: ListKey; fetch: () => Promise<unknown>; labelKeys?: st
   { key: "discountType", fetch: getDiscountTypeList, labelKeys: ["discount_code", "discount_name", "name"] },
   { key: "menuList", fetch: getMenuList, labelKeys: ["osa_code", "name"] },
   { key: "vendor", fetch: vendorList, labelKeys: ["code", "name"] },
+  { key: "merchandiser", fetch: merchandiserList, labelKeys: ["code", "name"] },
   { key: "salesman", fetch: salesmanList, labelKeys: ["osa_code", "name"] },
   { key: "agentCustomer", fetch: agentCustomerList, labelKeys: ["osa_code", "name"] },
   { key: "shelves", fetch: shelvesList, labelKeys: ["shelf_name", "name"] },
@@ -331,11 +337,13 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
     discountType: lists.discountType,
     menuList: lists.menuList,
     vendor: lists.vendor,
+    merchandiser: lists.merchandiser,
     salesman: lists.salesman,
     agentCustomer: lists.agentCustomer,
     shelves: lists.shelves,
     submenu: lists.submenu,
     permissions: lists.permissions,
+
     companyOptions: options.companyList,
     countryOptions: options.countryList,
     onlyCountryOptions: lists.countryList.map((it) => ({ value: String(it.id ?? ""), label: labelFor(it, ["country_name", "country_code", "name"]) })),
@@ -360,15 +368,18 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
     itemOptions: options.item,
     discountTypeOptions: options.discountType,
     menuOptions: options.menuList,
-    vendorOptions: options.vendor,
+    vendorOptions: options.vendor,          // ✅ Added this line
+    merchandiserOptions: options.merchandiser,
     salesmanOptions: options.salesman,
     agentCustomerOptions: options.agentCustomer,
     shelvesOptions: options.shelves,
     submenuOptions: options.submenu,
     permissionsOptions: options.permissions,
+
     refreshDropdowns,
     loading,
   };
+
 
   return <AllDropdownListDataContext.Provider value={contextValue}>{children}</AllDropdownListDataContext.Provider>;
 };
