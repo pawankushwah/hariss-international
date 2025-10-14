@@ -132,7 +132,6 @@ export default function CompanyPage() {
                   href="/settings/company/companyType/add"
                   leadingIcon="lucide:plus"
                   label="Add"
-                  label="Add"
                   labelTw="hidden sm:block"
                   isActive
                 />,

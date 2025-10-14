@@ -25,9 +25,7 @@ interface Salesman {
     salesman_type_code?: string;
     salesman_type_name?: string;
   };
-  sub_type?: string;
   designation?: string;
-  security_code?: string;
   route?: {
     id?: number;
     route_code?: string;
@@ -39,14 +37,14 @@ interface Salesman {
     warehouse_name?: string;
   };
   device_no?: string;
-  salesman_role?: string | number;
   username?: string;
   contact_no?: string;
-  sap_id?: string | null;
   status?: string | number;
   image_url?: string | null;
   description?: string | null;
-  token_no?: string;
+  is_block?: string | number;
+  is_block_reason?: string;
+  forceful_login?: string | number;
 }
 
 const title = "Salesman Details";
@@ -114,7 +112,9 @@ export default function ViewPage() {
             <div className="flex justify-center">
               <StatusBtn
                 isActive={
-                  salesman?.status == 1 || salesman?.status === "1" ? true : false
+                  salesman?.status == 1 || salesman?.status === "1"
+                    ? true
+                    : false
                 }
               />
             </div>
@@ -123,24 +123,16 @@ export default function ViewPage() {
 
         {/* Right Section */}
         <div className="w-full flex flex-col gap-y-[20px]">
-
           {/* General Information */}
           <ContainerCard className="w-full">
             <KeyValueData
               title="Salesman Information"
               data={[
                 {
-                  key: "SAP ID",
-                  value: salesman?.sap_id || "-",
-                },
-                {
                   key: "Salesman Type",
-                  value:
-                    salesman?.salesman_type?.salesman_type_name || "-",
+                  value: salesman?.salesman_type?.salesman_type_name || "-",
                 },
-                { key: "Sub Type", value: salesman?.sub_type || "-" },
                 { key: "Designation", value: salesman?.designation || "-" },
-                { key: "Device No", value: salesman?.device_no || "-" },
                 { key: "Contact No", value: salesman?.contact_no || "-" },
                 {
                   key: "Warehouse",
@@ -150,8 +142,27 @@ export default function ViewPage() {
                   key: "Route",
                   value: salesman?.route?.route_name || "-",
                 },
-                { key: "Token No", value: salesman?.token_no || "-" },
-                
+                { key: "User Name", value: salesman?.username || "-" },
+                {
+                  key: "Forcefull Login",
+                  value:
+                    salesman?.forceful_login === 1 ||
+                    salesman?.forceful_login === "1"
+                      ? "Yes"
+                      : "No",
+                },
+                {
+                  key: "Is Block",
+                  value:
+                    salesman?.is_block === 1 || salesman?.is_block === "1"
+                      ? "Yes"
+                      : "No",
+                },
+
+                {
+                  key: "Is Block Reason",
+                  value: salesman?.is_block_reason || "-",
+                },
               ]}
             />
           </ContainerCard>
