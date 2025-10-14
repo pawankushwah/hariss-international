@@ -57,20 +57,20 @@ export default function Competitor() {
   );
 
   // Handle image popup open
-  const BASE_URL ="http://127.0.0.1:8000";
-  const handleOpenImagePopup = (row: any) => {
-    const images: string[] = [];
- if (row.image?.image1) images.push(BASE_URL + row.image.image1);
-    if (row.image?.image2) images.push(BASE_URL + row.image.image2);
-    if (row.image?.image3) images.push(BASE_URL + row.image.image3);
+//   const BASE_URL ="http://127.0.0.1:8000";
+//   const handleOpenImagePopup = (row: any) => {
+//     const images: string[] = [];
+//  if (row.image?.image1) images.push(BASE_URL + row.image.image1);
+//     if (row.image?.image2) images.push(BASE_URL + row.image.image2);
+//     if (row.image?.image3) images.push(BASE_URL + row.image.image3);
 
-    if (images.length === 0) {
-      showSnackbar("No images available", "info");
-      return;
-    }
+//     if (images.length === 0) {
+//       showSnackbar("No images available", "info");
+//       return;
+//     }
 
-    setPopupImages(images);
-  };
+//     setPopupImages(images);
+//   };
 
   return (
     <>
