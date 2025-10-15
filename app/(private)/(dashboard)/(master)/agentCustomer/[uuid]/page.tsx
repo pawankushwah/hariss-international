@@ -19,6 +19,7 @@ import {
     saveFinalCode,
     routeList,
     customerSubCategoryList,
+    customerCategoryList,
 } from "@/app/services/allApi";
 import * as Yup from "yup";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
@@ -38,7 +39,6 @@ interface AgentCustomerFormValues {
     outlet_channel_id: number | string;
     customer_type: number | string;
     contact_no: string;
-    // country_code_contact_no: string;
     contact_no2: string;
     whatsapp_no: string;
     street: string;
@@ -83,6 +83,7 @@ export default function AddEditAgentCustomer() {
     const [codeMode, setCodeMode] = useState<"auto" | "manual">("auto");
     const [prefix, setPrefix] = useState("");
     const [filteredRouteOptions, setFilteredRouteOptions] = useState(routeOptions);
+    const [filteredCustomerCategoryOptions, setFilteredCustomerCategoryOptions] = useState(customerCategoryOptions);
     const [filteredCustomerSubCategoryOptions, setFilteredCustomerSubCategoryOptions] = useState(customerSubCategoryOptions);
 
     const { showSnackbar } = useSnackbar();
@@ -116,24 +117,23 @@ export default function AddEditAgentCustomer() {
             outlet_channel_id: "",
             customer_type: "",
             contact_no: "",
-            // country_code_contact_no: "",
             contact_no2: "",
             whatsapp_no: "",
             street: "",
             landmark: "",
             town: "",
             district: "",
-            payment_type: "", // will be validated against allowed values
-            buyertype: "0", // "0" or "1"
+            payment_type: "",
+            buyertype: "0",
             warehouse: "",
             route_id: "",
             category_id: "",
             subcategory_id: "",
-            enable_promotion: "0", // "0" or "1"
+            enable_promotion: "0",
             creditday: "",
             credit_limit: "",
-            status: "1", // default active
-            is_cash: "1", // default cash
+            status: "1", 
+            is_cash: "1",
             vat_no: null,
             latitude: null,
             longitude: null,
@@ -161,6 +161,22 @@ export default function AddEditAgentCustomer() {
             label: route.route_name,
         })));
     };
+
+    const fetchCategories = async (value: string) => {
+        const filteredOptions = await customerCategoryList({
+            customer_category_id: value,
+            per_page: "10",
+        });
+        if(filteredOptions.error) {
+            showSnackbar(filteredOptions.data?.message || "Failed to fetch Customer Categories", "error");
+            return;
+        }
+        const options = filteredOptions?.data || [];
+        setFilteredCustomerCategoryOptions(options.map((category: { id: number; customer_category_code: string; customer_category_name: string }) => ({
+            value: String(category.id),
+            label: category.customer_category_name + " - " + category.customer_category_code,
+        })));
+    }
 
     const fetchSubCategories = async (value: string) => {
         const filteredOptions = await customerSubCategoryList({
@@ -192,21 +208,21 @@ export default function AddEditAgentCustomer() {
                         name: String(data.name ?? ""),
                         owner_name: String(data.owner_name ?? ""),
                         warehouse:
-                            data.warehouse != null
-                                ? String(data.warehouse)
+                            data.get_warehouse != null
+                                ? String(data.get_warehouse?.id)
                                 : "",
                         customer_type:
-                            data.customer_type != null
-                                ? String(data.customer_type)
+                            data.customertype != null
+                                ? String(data.customertype?.id)
                                 : "",
                         route_id:
-                            data.route_id != null
-                                ? String(data.route_id)
-                                : String(data.route?.id ?? ""),
+                            data.route?.route_id != null
+                                ? String(data.route?.route_id)
+                                : "",
                         outlet_channel_id:
-                            data.outlet_channel_id != null
-                                ? String(data.outlet_channel_id)
-                                : String(data.outlet_channel?.id ?? ""),
+                            data.outlet_channel.id != null
+                                ? String(data.outlet_channel?.id)
+                                : "",
                         buyertype:
                             data.buyertype != null
                                 ? String(data.buyertype)
@@ -232,8 +248,12 @@ export default function AddEditAgentCustomer() {
                         vat_no: data.vat_no ?? data.tin_no ?? null,
                         payment_type:
                             data.payment_type != null
-                                ? paymentTypeOptions.find((p) => p.value === String(data.payment_type))?.value || "1"
+                                ? paymentTypeOptions.find((p) => p.label === String(data.payment_type))?.value || "1"
                                 : "",
+                        is_cash:
+                            (data.payment_type != null
+                                ? paymentTypeOptions.find((p) => p.label === String(data.payment_type))?.value || "1"
+                                : "") === "1" ? "1" : "0",
                         creditday:
                             data.creditday != null
                                 ? String(data.creditday)
@@ -242,16 +262,14 @@ export default function AddEditAgentCustomer() {
                             data.credit_limit != null
                                 ? String(data.credit_limit)
                                 : "",
-                        is_cash:
-                            data.is_cash != null ? String(data.is_cash) : "1",
                         // categories
                         category_id:
-                            data.category_id != null
-                                ? String(data.category_id)
+                            data.category.id != null
+                                ? String(data.category?.id)
                                 : String(data.category?.id ?? ""),
                         subcategory_id:
-                            data.subcategory_id != null
-                                ? String(data.subcategory_id)
+                            data.subcategory?.id != null
+                                ? String(data.subcategory?.id)
                                 : String(data.subcategory?.id ?? ""),
                         // extras
                         status: data.status != null ? String(data.status) : "1",
@@ -478,6 +496,7 @@ export default function AddEditAgentCustomer() {
                 customer_type: Number(values.customer_type),
                 route_id: Number(values.route_id),
                 buyertype: Number(values.buyertype),
+                creditday: Number(values.creditday),
                 payment_type:
                     paymentTypeOptions.find(
                         (option) => option.value === String(values.payment_type)
@@ -681,10 +700,8 @@ export default function AddEditAgentCustomer() {
                                         label="Customer Type"
                                         options={customerTypeOptions}
                                         name="customer_type"
-                                        value={
-                                            values.customer_type?.toString() ??
-                                            ""
-                                        }
+                                        value={values.customer_type?.toString() ??""}
+                                        disabled={customerTypeOptions.length === 0}
                                         onChange={(e) =>
                                             setFieldValue(
                                                 "customer_type",
@@ -711,6 +728,7 @@ export default function AddEditAgentCustomer() {
                                         name="warehouse"
                                         value={values.warehouse}
                                         options={warehouseOptions}
+                                        disabled={warehouseOptions.length === 0}
                                         onChange={(e) => {
                                             setFieldValue("warehouse", e.target.value);
                                             if (values.warehouse !== e.target.value) {
@@ -1019,10 +1037,7 @@ export default function AddEditAgentCustomer() {
                                     required
                                     label="Payment Type"
                                     name="payment_type"
-                                    value={
-                                        values.payment_type?.toString() ??
-                                        ""
-                                    }
+                                    value={values.payment_type?.toString() ??""}
                                     onChange={(e) =>{
                                         setFieldValue("payment_type",e.target.value)
                                         setFieldValue("is_cash", (e.target.value === "1") ? "1" : "0")
@@ -1101,17 +1116,18 @@ export default function AddEditAgentCustomer() {
                                             values.outlet_channel_id?.toString() ??
                                             ""
                                         }
-                                        onChange={(e) =>
-                                            setFieldValue(
-                                                "outlet_channel_id",
-                                                e.target.value
-                                            )
-                                        }
+                                        onChange={(e) => {
+                                            setFieldValue("outlet_channel_id", e.target.value);
+                                            if (values.outlet_channel_id !== e.target.value) {
+                                                fetchCategories(e.target.value);
+                                            }
+                                        }}
                                         error={
                                             touched.outlet_channel_id &&
                                             errors.outlet_channel_id
                                         }
                                         options={channelOptions}
+                                        disabled={channelOptions.length === 0}
                                     />
                                     {touched.outlet_channel_id &&
                                         errors.outlet_channel_id && (
@@ -1139,7 +1155,8 @@ export default function AddEditAgentCustomer() {
                                             touched.category_id &&
                                             errors.category_id
                                         }
-                                        options={customerCategoryOptions}
+                                        options={filteredCustomerCategoryOptions}
+                                        disabled={customerCategoryOptions.length === 0}
                                     />
                                     {touched.category_id &&
                                         errors.category_id && (

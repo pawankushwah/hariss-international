@@ -1,9 +1,18 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import PhoneInput from "react-phone-input-2";
+import 'react-phone-input-2/lib/style.css';
 
 type Option = {
   value: string;
   label: string;
+};
+
+type PhoneCountry = {
+  dialCode?: string;
+  countryCode?: string;
+  iso2?: string;
+  name?: string;
 };
 
 type Props = {
@@ -15,7 +24,7 @@ type Props = {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
   options?: Option[];
-  type?: "text" | "select" | "file" | "date" | "radio" | "number" | "textarea";
+  type?: "text" | "select" | "file" | "date" | "radio" | "number" | "textarea" | "contact";
   id?: string;
   width?: string;
   error?: string | false;
@@ -63,10 +72,12 @@ export default function InputFields({
     top: "0",
     left: "0"
   })
+  const [dropdownPropertiesString, setDropdownPropertiesString] = useState("");
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const pointerDownRef = useRef(false);
   const isMulti = (options && options.length > 0 && typeof isSingle !== 'undefined' && isSingle === false) || (loading && isSingle === false);
   const isSingleSelect = (options && options.length > 0 && isSingle !== false) || (loading && isSingle !== false);
   const selectedValues: string[] = Array.isArray(value) ? value : [];
@@ -84,6 +95,7 @@ useEffect(() => {
       if (dropdown) {
         const { width, top, left, height } = dropdown.getBoundingClientRect();
         setDropdownProperties({ width: `${width}px`, top: `${top+height}px`, left: `${left}px` });
+        setDropdownPropertiesString(`!w-[${Math.floor(width)}px] !top-[${Math.floor(top+height)}px] !left-[${Math.floor(left)}px]`);
     }
     function handleClick(event: MouseEvent) {
             // Check if the ref exists and if the clicked target is a node
@@ -151,13 +163,13 @@ useEffect(() => {
 
   return (
     <div className={`flex flex-col gap-2 w-full ${width}`}>
-      {label && <label
+      <label
         htmlFor={id ?? name}
         className="text-sm font-medium text-gray-700"
       >
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
-      </label>}
+      </label>
 
       {type === "radio" && options && options.length > 0 ? (
         <div className="flex-wrap flex gap-4 mt-3">
@@ -179,8 +191,12 @@ useEffect(() => {
           {error && <span className="text-xs text-red-500 mt-1">{error}</span>}
         </div>
       ) : isMulti ? (
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative select-none" ref={dropdownRef}>
           <div
+            tabIndex={0}
+            onMouseDown={() => { pointerDownRef.current = true; }}
+            onMouseUp={() => { pointerDownRef.current = false; }}
+            onFocus={() => { if (!pointerDownRef.current) setDropdownOpen(true); }}
             className={`${showBorder === true && "border"} h-[44px] w-full rounded-md px-3 mt-[6px] flex items-center cursor-pointer bg-white ${error ? "border-red-500" : "border-gray-300"}`}
             onClick={() => { if (!loading && !isSearchable) setDropdownOpen(v => !v); }}
           >
@@ -250,7 +266,7 @@ useEffect(() => {
           </div>
           {dropdownOpen && !loading && (
             <>
-              <div style={dropdownProperties} className="fixed z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              <div style={dropdownProperties} className="fixed z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
                 {!isSearchable && (
                   <div className="px-3 py-2 border-b flex items-center" style={{ borderBottomColor: '#9ca3af' }}>
                     <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
@@ -315,9 +331,13 @@ useEffect(() => {
           )}
         </div>
       ) : isSingleSelect ? (
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative select-none" ref={dropdownRef}>
           <div
-            className={`border h-[44px] w-full rounded-md px-3 mt-[6px] flex items-center cursor-pointer bg-white ${error ? "border-red-500" : "border-gray-300"}`}
+            tabIndex={0}
+            onMouseDown={() => { pointerDownRef.current = true; }}
+            onMouseUp={() => { pointerDownRef.current = false; }}
+            onFocus={() => { if (!pointerDownRef.current) setDropdownOpen(true); }}
+            className={`${showBorder === true && "border"} h-[44px] w-full rounded-md px-3 mt-[6px] flex items-center cursor-pointer bg-white ${error ? "border-red-500" : "border-gray-300"}`}
             onClick={() => { if (!loading && !isSearchable) setDropdownOpen(v => !v); }}
           >
             {isSearchable ? (
@@ -442,7 +462,38 @@ useEffect(() => {
             </div>
           )}
         </div>
-      ) : type === "date" ? (
+        ) : type === "contact" ? (
+    <div ref={dropdownRef} className="relative mt-[6px] w-full">
+    <PhoneInput
+      country={"in"}
+      value={value as string}
+      onChange={(phone, country: PhoneCountry) => {
+        const dial = country?.dialCode ? `+${country.dialCode}` : (typeof value === 'string' && value.includes('|') ? (value as string).split('|')[0] : '+91');
+        const event = { target: { value: `${dial}|${phone}`, name } };
+        safeOnChange(event as unknown as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>);
+      }}
+      disabled={disabled}
+      inputProps={{
+        name,
+        id: id ?? name,
+        required,
+        onBlur,
+      }}
+      containerClass="!w-full !rounded-md relative"
+      inputClass={`!w-full !h-[44px] !text-gray-900 !rounded-md !border ${
+        error ? "!border-red-500" : "!border-gray-300"
+      } !focus:ring-0 !focus:outline-none !shadow-none ${
+        disabled ? "!bg-gray-100 !cursor-not-allowed" : ""
+      } !pl-[60px]`}
+      buttonClass="!border-gray-300 !bg-white !rounded-l-md !h-[44px] !px-2 !flex !items-center !justify-center"
+      buttonStyle={{ boxSizing: 'border-box', borderRight: '1px solid #e5e7eb' }}
+      dropdownClass={`!z-50 !rounded-md !fixed !bg-white !border !border-gray-300`}
+      dropdownStyle={dropdownProperties}
+      searchPlaceholder="Search country"
+      placeholder={placeholder || `Enter ${label}`}
+    />
+  </div>
+) : type === "date" ? (
         <input
           id={id ?? name}
           name={name}

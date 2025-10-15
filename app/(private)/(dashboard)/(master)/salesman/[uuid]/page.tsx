@@ -37,20 +37,16 @@ interface SalesmanFormValues {
   osa_code: string;
   name: string;
   type: string;
-  sub_type: string;
   designation: string;
-  security_code: string;
-  device_no: string;
   route_id: string;
-  // salesman_role: string;
   username: string;
   password: string;
   contact_no: string;
   warehouse_id: string;
-  token_no: string;
-  sap_id: string;
-  is_login: string;
+  forceful_login: string;
+  is_block: string;
   status: string;
+  is_block_reason: string;
   email: string;
 }
 
@@ -58,18 +54,19 @@ interface SalesmanFormValues {
 const SalesmanSchema = Yup.object().shape({
   name: Yup.string().required("Name is required"),
   type: Yup.string().required("Type is required"),
-  sub_type: Yup.string().required("Sub Type is required"),
   designation: Yup.string().required("Designation is required"),
-  contact_no: Yup.string().required("Contact is required"),
+  contact_no: Yup.string().required("Contact is required").min(9).max(13),
   username: Yup.string().required("Username is required"),
-  password: Yup.string().required("Password is required"),
-  security_code: Yup.string().required("Security code is required"),
+  password: Yup.string()
+    .required("Password is required")
+    .min(12, "Password must be at least 12 characters long")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]).{12,}$/,
+      "Password must include uppercase, lowercase, number, and special character"
+    ),
   route_id: Yup.string().required("Route is required"),
   warehouse_id: Yup.string().required("Warehouse is required"),
-  token_no: Yup.string().required("Token Number is required"),
-  device_no: Yup.string().required("Token Number is required"),
-   email: Yup.string().required("Email is required").email("Invalid email"),
-  //  salesman_role: Yup.string().required("Salesman Role is required"),
+  email: Yup.string().required("Email is required").email("Invalid email"),
 });
 
 // ✅ Step-wise validation
@@ -77,23 +74,23 @@ const stepSchemas = [
   Yup.object({
     name: Yup.string().required("Name is required"),
     type: Yup.string().required("Type is required"),
-    sub_type: Yup.string().required("Sub Type is required"),
     designation: Yup.string().required("Designation is required"),
     warehouse_id: Yup.string().required("Warehouse is required"),
     route_id: Yup.string().required("Route is required"),
   }),
   Yup.object({
-    contact_no: Yup.string().required("Contact is required"),
+    contact_no: Yup.string().required("Contact is required").min(9).max(13),
     username: Yup.string().required("Username is required"),
-    password: Yup.string().required("Password is required"),
-    device_no: Yup.string().required("Token Number is required"),
-  token_no: Yup.string().required("Token Number is required"),
-  
+    password: Yup.string()
+      .required("Password is required")
+      .min(12, "Password must be at least 12 characters long")
+      .matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]).{12,}$/,
+        "Password must include uppercase, lowercase, number, and special character"
+      ),
     email: Yup.string().required("Email is required").email("Invalid email"),
   }),
   Yup.object({
-    security_code: Yup.string().required("Security code is required"),
-    salesman_role: Yup.string().required("Salesman Role is required"),
     status: Yup.string().required("Status is required"),
     is_login: Yup.string(),
   }),
@@ -116,20 +113,16 @@ export default function AddEditSalesman() {
     osa_code: "",
     name: "",
     type: "",
-    sub_type: "",
     designation: "",
-    security_code: "",
-    device_no: "",
     route_id: "",
-    // salesman_role: "",
+    forceful_login: "0",
+    is_block: "0",
     username: "",
     password: "",
     contact_no: "",
     warehouse_id: "",
-    token_no: "",
-    sap_id: "",
-    is_login: "0",
     status: "1",
+    is_block_reason: "",
     email: "",
   });
 
@@ -159,21 +152,17 @@ export default function AddEditSalesman() {
             setInitialValues({
               osa_code: d.osa_code || "",
               name: d.name || "",
-              type: d.salesman_type?.id?.toString() || "", // flatten nested object
-              sub_type: d.sub_type?.toString() || "",
+              type: d.salesman_type?.id?.toString() || "",
               designation: d.designation || "",
-              security_code: d.security_code, // security code won’t usually come from API
-              device_no: d.device_no || "",
               route_id: d.route?.id?.toString() || "",
-              // salesman_role: d.salesman_role?.toString() || "",
               username: d.username || "",
               password: d.password, // password is not returned from API → leave empty
               contact_no: d.contact_no || "",
               warehouse_id: d.warehouse?.id?.toString() || "",
-              token_no: d.token_no || "",
-              sap_id: d.sap_id || "",
-              is_login: d.is_login?.toString() || "0",
+              is_block: d.is_block?.toString() || "0",
+              forceful_login: d.forceful_login?.toString() || "0",
               status: d.status?.toString() || "1",
+              is_block_reason: d.is_block_reason || "",
               email: d.email || "",
             });
           }
@@ -199,7 +188,35 @@ export default function AddEditSalesman() {
     })();
   }, [isEditMode, salesmanId]);
 
-  // ✅ Step validation
+  // // ✅ Step validation
+  // const handleNext = async (
+  //   values: SalesmanFormValues,
+  //   actions: FormikHelpers<SalesmanFormValues>
+  // ) => {
+  //   try {
+  //     const schema = stepSchemas[currentStep - 1];
+  //     await schema.validate(values, { abortEarly: false });
+  //     markStepCompleted(currentStep);
+  //     nextStep();
+  //   } catch (err: unknown) {
+  //     if (err instanceof Yup.ValidationError) {
+  //       actions.setTouched(
+  //         err.inner.reduce((acc, curr) => ({ ...acc, [curr.path!]: true }), {})
+  //       );
+  //       actions.setErrors(
+  //         err.inner.reduce(
+  //           (acc, curr) => ({
+  //             ...acc,
+  //             [curr.path as keyof SalesmanFormValues]: curr.message,
+  //           }),
+  //           {}
+  //         )
+  //       );
+  //     }
+  //     showSnackbar("Please fix validation errors before proceeding", "error");
+  //   }
+  // };
+
   const handleNext = async (
     values: SalesmanFormValues,
     actions: FormikHelpers<SalesmanFormValues>
@@ -207,19 +224,26 @@ export default function AddEditSalesman() {
     try {
       const schema = stepSchemas[currentStep - 1];
       await schema.validate(values, { abortEarly: false });
+
       markStepCompleted(currentStep);
+      // ✅ Clear errors/touched when moving to next step
+      actions.setErrors({});
+      actions.setTouched({});
       nextStep();
     } catch (err: unknown) {
       if (err instanceof Yup.ValidationError) {
-        actions.setTouched(
-          err.inner.reduce((acc, curr) => ({ ...acc, [curr.path!]: true }), {})
+        const fieldErrors = err.inner.reduce(
+          (acc, curr) => ({
+            ...acc,
+            [curr.path as keyof SalesmanFormValues]: curr.message,
+          }),
+          {}
         );
-        actions.setErrors(
-          err.inner.reduce(
-            (acc, curr) => ({
-              ...acc,
-              [curr.path as keyof SalesmanFormValues]: curr.message,
-            }),
+
+        actions.setErrors(fieldErrors);
+        actions.setTouched(
+          Object.keys(fieldErrors).reduce(
+            (acc, key) => ({ ...acc, [key]: true }),
             {}
           )
         );
@@ -227,6 +251,16 @@ export default function AddEditSalesman() {
       showSnackbar("Please fix validation errors before proceeding", "error");
     }
   };
+
+  const handlePrev = (
+    actions: FormikHelpers<SalesmanFormValues>
+  ) => {
+    actions.setErrors({});
+    actions.setTouched({});
+    prevStep();
+  };
+
+
 
   // ✅ Submit handler
   const handleSubmit = async (
@@ -258,7 +292,7 @@ export default function AddEditSalesman() {
             reserved_code: values.osa_code,
             model_name: "salesman",
           });
-        } catch {}
+        } catch { }
       }
     } catch {
       showSnackbar("Validation failed, please check your inputs", "error");
@@ -286,111 +320,85 @@ export default function AddEditSalesman() {
               <InputFields
                 required
                 label="OSA Code"
-                    disabled
+                disabled
                 name="osa_code"
                 value={values.osa_code}
                 onChange={(e) => setFieldValue("osa_code", e.target.value)}
                 error={touched.osa_code && errors.osa_code}
               />
-          
-              <div>
-                    <InputFields
-                required
-                label="Name"
-                name="name"
-                value={values.name}
-                onChange={(e) => setFieldValue("name", e.target.value)}
-                error={touched.name && errors.name}
-              />
-                <ErrorMessage
-                                      name="name"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-              </div>
-<div>
-      <InputFields
-                label="SAP ID"
-                name="sap_id"
-                value={values.sap_id}
-                disabled
-                onChange={(e) => setFieldValue("sap_id", e.target.value)}
-              />
-</div>
-          <div>
-      <InputFields
-                label="Salesman Type"
-                name="type"
-                value={values.type}
-                onChange={(e) => setFieldValue("type", e.target.value)}
-                options={salesmanTypeOptions}
-              />
-                   <ErrorMessage
-                                      name="type"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-          </div>
-        
+
               <div>
                 <InputFields
-                label="Sub Type"
-                name="sub_type"
-                value={values.sub_type}
-                onChange={(e) => setFieldValue("sub_type", e.target.value)}
-                options={[
-                  { value: "0", label: "None" },
-                  { value: "1", label: "Merchandiser" },
-                ]}
-              />
-                 <ErrorMessage
-                                      name="sub_type"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
+                  required
+                  label="Name"
+                  name="name"
+                  value={values.name}
+                  onChange={(e) => setFieldValue("name", e.target.value)}
+                  error={touched.name && errors.name}
+                />
+                <ErrorMessage
+                  name="name"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
+              <div>
+                <InputFields
+                  label="Salesman Type"
+                  name="type"
+                  value={values.type}
+                  onChange={(e) => setFieldValue("type", e.target.value)}
+                  options={salesmanTypeOptions}
+                />
+                <ErrorMessage
+                  name="type"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
               </div>
 
-          <div>
+              <div>
                 <InputFields
-                label="Designation"
-                name="designation"
-                value={values.designation}
-                onChange={(e) => setFieldValue("designation", e.target.value)}
-              />
-               <ErrorMessage
-                                      name="designation"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-          </div>
-            <div>
+                  label="Designation"
+                  name="designation"
+                  value={values.designation}
+                  onChange={(e) => setFieldValue("designation", e.target.value)}
+                />
+                <ErrorMessage
+                  name="designation"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
+              <div>
                 <InputFields
-                label="Warehouse"
-                name="warehouse_id"
-                value={values.warehouse_id}
-                onChange={(e) => setFieldValue("warehouse_id", e.target.value)}
-                options={warehouseOptions}
-              />
-               <ErrorMessage
-                                      name="warehouse_id"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-            </div>
-             <div>
-               <InputFields
-                label="Route"
-                name="route_id"
-                value={values.route_id}
-                onChange={(e) => setFieldValue("route_id", e.target.value)}
-                options={routeOptions}
-              />
-                 <ErrorMessage
-                                      name="route_id"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-             </div>
+                  label="Warehouse"
+                  type="select"
+                  name="warehouse_id"
+                  value={values.warehouse_id}
+                  onChange={(e) => setFieldValue("warehouse_id", e.target.value)}
+                  options={warehouseOptions}
+                />
+                <ErrorMessage
+                  name="warehouse_id"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
+              <div>
+                <InputFields
+                  label="Route"
+                  name="route_id"
+                  value={values.route_id}
+                  onChange={(e) => setFieldValue("route_id", e.target.value)}
+                  options={routeOptions}
+                />
+                <ErrorMessage
+                  name="route_id"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
             </div>
           </ContainerCard>
         );
@@ -398,84 +406,61 @@ export default function AddEditSalesman() {
         return (
           <ContainerCard>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-                <InputFields
-                label="Contact No"
-                name="contact_no"
-                value={values.contact_no}
-                onChange={(e) => setFieldValue("contact_no", e.target.value)}
-              />
-               <ErrorMessage
-                                      name="contact_no"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-          </div>
-              
-          <div>
-                <InputFields
-                label="Email"
-                name="email"
-                value={values.email}
-                onChange={(e) => setFieldValue("email", e.target.value)}
-              />
-               <ErrorMessage
-                                      name="email"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-          </div>
               <div>
                 <InputFields
-                label="Username"
-                name="username"
-                value={values.username}
-                onChange={(e) => setFieldValue("username", e.target.value)}
-              />
-               <ErrorMessage
-                                      name="username"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
+                  label="Contact No"
+                  name="contact_no"
+                  value={values.contact_no}
+                  onChange={(e) => setFieldValue("contact_no", e.target.value)}
+                />
+                <ErrorMessage
+                  name="contact_no"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
               </div>
-             <div>
-               <CustomPasswordInput
-                label="Password"
-                value={values.password}
-                onChange={(e) => setFieldValue("password", e.target.value)}
-              />
-               <ErrorMessage
-                                      name="password"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-             </div>
-             <div>
-               <InputFields
-                label="Device No"
-                name="device_no"
-                value={values.device_no}
-                onChange={(e) => setFieldValue("device_no", e.target.value)}
-              />
-               <ErrorMessage
-                                      name="device_no"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-             </div>
-           <div>
-               <InputFields
-                label="Token No"
-                name="token_no"
-                value={values.token_no}
-                onChange={(e) => setFieldValue("token_no", e.target.value)}
-              />
-               <ErrorMessage
-                                      name="token_no"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-           </div>
+
+              <div>
+                <InputFields
+                  label="Email"
+                  name="email"
+                  value={values.email}
+                  onChange={(e) => setFieldValue("email", e.target.value)}
+                />
+                <ErrorMessage
+                  name="email"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
+              <div>
+                <InputFields
+                  label="Username"
+                  name="username"
+                  value={values.username}
+                  onChange={(e) => setFieldValue("username", e.target.value)}
+                />
+                <ErrorMessage
+                  name="username"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
+              <div>
+                <CustomPasswordInput
+                  label="Password"
+                  value={values.password}
+                  onChange={(e) => setFieldValue("password", e.target.value)}
+                />
+                <ErrorMessage
+                  name="password"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
+             
+              <div>
+              </div>
             </div>
           </ContainerCard>
         );
@@ -483,66 +468,75 @@ export default function AddEditSalesman() {
         return (
           <ContainerCard>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           <div>
-               <CustomSecurityCode
-                label="Security Code"
-                placeholder="Security Code"
-                value={values.security_code}
-                onChange={(e) => setFieldValue("security_code", e.target.value)}
-              />
+              <div>
+                <InputFields
+                  label=" forceful login"
+                  type="radio"
+                  name="forceful_login"
+                  value={values.forceful_login}
+                  onChange={(e) => setFieldValue("forceful_login", e.target.value)}
+                  options={[
+                    { value: "1", label: "Yes" },
+                    { value: "0", label: "No" },
+                  ]}
+                />
                 <ErrorMessage
-                                      name="security_code"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-           </div>
-       {/* <div>
-               <InputFields
-                label="Salesman Role"
-                name="salesman_role"
-                value={values.salesman_role}
-                onChange={(e) => setFieldValue("salesman_role", e.target.value)}
-              />
+                  name="forceful_login"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
+              <div>
+                <InputFields
+                  label="Is block"
+                  name="is_block"
+                  type="radio"
+                  value={values.is_block}
+                  onChange={(e) => setFieldValue("is_block", e.target.value)}
+                  options={[
+                    { value: "1", label: "Yes" },
+                    { value: "0", label: "No" },
+                  ]}
+                />
                 <ErrorMessage
-                                      name="salesman_role"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-       </div> */}
-       <div>
-               <InputFields
-                label="Status"
-                name="status"
-                value={values.status}
-                onChange={(e) => setFieldValue("status", e.target.value)}
-                options={[
-                  { value: "1", label: "Active" },
-                  { value: "0", label: "Inactive" },
-                ]}
-              />
+                  name="is_block"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
+              {values.is_block === "1" && (
+                <div>
+                  <InputFields
+                    label="Block Region"
+                    type="select"
+                    name="is_block_reason"
+                    value={values.is_block_reason || ""}
+                    onChange={(e) => setFieldValue("is_block_reason", e.target.value)}
+                    options={[
+                    { value: "Cashier Description", label: "Cashier Description" },
+                    { value: "Invoice", label: "Invoice" },
+                  ]}
+                  />
+                </div>
+              )}
+              <div>
+                <InputFields
+                  label="Status"
+                  name="status"
+                  type="radio"
+                  value={values.status}
+                  onChange={(e) => setFieldValue("status", e.target.value)}
+                  options={[
+                    { value: "1", label: "Active" },
+                    { value: "0", label: "Inactive" },
+                  ]}
+                />
                 <ErrorMessage
-                                      name="status"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-       </div>
-         <div>
-               <InputFields
-                label="Is Login"
-                name="is_login"
-                value={values.is_login}
-                onChange={(e) => setFieldValue("is_login", e.target.value)}
-                options={[
-                  { value: "1", label: "Yes" },
-                  { value: "0", label: "No" },
-                ]}
-              />
-                <ErrorMessage
-                                      name="is_login"
-                                      component="span"
-                                      className="text-xs text-red-500"
-                                    />
-         </div>
+                  name="status"
+                  component="span"
+                  className="text-xs text-red-500"
+                />
+              </div>
             </div>
           </ContainerCard>
         );
@@ -582,14 +576,15 @@ export default function AddEditSalesman() {
           setTouched,
         }) => (
           <Form>
+            <>{console.log(values)}</>
             <StepperForm
               steps={steps.map((step) => ({
                 ...step,
                 isCompleted: isStepCompleted(step.id),
               }))}
               currentStep={currentStep}
-              onStepClick={() => {}}
-              onBack={prevStep}
+              onStepClick={() => { }}
+              onBack={() => handlePrev({ setErrors, setTouched } as FormikHelpers<SalesmanFormValues>)}
               onNext={() =>
                 handleNext(values, {
                   setErrors,

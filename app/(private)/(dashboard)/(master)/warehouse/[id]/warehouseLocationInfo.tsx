@@ -13,30 +13,30 @@ type Props = {
 export default function WarehouseLocationInfo({ values, errors, touched, handleChange, setFieldValue }: Props) {
 
 
-  const { regionOptions, loading, areaOptions, fetchAreaOptions } = useAllDropdownListData();
-  const [localAreaOptions, setLocalAreaOptions] = useState<{ value: string; label: string }[]>(areaOptions || []);
-  const [areaLoading, setAreaLoading] = useState(false);
+  const { regionOptions, loading, areaOptions,fetchAreaOptions } = useAllDropdownListData();
+
+  const prevRegionRef = React.useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    // When region changes, clear area dropdown and reset value instantly
-    setLocalAreaOptions([]);
-    setFieldValue("area_id", "");
-    if (values.region_id) {
-      setAreaLoading(true);
-      fetchAreaOptions(values.region_id)
-        .then(() => {
-          setAreaLoading(false);
-        })
-        .catch(() => {
-          setAreaLoading(false);
-        });
+    const prev = prevRegionRef.current;
+    if (prev !== values.region_id) {
+      if (prev !== undefined) {
+        setFieldValue("area_id", "");
+      }
+      if (values.region_id) {
+        fetchAreaOptions(values.region_id);
+      }
+    } else {
+      if (values.region_id && (!areaOptions)) {
+        fetchAreaOptions(values.region_id);
+      }
     }
-  }, [values.region_id]);
+
+    prevRegionRef.current = values.region_id;
+  }, [values.region_id, areaOptions?.length, fetchAreaOptions, setFieldValue]);
 
   // Keep localAreaOptions in sync with context areaOptions
-  useEffect(() => {
-    setLocalAreaOptions(areaOptions || []);
-  }, [areaOptions]);
+
   return (
     <>
       {/* Grid Layout */}
@@ -85,19 +85,19 @@ export default function WarehouseLocationInfo({ values, errors, touched, handleC
         <div>
           <InputFields
             required
-            label="Sub Region"
+            label="Area"
             name="area_id"
             value={values.area_id}
             onChange={handleChange}
-            options={areaLoading ? [{ value: '', label: 'Loading...' }] : (localAreaOptions.length > 0 ? localAreaOptions : [{ value: '', label: 'No options available' }])}
+            options={loading ? [{ value: '', label: 'Loading...' }] : (areaOptions.length ? areaOptions : [{ value: '', label: 'No options available' }])}
             error={errors?.area_id && touched?.area_id ? errors.area_id : false}
-            disabled={areaLoading || !values.region_id}
+            disabled={loading || !values.region_id}
           />
           {errors?.area_id && touched?.area_id && (
             <span className="text-xs text-red-500 mt-1">{errors.area_id}</span>
           )}
         </div>
-        <div>
+        {/* <div>
           <InputFields
             label="District"
             name="district"
@@ -121,7 +121,7 @@ export default function WarehouseLocationInfo({ values, errors, touched, handleC
           {errors?.address && touched?.address && (
             <span className="text-xs text-red-500 mt-1">{errors.address}</span>
           )}
-        </div>
+        </div> */}
         {/* Row 2 */}
         <div>
           <InputFields

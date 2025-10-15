@@ -13,81 +13,82 @@ type Props = {
 
 export default function WarehouseContactDetails({ values, errors, touched, handleChange, setFieldValue }: Props) {
   const { onlyCountryOptions } = useAllDropdownListData();
-  // fallback if context not populated
-  const fallbackCountries = [
-    { value: "uae", label: "UAE" },
-    { value: "in", label: "India" },
-    { value: "us", label: "USA" },
-    { value: "uk", label: "UK" },
-  ];
 
-  const countries = onlyCountryOptions && onlyCountryOptions.length > 0 ? onlyCountryOptions : fallbackCountries;
+
+  const countries = onlyCountryOptions && onlyCountryOptions.length > 0 ? onlyCountryOptions : [];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full overflow-x-hidden">
-      {/* Contact */}
-      <div className="flex flex-col gap-2 w-full">
-        <label className="text-sm font-medium text-gray-700 mb-2">Owner Contact Number<span className="text-red-500 px-1">*</span></label>
-        <div className="flex w-full">
-          <select
-            name="ownerContactCountry"
-            value={values.ownerContactCountry ?? onlyCountryOptions ?? ""}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-l-md px-3 text-gray-900 h-[44px] w-24 sm:w-28"
-          >
-            {countries.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <input
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="flex flex-col gap-2">
+          <InputFields
             required
-            type="text"
+            type="contact"
+            label="Owner Contact Number"
             name="owner_number"
-            value={values.owner_number ?? ""}
-            onChange={handleChange}
-            placeholder="Contact Number"
-            className={`border border-gray-300 rounded-r-md px-3 text-gray-900 placeholder-gray-400 flex-1 h-[44px] w-full ${errors?.owner_number && touched?.owner_number ? 'border-red-500' : ''}`}
+            value={`${values.ownerContactCountry ?? '+91'}|${values.owner_number ?? ''}`}
+            onChange={(e) => {
+                const combined = (e.target as HTMLInputElement).value || '';
+                if (combined.includes('|')) {
+                  const [code = '+91', num = ''] = combined.split('|');
+                  const numDigits = num.replace(/\D/g, '');
+                  const codeDigits = String(code).replace(/\D/g, '');
+                  const localNumber = codeDigits && numDigits.startsWith(codeDigits) ? numDigits.slice(codeDigits.length) : numDigits;
+                  setFieldValue('ownerContactCountry', code);
+                  setFieldValue('owner_number', localNumber);
+                } else {
+                  const digits = combined.replace(/\D/g, '');
+                  const currentCountry = (values.ownerContactCountry || '+91').replace(/\D/g, '');
+                  if (currentCountry && digits.startsWith(currentCountry)) {
+                    setFieldValue('ownerContactCountry', `+${currentCountry}`);
+                    setFieldValue('owner_number', digits.slice(currentCountry.length));
+                  } else {
+                    setFieldValue('owner_number', digits);
+                  }
+                }
+            }}
+            error={errors?.owner_number && touched?.owner_number ? errors.owner_number : false}
           />
-        </div>
          {errors?.owner_number && touched?.owner_number && (
           <span className="text-xs text-red-500 mt-1">{errors.owner_number}</span>
         )}
       </div>
-      <div className="flex flex-col gap-2 w-full">
-        <label className="text-sm font-medium text-gray-700 mb-2">Manager Contact Number<span className="text-red-500 px-1">*</span></label>
-        <div className="flex w-full">
-          <select
-            name="managerContactCountry"
-            value={values.managerContactCountry ?? onlyCountryOptions ?? ""}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-l-md px-3 text-gray-900 h-[44px] w-24 sm:w-28"
-          >
-            {countries.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <input
+      <div className="flex flex-col gap-2 ">
+          <InputFields
             required
-            type="text"
+            type="contact"
+            label="Manager Contact Number"
             name="warehouse_manager_contact"
-            value={values.warehouse_manager_contact ?? ""}
-            onChange={handleChange}
-            placeholder="Contact Number"
-            className={`border border-gray-300 rounded-r-md px-3 text-gray-900 placeholder-gray-400 flex-1 h-[44px] w-full ${errors?.warehouse_manager_contact && touched?.warehouse_manager_contact ? 'border-red-500' : ''}`}
+            value={`${values.managerContactCountry ?? '+91'}|${values.warehouse_manager_contact ?? ''}`}
+            onChange={(e) => {
+              const combined = (e.target as HTMLInputElement).value || '';
+                if (combined.includes('|')) {
+                const [code = '+91', num = ''] = combined.split('|');
+                const numDigits = num.replace(/\D/g, '');
+                const codeDigits = String(code).replace(/\D/g, '');
+                const localNumber = codeDigits && numDigits.startsWith(codeDigits) ? numDigits.slice(codeDigits.length) : numDigits;
+                setFieldValue('managerContactCountry', code);
+                setFieldValue('warehouse_manager_contact', localNumber);
+              } else {
+                const digits = combined.replace(/\D/g, '');
+                const currentCountry = (values.managerContactCountry || '+91').replace(/\D/g, '');
+                if (currentCountry && digits.startsWith(currentCountry)) {
+                  setFieldValue('managerContactCountry', `+${currentCountry}`);
+                  setFieldValue('warehouse_manager_contact', digits.slice(currentCountry.length));
+                } else {
+                  setFieldValue('warehouse_manager_contact', digits);
+                }
+              }
+            }}
+            error={errors?.warehouse_manager_contact && touched?.warehouse_manager_contact ? errors.warehouse_manager_contact : false}
           />
-        </div>
-        {errors?.warehouse_manager_contact && touched?.warehouse_manager_contact && (
+           {errors?.warehouse_manager_contact && touched?.warehouse_manager_contact && (
           <span className="text-xs text-red-500 mt-1">{errors.warehouse_manager_contact}</span>
         )}
-      </div>
-      {/* Email */}
+        </div>
+       
       <div>
         <InputFields
-          label="Email"
+          label="Owner Email"
           required
           name="owner_email"
           value={values.owner_email}
@@ -98,6 +99,7 @@ export default function WarehouseContactDetails({ values, errors, touched, handl
           <span className="text-xs text-red-500 mt-1">{errors.owner_email}</span>
         )}
       </div>
+      
     </div>
   );
 }

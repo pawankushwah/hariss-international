@@ -202,13 +202,13 @@ export const initialLinkData: SidebarDataType[] = [
                     //     leadingIcon: "mdi:map",
                     //     iconColor: "text-yellow-400"
                     // },
-                    {
-                        isActive: false,
-                        href: "/merchandiser/planogramImage",
-                        label: "Planogram Image",
-                        leadingIcon: "mdi:map",
-                        iconColor: "text-yellow-400",
-                    },
+                    // {
+                    //     isActive: false,
+                    //     href: "/merchandiser/planogramImage",
+                    //     label: "Planogram Image",
+                    //     leadingIcon: "mdi:map",
+                    //     iconColor: "text-yellow-400",
+                    // },
                     {
                         isActive: false,
                         href: "/merchandiser/shelfDisplay",
@@ -216,13 +216,43 @@ export const initialLinkData: SidebarDataType[] = [
                         leadingIcon: "mdi:map",
                         iconColor: "text-yellow-400",
                     },
+                    // {
+                    //     isActive: false,
+                    //     href: "/merchandiser/survey",
+                    //     label: "Survey",
+                    //     leadingIcon: "mdi:map",
+                    //     iconColor: "text-yellow-400",
+                    // },
                     {
                         isActive: false,
-                        href: "/merchandiser/survey",
-                        label: "Survey",
+                        href: "/merchandiser/complaintFeedback",
+                        label: "Complaint Feedback",
                         leadingIcon: "mdi:map",
                         iconColor: "text-yellow-400",
                     },
+                    {
+                        isActive: false,
+                        href: "/merchandiser/campaign",
+                        label: "Campaign Information",
+                        leadingIcon: "mdi:map",
+                        iconColor: "text-yellow-400",
+                    },
+                    {
+                        isActive: false,
+                        href: "/merchandiser/competitor",
+                        label: "Competitor Info",
+                        leadingIcon: "mdi:map",
+                        iconColor: "text-yellow-400",
+                    },
+                    // {
+                    //     isActive: false,
+                    //     href: "dashboard/merchandiser/complaintFeedback",
+                    //     label: "Camplaint Feedback",
+                    //     leadingIcon: "mdi:map",
+                    //     iconColor: "text-yellow-400"
+                    // },
+
+
                 ],
             },
 
