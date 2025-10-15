@@ -2465,7 +2465,7 @@ export const submenuGenerateCode = async (params?: Params) => {
   }
 };
 
-export const exportRoutesCSV = async (params?: any): Promise<Blob | null> => {
+export const exportRoutesCSV = async (params?: Params): Promise<Blob | null> => {
   try {
     const res = await API.post(
       `/api/master/route/export`,
