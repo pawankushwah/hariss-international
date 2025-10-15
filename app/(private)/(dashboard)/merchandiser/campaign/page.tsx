@@ -11,10 +11,17 @@ import CustomDropdown from "@/app/components/customDropdown";
 
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
+<<<<<<< HEAD
 import {
   campaignInformationList,
   exportCompaignData,
 } from "@/app/services/merchandiserApi";
+=======
+import { campaignInformationList } from "@/app/services/merchandiserApi";
+import { div } from "framer-motion/client";
+
+
+>>>>>>> 9df7fea9ea080d334a105103f5ab1ae4bb7c55b7
 
 const dropdownDataList = [
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
@@ -189,6 +196,20 @@ export default function CampaignPage() {
             header: {
               searchBar: false,
               columnFilter: true,
+<<<<<<< HEAD
+=======
+              actions: [
+                // <SidebarBtn
+                //   key="add"
+                //   href="/merchandiser/complaintFeedback/add"
+                //   leadingIcon="lucide:plus"
+                //   label="Add Feedback"
+                //   labelTw="hidden lg:block"
+                //   isActive
+                // />,
+
+              ],
+>>>>>>> 9df7fea9ea080d334a105103f5ab1ae4bb7c55b7
             },
             footer: { nextPrevBtn: true, pagination: true },
             columns: [
