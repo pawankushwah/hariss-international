@@ -39,7 +39,6 @@ type configType = {
         title?: string;
         wholeTableActions?: React.ReactNode[];
         tableActions?: React.ReactNode[];
-        tableActions?: React.ReactNode[];
         searchBar?:
             | boolean
             | {
@@ -47,14 +46,6 @@ type configType = {
                   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
               }; // yet to implement
         columnFilter?: boolean;
-        threeDot?: {
-            label: string;
-            labelTw?: string;
-            icon?: string;
-            iconWidth?: string;
-            onClick?: (data: TableDataType[], selectedRow?: number[]) => void;
-            showOnSelect?: boolean;
-        }[],
         threeDot?: {
             label: string;
             labelTw?: string;
@@ -264,16 +255,12 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
     return (
         <>
             {(config.header?.title || config.header?.wholeTableActions || config.header?.tableActions) && (
-            {(config.header?.title || config.header?.wholeTableActions || config.header?.tableActions) && (
                 <div className="flex justify-between items-center mb-[20px] h-[34px]">
                     {config.header?.title && (
                         <h1 className="text-[18px] font-semibold text-[#181D27]">
                             {config.header.title}
                         </h1>
                     )}
-                    
-                    <div className="flex gap-[8px]">
-                        {config.header?.tableActions && config.header?.tableActions?.map((action) => action)}
                     
                     <div className="flex gap-[8px]">
                         {config.header?.tableActions && config.header?.tableActions?.map((action) => action)}
