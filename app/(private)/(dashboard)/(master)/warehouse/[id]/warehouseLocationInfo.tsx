@@ -27,7 +27,7 @@ export default function WarehouseLocationInfo({ values, errors, touched, handleC
         fetchAreaOptions(values.region_id);
       }
     } else {
-      if (values.region_id && (!areaOptions || areaOptions.length === 0)) {
+      if (values.region_id && (!areaOptions)) {
         fetchAreaOptions(values.region_id);
       }
     }
@@ -49,6 +49,11 @@ export default function WarehouseLocationInfo({ values, errors, touched, handleC
             name="location"
             value={values.location}
             onChange={handleChange}
+            options={[
+              { value: 'Urban', label: 'Urban' },
+              { value: 'Suburban', label: 'Suburban' },
+              { value: 'Rural', label: 'Rural' },
+            ]}
             error={errors?.location && touched?.location ? errors.location : false}
           />
           {errors?.location && touched?.location && (

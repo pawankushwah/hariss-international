@@ -8,7 +8,7 @@ import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
 import Table, { TableDataType, listReturnType, searchReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { vehicleListData, deleteVehicle, vehicleGlobalSearch } from "@/app/services/allApi";
+import { vehicleListData, deleteVehicle, vehicleGlobalSearch ,exportVehicleData} from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
@@ -185,6 +185,29 @@ export default function VehiclePage() {
     []
   );
 
+           const exportFile = async () => {
+           try {
+             const response = await exportVehicleData({ format: "xlsx"}); 
+             let fileUrl = response;
+             if (response && typeof response === 'object' && response.url) {
+               fileUrl = response.url;
+             }
+             if (fileUrl) {
+               const link = document.createElement('a');
+               link.href = fileUrl;
+               link.download = '';
+               document.body.appendChild(link);
+               link.click();
+               document.body.removeChild(link);
+               showSnackbar("File downloaded successfully ", "success");
+             } else {
+               showSnackbar("Failed to get download URL", "error");
+             }
+           } catch (error) {
+             showSnackbar("Failed to download warehouse data", "error");
+           } finally {
+           }
+         };
 
   const handleConfirmDelete = async () => {
     if (!selectedRow?.id) return;
@@ -296,6 +319,16 @@ export default function VehiclePage() {
                   )}
                 </div>
               ],
+               tableActions:[
+                                            <>
+                                            <BorderIconButton
+                                icon="gala:file-document"
+                                onClick={exportFile}
+                                label="Export CSV"
+                                labelTw="text-[12px] hidden sm:block"
+                              /></>
+                            
+                          ],
               searchBar: true,
               columnFilter: true,
               actions: [

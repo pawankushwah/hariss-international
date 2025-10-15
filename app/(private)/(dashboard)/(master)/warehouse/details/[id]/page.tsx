@@ -77,10 +77,12 @@ export default function ViewPage() {
       const [activeTab, setActiveTab] = useState("overview");
   const tabList = [
     { key: "overview", label: "Overview" },
-    { key: "address", label: "Location Info" },
-    { key: "financial", label: "Financial Info" },
-    { key: "guarantee", label: "Guarantee Info" },
-    { key: "additional", label: "Additional Info" },
+    { key: "warehouseCustomer", label: "Warehouse Customer" },
+    { key: "warehouseStock", label: "Warehouse Stock" },
+    { key: "rout&vehicle", label: "Route & Vechile" },
+    { key: "salesman", label: "Salesman" },
+    { key: "sales", label: "Sales" },
+    { key: "return", label: "Return" },
   ];
 
     useEffect(() => {
@@ -133,16 +135,7 @@ export default function ViewPage() {
                                 <h2 className="text-[20px] font-semibold text-[#181D27] mb-[10px]">
                                     {item?.warehouse_code || "-"} - {item?.warehouse_name} 
                                 </h2>
-                                <span className="flex items-center">
-                                    <span className="text-[#414651] text-[16px]">
-                                         <Icon
-                                                icon="lucide:map-pin"
-                                                width={16}
-                                                className="text-[#EA0A2A]"
-                                            />
-                                            <span className="ml-2">{item?.location}</span>
-                                    </span>
-                                </span>
+                               
                             </div>
                         </div>
                         <span className="flex justify-center p-[10px] sm:p-0 sm:inline-block mt-[10px] sm:mt-0 sm:ml-[10px]">
@@ -223,14 +216,7 @@ export default function ViewPage() {
                                             />
                                             <span>{item?.owner_email}</span>
                                         </div>
-                                        <div className="flex items-center gap-[8px] text-[16px]">
-                                            <Icon
-                                                icon="lucide:map-pin"
-                                                width={16}
-                                                className="text-[#EA0A2A]"
-                                            />
-                                            <span>{item?.location}</span>
-                                        </div>
+                                       
                                     </div>
                                 </div>
                             </ContainerCard>
@@ -240,14 +226,12 @@ export default function ViewPage() {
                                 <KeyValueData
                                     title="Location Information"
                                     data={[
-                                        { key: "Region Code", value: item?.region?.region_code || "-" },
                                         {
                                             key: "Region Name",
                                             value: item?.region?.region_name || "-",
                                         },
-                                        { key: "Sub Region Code", value: item?.area?.area_code || "-" },
                                         {
-                                            key: "Sub Region Name",
+                                            key: "Area Name",
                                             value: item?.area?.area_name || "-" },
                                         { key: "Location", value: item?.location || "-" },
                                         { key: "City", value: item?.city || "-" },

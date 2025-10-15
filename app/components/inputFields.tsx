@@ -196,9 +196,9 @@ useEffect(() => {
             tabIndex={0}
             onMouseDown={() => { pointerDownRef.current = true; }}
             onMouseUp={() => { pointerDownRef.current = false; }}
-            onFocus={() => { if (!pointerDownRef.current) setDropdownOpen(true); }}
+            onFocus={() => { if (!pointerDownRef.current && !disabled) setDropdownOpen(true); }}
             className={`${showBorder === true && "border"} h-[44px] w-full rounded-md px-3 mt-[6px] flex items-center cursor-pointer ${error ? "border-red-500" : "border-gray-300"} ${disabled ? "bg-gray-200" : "bg-white"}`}
-            onClick={() => { if (!loading && !isSearchable && !disabled) setDropdownOpen(v => !v); }}
+            onClick={() => { if (!loading && !isSearchable) setDropdownOpen(v => !v); }}
           >
             {isSearchable ? (
               (() => {
@@ -260,7 +260,8 @@ useEffect(() => {
               }
               return null;
             })()}
-            {!isSearchable && (
+            {/* Show down arrow only if not disabled and not searchable */}
+            {!isSearchable && !disabled && (
               <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
             )}
           </div>
@@ -276,23 +277,25 @@ useEffect(() => {
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                       className="w-full border-none outline-none text-sm"
+                      disabled={disabled}
                     />
                   </div>
                 )}
                 <div
                   className="flex items-center px-3 py-2 border-b cursor-pointer"
                   style={{ borderBottomColor: '#9ca3af' }}
-                  onClick={handleSelectAll}
+                  onClick={() => { if (!disabled) handleSelectAll(); }}
                 >
                   <input
                     type="checkbox"
                     checked={selectedValues.length === filteredOptions.length && filteredOptions.length > 0}
                     onChange={e => {
                       e.stopPropagation();
-                      handleSelectAll();
+                      if (!disabled) handleSelectAll();
                     }}
                     className="mr-2 cursor-pointer"
                     style={selectedValues.length === filteredOptions.length && filteredOptions.length > 0 ? { accentColor: '#EA0A2A' } : {}}
+                    disabled={disabled}
                   />
                   <span className="text-sm select-none">Select All</span>
                 </div>
@@ -302,10 +305,10 @@ useEffect(() => {
                   ) : filteredOptions.map((opt, idx) => (
                     <div
                       key={opt.value + idx}
-                      className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      className={`flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       onClick={e => {
                         e.preventDefault();
-                        handleCheckbox(opt.value);
+                        if (!disabled) handleCheckbox(opt.value);
                       }}
                     >
                       <input
@@ -313,10 +316,11 @@ useEffect(() => {
                         checked={selectedValues.includes(opt.value)}
                         onChange={e => {
                           e.stopPropagation();
-                          handleCheckbox(opt.value);
+                          if (!disabled) handleCheckbox(opt.value);
                         }}
                         className="mr-2 cursor-pointer"
                         style={selectedValues.includes(opt.value) ? { accentColor: '#EA0A2A' } : {}}
+                        disabled={disabled}
                       />
                       <label
                         className="text-sm select-none cursor-pointer text-gray-800"
@@ -336,7 +340,7 @@ useEffect(() => {
             tabIndex={0}
             onMouseDown={() => { pointerDownRef.current = true; }}
             onMouseUp={() => { pointerDownRef.current = false; }}
-            onFocus={() => { if (!pointerDownRef.current) setDropdownOpen(true); }}
+            onFocus={() => { if (!pointerDownRef.current && !disabled) setDropdownOpen(true); }}
             className={`${showBorder === true && "border"} h-[44px] w-full rounded-md px-3 mt-[6px] flex items-center cursor-pointer ${error ? "border-red-500" : "border-gray-300"} ${disabled ? "bg-gray-200" : "bg-white"}`}
             onClick={() => { if (!loading && !isSearchable && !disabled) setDropdownOpen(v => !v); }}
           >
@@ -384,7 +388,8 @@ useEffect(() => {
                 }
               </span>
             )}
-            {!isSearchable && (
+            {/* Show down arrow only if not disabled and not searchable */}
+            {!isSearchable && !disabled && (
               <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
             )}
           </div>

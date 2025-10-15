@@ -54,7 +54,6 @@ export default function WarehouseContactDetails({ values, errors, touched, handl
       </div>
       <div className="flex flex-col gap-2 ">
           <InputFields
-            required
             type="contact"
             label="Manager Contact Number"
             name="warehouse_manager_contact"
@@ -89,7 +88,6 @@ export default function WarehouseContactDetails({ values, errors, touched, handl
       <div>
         <InputFields
           label="Owner Email"
-          required
           name="owner_email"
           value={values.owner_email}
           onChange={handleChange}

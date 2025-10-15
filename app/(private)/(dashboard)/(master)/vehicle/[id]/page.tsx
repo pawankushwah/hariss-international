@@ -447,8 +447,8 @@ export default function AddEditVehicleWithStepper() {
                   name="ownerType"
                   error={touched.ownerType && errors.ownerType}
                   options={[
-                    { value: "0", label: "Company Owned" },
-                    { value: "1", label: "Contractor" },
+                    { value: "0", label: "Company" },
+                    { value: "1", label: "Agent" },
                   ]}
                 />
                 {touched.ownerType && errors.ownerType && (
@@ -474,7 +474,7 @@ export default function AddEditVehicleWithStepper() {
               <div>
                 <InputFields
                   required
-                  label="Odo Meter"
+                  label="Odometer"
                   value={form.odoMeter}
                   onChange={handleChange}
                   name="odoMeter"
