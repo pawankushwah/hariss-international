@@ -197,25 +197,29 @@ export const addShelves = async (body: shelvesType) => {
 };
 
 
-export type PlanogramType = {
-  name: string;
-  valid_from?: string;
-  valid_to?: string;
-  customer_ids: number[];
-};
+  export type PlanogramType = {
+    name: string;
+    valid_from?: string;
+    valid_to?: string;
+    customer_ids: number[];
+  };
 export const addPlanogram = async (body: PlanogramType) => {
   try {
     const res = await API.post("/api/merchendisher/planogram/create", body);
-    return res.data; // { error: false, data: ... } ya error format
+    return res.data; // { error: false, data: ... } or error format
   } catch (error: unknown) {
     return handleError(error);
   }
 };
-export const updatePlanogramById = async (uuid: string, data: any) => {
+
+export const updatePlanogramById = async (
+  uuid: string,
+  data: PlanogramType
+) => {
   try {
-    console.log(data)
+    console.log(data);
     const res = await API.put(`/api/merchendisher/planogram/update/${uuid}`, data);
-    console.log(res)
+    console.log(res);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -233,7 +237,7 @@ export const getShelfById = async (uuid: string) => {
 };
 
 
-export const updateShelves = async (uuid: string, data: any) => {
+export const updateShelves = async (uuid: string, data:string ) => {
   try {
     console.log(data)
     const res = await API.put(`/api/merchendisher/shelves/update/${uuid}`, data);

@@ -293,7 +293,7 @@ export default function Planogram() {
       </div>
     </ContainerCard>
   );
-
+      // --- Step 2 Content ---
       case 2:
 
         const filteredCustomers = allCustomers.filter((c) =>
