@@ -40,6 +40,7 @@ type Props = {
   leadingElement?: React.ReactNode;
   trailingElement?: React.ReactNode;
   showBorder?: boolean;
+  showSkeleton?: boolean
 };
 
 export default function InputFields({
@@ -64,7 +65,8 @@ export default function InputFields({
   textareaResize = true,
   leadingElement,
   trailingElement,
-  showBorder = true
+  showBorder = true,
+  showSkeleton
 }: Props) {
 
   const [dropdownProperties, setDropdownProperties] = useState({
@@ -162,7 +164,7 @@ useEffect(() => {
 
 
   return (
-    <div className={`flex flex-col gap-2 w-full ${width}`}>
+    <div className={`flex flex-col gap-2 w-full ${width} ${showSkeleton && "animate-pulse"}`}>
       <label
         htmlFor={id ?? name}
         className="text-sm font-medium text-gray-700"
@@ -170,7 +172,8 @@ useEffect(() => {
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-
+      <div className="relative">
+        {showSkeleton && <div className="absolute h-[50px] w-full rounded-[5px] bg-gray-300 z-40"></div>}
       {type === "radio" && options && options.length > 0 ? (
         <div className="flex-wrap flex gap-4 mt-3">
           {options.map((opt, idx) => (
@@ -463,7 +466,7 @@ useEffect(() => {
             </div>
           )}
         </div>
-        ) : type === "contact" ? (
+      ) : type === "contact" ? (
     <div ref={dropdownRef} className="relative mt-[6px] w-full">
     <PhoneInput
       country={"in"}
@@ -494,7 +497,7 @@ useEffect(() => {
       placeholder={placeholder || `Enter ${label}`}
     />
   </div>
-) : type === "date" ? (
+      ) : type === "date" ? (
         <input
           id={id ?? name}
           name={name}
@@ -532,6 +535,7 @@ useEffect(() => {
           style={textareaResize === false ? { resize: 'none' } : {}}
         />
       ): null}
+    </div>
     </div>
   );
 }

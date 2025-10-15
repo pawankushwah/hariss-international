@@ -2512,3 +2512,39 @@ export const deleteSubmenu = async (uuid: string) => {
     return handleError(error);
   }
 };
+
+export const exportWarehouseData = async (body:object) => {
+  try {
+    const res = await API.post(`/api/master/warehouse/export`,body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const warehouseStatusUpdate = async (body:object) => {
+  try {
+    const res = await API.post(`/api/master/warehouse/multiple_status_update`,body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const exportAgentCustomerData = async (body:object) => {
+  try {
+    const res = await API.post(`/api/master/agent_customers/export`,body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const exportCompanyCustomerData = async (body:object) => {
+  try {
+    const res = await API.post(`/api/master/companycustomer/export`,body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
