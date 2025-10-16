@@ -1,3 +1,5 @@
+"use client";
+
 import KeyValueData from "@/app/(private)/(dashboard)/(master)/customer/[customerId]/keyValueData";
 import ContainerCard from "@/app/components/containerCard";
 import { useLoading } from "@/app/services/loadingContext";

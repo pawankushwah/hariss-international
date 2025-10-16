@@ -1,142 +1,230 @@
-import React, { useState } from "react";
+"use client";
 
-// Static mapping as given
+import React, { useState, useEffect } from "react";
+import KeyValueData from "@/app/(private)/(dashboard)/(master)/customer/[customerId]/keyValueData";
+import ContainerCard from "@/app/components/containerCard";
+import { useLoading } from "@/app/services/loadingContext";
+import { pricingHeaderById } from "@/app/services/allApi";
+import { useSnackbar } from "@/app/services/snackbarContext";
+import { useParams } from "next/navigation";
+
+// Your static mapping
 const initialKeys = [
-  {
-    type: "Location",
-    options: [
-      { id: "1", label: "Company", isSelected: false },
-      { id: "2", label: "Region", isSelected: false },
-      { id: "3", label: "Warehouse", isSelected: false },
-      { id: "4", label: "Area", isSelected: false },
-      { id: "5", label: "Route", isSelected: false },
-    ],
-  },
-  {
-    type: "Customer",
-    options: [
-      { id: "6", label: "Customer Type", isSelected: false },
-      { id: "7", label: "Channel", isSelected: false },
-      { id: "8", label: "Customer Category", isSelected: false },
-      { id: "9", label: "Customer", isSelected: false },
-    ],
-  },
-  {
-    type: "Item",
-    options: [
-      { id: "10", label: "Item Category", isSelected: false },
-      { id: "11", label: "Item", isSelected: false },
-    ],
-  },
+  { type: "Location", options: [
+      { id: "1", label: "Company" },
+      { id: "2", label: "Region" },
+      { id: "3", label: "Warehouse" },
+      { id: "4", label: "Area" },
+      { id: "5", label: "Route" },
+  ]},
+  { type: "Customer", options: [
+      { id: "6", label: "Customer Type" },
+      { id: "7", label: "Channel" },
+      { id: "8", label: "Customer Category" },
+      { id: "9", label: "Customer" },
+  ]},
+  { type: "Item", options: [
+      { id: "10", label: "Item Category" },
+      { id: "11", label: "Item" },
+  ]},
 ];
 
-// Helper to find id by label and type
-function getKeyIdByLabel(type, targetLabel) {
-  const group = initialKeys.find(g => g.type === type);
-  if (!group) return null;
-  const found = group.options.find(opt => opt.label === targetLabel);
-  return found ? found.id : null;
+// Build mapping object for quick lookup
+const keyIdLabelMap = {};
+initialKeys.forEach(group => {
+  group.options.forEach(opt => {
+    keyIdLabelMap[Number(opt.id)] = opt.label;
+  });
+});
+
+function getDescriptionLabels(desc) {
+  let descArray = [];
+  if (Array.isArray(desc)) {
+    descArray = desc;
+  } else if (typeof desc === "string") {
+    descArray = desc.split(",").map(x => Number(x.trim())).filter(Boolean);
+  }
+  return descArray.map(id => keyIdLabelMap[id] || id).join(", ");
 }
 
-// Helper to guess type for mapping (customize as needed)
-function guessTypeByKey(key) {
-  if (["Sub Channel", "Customer Category", "Customer Type", "Channel", "Customer"].includes(key)) return "Customer";
-  if (["Company", "Region", "Warehouse", "Area", "Route"].includes(key)) return "Location";
-  if (key === "Item" || key === "Item Category") return "Item";
-  return ""; // fallback
-}
-
-// Collapsible field component as required
-function CollapsibleField({ label, values }) {
+// Collapsible field/table for array-valued keys
+function CollapsibleField({ label, values, columns }) {
   const [expanded, setExpanded] = useState(false);
-
   if (!values || values.length === 0) return null;
 
-  // If only one value, display it inline
   if (values.length === 1) {
+    // Single value, display inline
     return (
-      <div style={{ display: "flex", borderBottom: "1px solid #eee", alignItems: "center", minHeight: 50 }}>
-        <div style={{ flex: 1, padding: "12px 16px" }}>{label}</div>
-        <div style={{ flex: 3, textAlign: "right", padding: "12px 16px" }}>{values[0]}</div>
+      <div className="flex border-b border-gray-200 min-h-[48px]">
+        <div className="flex-1 py-3 px-5 font-medium">{label}</div>
+        <div className="flex-3 text-left py-3 px-5">
+          {typeof values[0] === "object"
+            ? Object.values(values[0]).join(", ")
+            : String(values[0])
+          }
+        </div>
       </div>
     );
   }
-
-  // Otherwise show with expandable control
+  // Multiple, expandable
   return (
-    <div style={{ borderBottom: "1px solid #eee", minHeight: 50 }}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ flex: 1, padding: "12px 16px" }}>{label}</div>
-        <div style={{ flex: 3, textAlign: "right", padding: "12px 16px" }}>
-          {values[0]} & {values.length - 1} more...
+    <div className="border-b border-gray-200">
+      <div className="flex items-center min-h-[48px]">
+        <div className="flex-1 py-3 px-5 font-medium">{label}</div>
+        <div className="flex-3 text-left py-3 px-5">
+          {(typeof values[0] === "object"
+            ? Object.values(values[0]).join(", ")
+            : String(values[0]))
+          }
+          &nbsp;
           <span
-            style={{ marginLeft: 12, cursor: "pointer", color: "#37a08e", fontWeight: "bold" }}
+            className="text-teal-600 cursor-pointer font-bold"
             onClick={() => setExpanded(e => !e)}
           >
-            {expanded ? "▲" : "▼"}
+            {expanded ? "▲" : `& ${values.length - 1} more ▼`}
           </span>
         </div>
       </div>
       {expanded && (
-        <table style={{ width: "100%", background: "#fafafa", marginBottom: 6 }}>
-          <tbody>
-            {values.map((v, i) => (
-              <tr key={i}>
-                <td style={{ padding: "8px 16px" }}>{v}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full bg-gray-50 mb-2 border-collapse">
+            <thead>
+              <tr>
+                {columns.map(col => (
+                  <th key={col.key} className="p-2 text-left bg-gray-100">{col.label}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {values.map((row, i) => (
+                <tr key={i}>
+                  {columns.map(col => (
+                    <td key={col.key} className="p-2 border-b">
+                      {row[col.key]
+                        ?? row[col.key.replace("_name", "name")]
+                        ?? row[col.key.replace("name", "category_name")]
+                        ?? "-"
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
 }
 
-// Id-extraction utility—returns all mapped ids for summary/debug/audit
-function getAllSelectedIds(data, initialKeys) {
-  const ids = [];
-  Object.entries(data).forEach(([key, vals]) => {
-    const type = guessTypeByKey(key);
-    vals.forEach(v => {
-      const id = getKeyIdByLabel(type, v);
-      if (id) ids.push(Number(id));
-    });
-  });
-  return ids;
-}
-
-// Example "list response" like in your system
-const selected = {
-  "Sub Channel": ["CARD HOLDERS"],           // Single value
-  "Customer": ["villa Iantana Villa 386 Al Barsha 2 - 173758"],
-  "Item": [
-    "Tissue White 100 x 2PLY 1x36",
-    "Tissue Blue 2PLY 1x24",
-    "Hand Towel 1x12",
-    "Facial Tissue 1x48",
-    "Roll 1x9",
-    "Napkin 1x24",
-    "Folded Towel 1x10",
-    "Box 1x18",
-    "Paper Towel 1x6",
-    "Kitchen Roll 1x4"
+const arrayColumns = {
+  company: [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" }
+  ],
+  region: [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" }
+  ],
+  area: [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" }
+  ],
+  warehouse: [
+    { key: "id", label: "ID" },
+    { key: "warehouse_name", label: "Name" },
+    { key: "warehouse_code", label: "Code" }
+  ],
+  route: [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" }
+  ],
+  customer_category: [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" }
+  ],
+  customer: [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" }
+  ],
+  outlet_channel: [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" }
+  ],
+  item_category: [
+    { key: "id", label: "ID" },
+    { key: "category_name", label: "Name" },
+    { key: "category_code", label: "Code" }
+  ],
+  item: [
+    { key: "id", label: "ID" },
+    { key: "name", label: "Name" },
+    { key: "erp_code", label: "Code" }
   ]
 };
 
-// Main display component
-export default function KeyValue() {
-  // IDs selected—can be POSTed, displayed, etc.
-  const selectedIds = getAllSelectedIds(selected, initialKeys);
+export default function Overview() {
+  const params = useParams();
+  const uuid = Array.isArray(params.uuid)
+    ? params.uuid[0] || ""
+    : (params.uuid) || "";
+
+  const [pricing, setpricing] = useState(null);
+  const { showSnackbar } = useSnackbar();
+  const { setLoading } = useLoading();
+
+  useEffect(() => {
+    if (!uuid) return;
+
+    const fetchPricingDetails = async () => {
+      setLoading(true);
+      try {
+        const res = await pricingHeaderById(uuid);
+        if (res.error) {
+          showSnackbar(
+            res.data?.message || "Unable to fetch pricing Details",
+            "error"
+          );
+          return;
+        }
+        setpricing(res.data);
+      } catch (error) {
+        showSnackbar("Unable to fetch pricing Details", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPricingDetails();
+  }, [uuid, setLoading, showSnackbar]);
+
+  if (!pricing) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div style={{ maxWidth: 900, margin: "30px auto", border: "1px solid #eee", borderRadius: 6 }}>
-      {/* Display each field using CollapsibleField for your layout */}
-      {Object.entries(selected).map(([key, vals]) =>
-        <CollapsibleField key={key} label={key} values={vals} />
-      )}
-      {/* Show the selected IDs */}
-      <div style={{ margin: 20, fontSize: 14, color: "#888" }}>
-        Selected static ids: {JSON.stringify(selectedIds)}
+    <div className="flex gap-x-[20px] flex-wrap md:flex-nowrap">
+      <div className="w-full flex flex-col gap-y-[20px]">
+        <ContainerCard className="w-full">
+          {/* Collapsible array fields */}
+          {Object.entries(arrayColumns).map(([key, cols]) =>
+            Array.isArray(pricing[key]) && pricing[key].length > 0
+              ? <CollapsibleField
+                  key={key}
+                  label={key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                  values={pricing[key]}
+                  columns={cols}
+                />
+              : null
+          )}
+        </ContainerCard>
       </div>
     </div>
   );
