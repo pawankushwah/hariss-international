@@ -113,6 +113,8 @@ const SalesmanPage = () => {
   const { setLoading } = useLoading();
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
+    const [refreshKey, setRefreshKey] = useState(0);
+
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
@@ -126,6 +128,9 @@ const SalesmanPage = () => {
     showSnackbar("Please select at least one salesman", "error");
     return;
   }
+
+ 
+  
 
   const selectedSalesmen = data.filter((_, index) =>
     selectedRow.includes(index)
@@ -146,6 +151,7 @@ const SalesmanPage = () => {
         "error"
       );
     } else {
+           setRefreshKey((k) => k + 1);
       showSnackbar("Status updated successfully", "success");
       fetchSalesman();
     }
@@ -233,12 +239,14 @@ const SalesmanPage = () => {
     []
   );
 
+
   return (
     <>
       {/* Table */}
       
       <div className="flex flex-col h-full">
         <Table
+                    refreshKey={refreshKey}
           config={{
             api: { list: fetchSalesman },
             header: {
