@@ -130,7 +130,7 @@ const SalesmanPage = () => {
   const selectedSalesmen = data.filter((_, index) =>
     selectedRow.includes(index)
   );
-  console.log(data, selectedRow)
+  // console.log(data, selectedRow)
 
   const failedUpdates: string[] = [];
 
@@ -158,7 +158,6 @@ const SalesmanPage = () => {
     setShowDropdown(false);
   }
 };
-
 
 
   const handleExport = async (fileType: "csv" | "xlsx") => {
@@ -262,12 +261,13 @@ const SalesmanPage = () => {
                 {
                   icon: "lucide:radio",
                   label: "Inactive",
+                  showOnSelect: true,
                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
                     handleStatusChange(data, selectedRow, "0");
                 },
               }
               ],
-              
+
               // wholeTableActions: [
               //   <div key={0} className="flex gap-[12px] relative">
               //     <DismissibleDropdown

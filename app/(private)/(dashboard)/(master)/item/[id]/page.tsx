@@ -498,7 +498,7 @@ const res = isEditMode
         isEditMode ? "Item updated successfully!" : "Item created successfully!",
         "success"
       );
-      router.push("/items");
+      router.push("/item");
     } else {
       //  console.error("Error:", res);
       throw new Error(res?.data?.message || "Something went wrong");
