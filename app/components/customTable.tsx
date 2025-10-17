@@ -7,7 +7,7 @@ import SearchBar from "./searchBar";
 import { Icon } from "@iconify-icon/react";
 import CustomDropdown from "./customDropdown";
 import BorderIconButton from "./borderIconButton";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import FilterDropdown from "./filterDropdown";
 import CustomCheckbox from "./customCheckbox";
 import DismissibleDropdown from "./dismissibleDropdown";
@@ -841,14 +841,15 @@ function FilterTableHeader({
     const [searchBarValue, setSearchBarValue] = useState("");
     const [filteredOptions, setFilteredOptions] = useState<Array<{ value: string; label: string }>>([]);
     const [selectedValues, setSelectedValues] = useState<string[]>([]);
+    const parentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (filterConfig?.options) {
             setFilteredOptions(filterConfig.options);
-            console.log('FilterTableHeader options:', filterConfig.options);
+            // console.log('FilterTableHeader options:', filterConfig.options);
         } else {
             setFilteredOptions([]);
-            console.log('FilterTableHeader options are empty or undefined');
+            // console.log('FilterTableHeader options are empty or undefined');
         }
     }, [filterConfig?.options]);
 
@@ -905,14 +906,17 @@ function FilterTableHeader({
             isOpen={showFilterDropdown}
             setIsOpen={setShowFilterDropdown}
             button={
-                <Icon
-                    icon="circum:filter"
-                    width={16}
-                    onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                />
+                <div ref={parentRef} className="flex item-center">
+                    <Icon
+                        icon="circum:filter"
+                        width={16}
+                        onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                    />
+                </div>
             }
             dropdown={
                 <FilterDropdown
+                    anchorRef={parentRef as React.RefObject<HTMLDivElement>}
                     dimensions={dimensions}
                     searchBarValue={searchBarValue}
                     setSearchBarValue={setSearchBarValue}
@@ -930,15 +934,18 @@ function FilterTableHeader({
                                 onSelect={(filterConfig as any).onSelect}
                             />
                         ) : filterConfig?.isSingle !== false ? (
-                            filteredOptions.map((option, idx) => (
-                                <div
+                            filteredOptions.map((option, idx) => {
+                                const [code, value] = option.label.split("-");
+                                return <div
                                     key={option.value}
                                     className="font-normal text-[14px] text-[#181D27] flex gap-x-[8px] py-[10px] px-[14px] hover:bg-[#FAFAFA] cursor-pointer"
                                     onClick={() => handleSelect(option.value)}
                                 >
-                                    <span className="text-[#535862]">{option.label}</span>
+                                    <span className="text-[#181D27] font-medium">{code}</span>
+                                    <span className="text-[#535862]">{value}</span>
                                 </div>
-                            ))
+                            }
+                            )
                         ) : (
                             filteredOptions.map((option, idx) => (
                                 <div
