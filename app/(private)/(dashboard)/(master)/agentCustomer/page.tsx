@@ -76,6 +76,7 @@ export default function AgentCustomer() {
             onSelect: (selected) => {
                 setSelectedSubCategoryId((prev) => prev === selected ? "" : (selected as string));
             },
+            selectedValue: selectedSubCategoryId,
         },
         showByDefault: true,
     },
@@ -96,6 +97,7 @@ export default function AgentCustomer() {
                     onSelect: (selected) => {
                         setChannelId((prev) => prev === selected ? "" : (selected as string));
                     },
+                    selectedValue: channelId,
                 },
         
         showByDefault: true,
@@ -121,6 +123,7 @@ export default function AgentCustomer() {
                     onSelect: (selected) => {
                         setWarehouseId((prev) => prev === selected ? "" : (selected as string));
                     },
+                    selectedValue: warehouseId,
                 },
        
         showByDefault: true,
@@ -145,6 +148,7 @@ export default function AgentCustomer() {
             onSelect: (selected) => {
                 setRouteId((prev) => prev === selected ? "" : (selected as string));
             },
+            selectedValue: routeId,
         },
        
         showByDefault: true,
@@ -331,7 +335,7 @@ export default function AgentCustomer() {
     // Refresh table when subcategory filter changes
     useEffect(() => {
         setRefreshKey((k) => k + 1);
-    }, [selectedSubCategoryId,channelId,warehouseId,routeId]);
+    }, [selectedSubCategoryId,channelId,warehouseId,routeId,customerSubCategoryOptions,channelOptions,warehouseOptions,routeOptions]);
 
     return (
         <>
