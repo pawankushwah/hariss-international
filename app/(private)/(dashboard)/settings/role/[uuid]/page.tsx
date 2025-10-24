@@ -60,7 +60,7 @@ export default function AddEditRole() {
             showSnackbar(roleRes?.data?.message || "Failed to fetch role data", "error");
             return;
           }
-          let roleData = roleRes?.data || [];
+          const roleData = roleRes?.data || [];
           const menusFromRes = Array.isArray(roleData?.menus) ? roleData.menus : [];
 
           // extract menus and submenus from their APIs
