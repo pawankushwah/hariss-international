@@ -9,6 +9,11 @@ import Link from "next/link";
 import { Icon } from "@iconify-icon/react";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import { itemList,addPromotionHeader ,promotionDetailById,promotionHeaderById} from "@/app/services/allApi";
+import InputFields from "@/app/components/inputFields";
+import Table from "@/app/components/customTable";
+import { useRouter } from "next/navigation";
+import CustomCheckbox from "@/app/components/customCheckbox";
+import * as yup from "yup";
 
 type KeyComboType = {
   Location: string[];
@@ -23,8 +28,8 @@ const initialKeys: KeyGroup[] = [
     options: [
       { id: "1", label: "Company", isSelected: false },
       { id: "2", label: "Region", isSelected: false },
-      { id: "3", label: "Warehouse", isSelected: false },
       { id: "4", label: "Area", isSelected: false },
+      { id: "3", label: "Warehouse", isSelected: false },
       { id: "5", label: "Route", isSelected: false },
     ],
   },
@@ -159,12 +164,8 @@ function SelectKeyCombinationInline({ keyCombo, setKeyCombo }: { keyCombo: KeyCo
     </ContainerCard>
   );
 }
-// --- End SelectKeyCombination component ---
-import InputFields from "@/app/components/inputFields";
-import Table from "@/app/components/customTable";
-import { useRouter } from "next/navigation";
-import CustomCheckbox from "@/app/components/customCheckbox";
-import * as yup from "yup";
+
+
 
 export default function AddPricing() {
   const params = useParams();
