@@ -1,11 +1,9 @@
 "use client";
 
 import { Icon } from "@iconify-icon/react";
-import { useEffect, useState, useRef, ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import InputFields from "@/app/components/inputFields";
-import SettingPopUp from "@/app/components/settingPopUp";
-import IconButton from "@/app/components/iconButton";
 import StepperForm, {
     useStepperForm,
     StepperStep,
@@ -13,10 +11,6 @@ import StepperForm, {
 import { useSnackbar } from "@/app/services/snackbarContext";
 import {
     agentCustomerById,
-    editAgentCustomer,
-    genearateCode,
-    addAgentCustomer,
-    saveFinalCode,
     routeList,
     customerSubCategoryList,
     customerCategoryList,
@@ -33,7 +27,6 @@ import {
     FormikTouched,
 } from "formik";
 import { useLoading } from "@/app/services/loadingContext";
-import { em } from "framer-motion/client";
 import CustomPasswordInput from "@/app/components/customPasswordInput";
 
 interface user {
@@ -55,7 +48,7 @@ interface user {
 
 interface contactCountry { name: string; code?: string; flag?: string; }
 
-export default function userAddEdit() {
+export default function UserAddEdit() {
     // starting point
     const { showSnackbar } = useSnackbar();
     const { setLoading } = useLoading();
@@ -494,7 +487,7 @@ export default function userAddEdit() {
                                         name="contact_number"
                                         value={values.contact_number}
                                         selectedCountry={country.contact_number}
-                                        setSelectedCountry={() => (country: contactCountry) => setCountry(prev => ({ ...prev, contact_number: country }))}
+                                        setSelectedCountry={(country: contactCountry) => setCountry(prev => ({ ...prev, contact_number: country }))}
                                         onChange={(e) => setFieldValue("contact_number",e.target.value)}
                                         error={touched.contact_number && errors.contact_number}
                                     />
@@ -507,6 +500,7 @@ export default function userAddEdit() {
                                 <div>
                                     <CustomPasswordInput
                                         label="Password"
+                                        width="max-w-[406px]"
                                         value={values.password}
                                         onChange={(e) => setFieldValue("password",e.target.value)}
                                     />
@@ -519,6 +513,7 @@ export default function userAddEdit() {
                                 <div>
                                     <CustomPasswordInput
                                         label="Confirm Password"
+                                        width="max-w-[406px]"
                                         value={values.password_confirmation}
                                         onChange={(e) => setFieldValue("password_confirmation",e.target.value)}
                                     />
