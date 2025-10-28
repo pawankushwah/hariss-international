@@ -19,25 +19,24 @@ const initialKeys: KeyGroup[] = [
     options: [
       { id: "1",label: "Company",  isSelected: false },
       { id: "2",label: "Region",  isSelected: false },
-      {  id: "3",label: "Warehouse", isSelected: false },
-      {  id: "4",label: "Area", isSelected: false },
+      {  id: "3",label: "Area", isSelected: false },
+      {  id: "4",label: "Warehouse", isSelected: false },
       { id: "5",label: "Route",  isSelected: false },
     ],
   },
   {
     type: "Customer",
     options: [
-      { id: "6",label: "Customer Type",  isSelected: false },
-      { id: "7",label: "Channel",  isSelected: false },
-      { id: "8",label: "Customer Category",  isSelected: false },
-      { id: "9",label: "Customer",  isSelected: false },
+      { id: "6",label: "Channel",  isSelected: false },
+      { id: "7",label: "Customer Category",  isSelected: false },
+      { id: "8",label: "Customer",  isSelected: false },
     ],
   },
   {
     type: "Item",
     options: [
-      {  id: "10",label: "Item Category", isSelected: false },
-      { id: "11",label: "Item",  isSelected: false },
+      {  id: "9",label: "Item Category", isSelected: false },
+      { id: "10",label: "Item",  isSelected: false },
     ],
   },
 ];
