@@ -217,7 +217,7 @@ interface CustomerSubCategory {
 
 interface Item {
   id?: number | string;
-  code?: string;
+  item_code?: string;
   name?: string;
 }
 
@@ -430,7 +430,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
 
   const itemOptions = (Array.isArray(item) ? item : []).map((c: Item) => ({
     value: String(c.id ?? ''),
-    label: c.code && c.name ? `${c.code} - ${c.name}` : (c.name ?? '')
+    label: c.item_code && c.name ? `${c.item_code} - ${c.name}` : (c.name ?? '')
   }));
 
   const discountTypeOptions = (Array.isArray(discountType) ? discountType : []).map((c: DiscountType) => ({
