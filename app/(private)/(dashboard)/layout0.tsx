@@ -88,8 +88,8 @@ export function filterMenuByPermissions(
     allMenus: LinkDataType[],
     role: Role
 ): LinkDataType[] {
-    const allowedMenus = role.menus.map((m) => m.menu.name);
-    const allowedSubMenus = role.menus.flatMap((m) => m.submenu.map((s) => s.name));
+    const allowedMenus = role?.menus?.map((m) => m.menu.name);
+    const allowedSubMenus = role?.menus?.flatMap((m) => m.submenu.map((s) => s.name));
 
     return allMenus
         .filter((menu) => allowedMenus.includes(menu.label))
@@ -140,11 +140,11 @@ const DashboardLayout0 = ({ children }: { children: React.ReactNode }) => {
             const id = localStorage.getItem("role")
             const res = await getRoleById(id as string);
             const data: LinkDataType[] = sidebarData[0].data
-            let allFilterdMenu:LinkDataType[] = filterMenuByPermissions(data, res.data)
+            const allFilterdMenu:LinkDataType[] = filterMenuByPermissions(data, res.data)
             console.log(allFilterdMenu,"allFilterdMenu")
             setFilterdMenu([{ data: allFilterdMenu }])
 
-            let allChildernsUrl:String[] = []
+            const allChildernsUrl:string[] = []
 
             allFilterdMenu.map((filterdChildrenMerge:LinkDataType)=>{
                 // allChildernsUrl = [...filterdChildrenMerge.children]
