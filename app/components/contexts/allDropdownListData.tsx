@@ -222,6 +222,17 @@ interface Item {
   id?: number | string;
   item_code?: string;
   name?: string;
+  // optional raw uom array coming from API
+  uom?: Array<{
+    id?: number;
+    item_id?: number;
+    uom_type?: string;
+    name?: string;
+    price?: string;
+    is_stock_keeping?: boolean;
+    upc?: string;
+    enable_for?: string;
+  }>;
 }
 
 interface DiscountType {
@@ -577,7 +588,33 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         if (Array.isArray(r)) return r as Item[];
         return [];
       };
-      setItem(normalize(res));
+
+      // normalize response and also extract UOM summary for each item
+      const rawItems = normalize(res);
+      const mappedItems = (Array.isArray(rawItems) ? rawItems : []).map((it: any) => {
+        // some APIs return 'uom' or 'uoms' as the array name; support both
+        const rawUoms = Array.isArray(it?.uom) ? it.uom : (Array.isArray(it?.uoms) ? it.uoms : []);
+        const uomSummary = (rawUoms || []).map((u: any) => ({
+          name: u?.name ?? "",
+          uom_type: u?.uom_type ?? u?.type ?? "",
+          price: u?.price ?? "",
+          upc: u?.upc ?? "",
+        }));
+
+        // attach a derived field so consumers can use it easily
+        return {
+          ...it,
+          uomSummary,
+        } as Item & { uomSummary: Array<{ name: string; uom_type: string; price: string; upc: string }>; };
+      });
+
+      // store mapped items (with uomSummary) in state
+      setItem(mappedItems as Item[]);
+
+      // console the mapped response as requested
+      // (kept intentionally lightweight to help debugging)
+      // eslint-disable-next-line no-console
+      console.log("fetchItemOptions - mapped items with UOM summary:", mappedItems);
     } catch (error) {
       setItem([]);
     } finally {
