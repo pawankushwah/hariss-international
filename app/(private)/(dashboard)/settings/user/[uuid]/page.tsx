@@ -16,6 +16,8 @@ import {
     customerCategoryList,
     updateAuthUser,
     registerAuthUser,
+    getRoleById,
+    authUserList,
 } from "@/app/services/allApi";
 import * as Yup from "yup";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
@@ -58,12 +60,13 @@ export default function UserAddEdit() {
     const isEditMode = userUUID !== undefined && userUUID !== "add";
 
     // Dropdown options from context
-    const { roleOptions } = useAllDropdownListData();
+    const { roleOptions, companyOptions, warehouseOptions, routeOptions, salesmanOptions, regionOptions, areaOptions, channelOptions } = useAllDropdownListData();
     const [skeleton, setSkeleton] = useState({
         route: false,
         customerCategory: false,
         customerSubCategory: false,
     });
+    const [labels, setLabels] = useState<Record<string, string>>({});
     const [filteredRouteOptions, setFilteredRouteOptions] = useState([] as { label: string; value: string }[]);
     const [filteredCustomerCategoryOptions, setFilteredCustomerCategoryOptions] = useState([] as { label: string; value: string }[]);
     const [filteredCustomerSubCategoryOptions, setFilteredCustomerSubCategoryOptions] = useState([] as  { label: string; value: string }[]);
@@ -156,11 +159,27 @@ export default function UserAddEdit() {
         setSkeleton({ ...skeleton, customerSubCategory: false });
     }
 
+    const fetchLabel = async (value: string) => {
+        const res = await getRoleById(value);
+        if(res.error) {
+            showSnackbar(res.data?.message || "Failed to fetch label", "error");
+            return;
+        }
+        const labels = res?.data?.labels || [];
+        if(!labels) {
+            showSnackbar("Label not found", "error");
+            return;
+        }
+        setLabels(labels);
+        console.log("Labels fetched:", labels);
+    };
+
     useEffect(() => {
+        return; // remove when editing API is ready
         setLoading(true);
         if (isEditMode && userUUID) {
             (async () => {
-                const res = await agentCustomerById(String(userUUID));
+                const res = await authUserList({});
                 const data = res?.data ?? res;
                 if (res && !res.error) {
                     setInitialValues({
@@ -193,14 +212,17 @@ export default function UserAddEdit() {
         name: Yup.string().required("Name is required").max(255),
         email: Yup.string().email("Invalid email").required("Email is required"),
         username: Yup.string().required("Username is required").max(255),
-        contact_number: Yup.string().required("Contact number is required").max(20),
+        contact_number: Yup.string()
+            .required("Contact number is required")
+            .transform((value) => (typeof value === "string" ? value.trim() : value))
+            .matches(/^\+?\d{7,13}$/, "Contact number must be 7 to 13 digits and may start with +"),
         password: Yup.string().required("Password is required").min(6).max(100),
         password_confirmation: Yup.string()
             .oneOf([Yup.ref("password"), undefined], "Passwords must match")
             .required("Password confirmation is required"),
 
         // multi-value fields with hierarchical dependency validation
-        role: Yup.array().of(Yup.string()).min(1, "Role is required"),
+        role: Yup.string().required("Role is required"),
 
         company: Yup.array().of(Yup.string()).min(1, "Company is required"),
 
@@ -431,7 +453,7 @@ export default function UserAddEdit() {
                     <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
                         <div className="p-6">
                             <h2 className="text-lg font-medium text-gray-800 mb-4">
-                                {steps[currentStep].label}
+                                {steps[currentStep]?.label}
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
@@ -499,10 +521,12 @@ export default function UserAddEdit() {
                                 </div>
                                 <div>
                                     <CustomPasswordInput
+                                        required
                                         label="Password"
                                         width="max-w-[406px]"
                                         value={values.password}
                                         onChange={(e) => setFieldValue("password",e.target.value)}
+                                        error={touched.password && errors.password}
                                     />
                                     {touched.password && errors.password && (
                                         <div className="text-red-500 text-xs mt-1">
@@ -512,6 +536,7 @@ export default function UserAddEdit() {
                                 </div>
                                 <div>
                                     <CustomPasswordInput
+                                        required
                                         label="Confirm Password"
                                         width="max-w-[406px]"
                                         value={values.password_confirmation}
@@ -533,7 +558,7 @@ export default function UserAddEdit() {
                     <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
                         <div className="p-6">
                             <h2 className="text-lg font-medium text-gray-800 mb-4">
-                                {steps[currentStep].label}
+                                {steps[currentStep]?.label}
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
@@ -543,12 +568,148 @@ export default function UserAddEdit() {
                                         name="role"
                                         value={values.role}
                                         options={roleOptions}
-                                        onChange={(e) => setFieldValue("role",e.target.value)}
+                                        onChange={(e) => { 
+                                            fetchLabel(e.target.value);
+                                            setFieldValue("role", e.target.value);
+                                        }}
                                         error={touched.role && errors.role}
                                     />
                                     {touched.role && errors.role && (
                                         <div className="text-red-500 text-xs mt-1">
                                             {errors.role}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <InputFields
+                                        required
+                                        label="Company"
+                                        name="company"
+                                        value={values.company}
+                                        options={companyOptions}
+                                        isSingle={false}
+                                        onChange={(e) => {
+                                            setFieldValue("company", e.target.value);
+                                        }}
+                                        error={touched.company && errors.company}
+                                    />
+                                    {touched.company && errors.company && (
+                                        <div className="text-red-500 text-xs mt-1">
+                                            {errors.company}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <InputFields
+                                        required
+                                        label="Warehouse"
+                                        name="warehouse"
+                                        value={values.warehouse}
+                                        options={warehouseOptions}
+                                        isSingle={false}
+                                        onChange={(e) => {
+                                            setFieldValue("warehouse", e.target.value);
+                                        }}
+                                        error={touched.warehouse && errors.warehouse}
+                                    />
+                                    {touched.warehouse && errors.warehouse && (
+                                        <div className="text-red-500 text-xs mt-1">
+                                            {errors.warehouse}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <InputFields
+                                        required
+                                        isSingle={false}
+                                        label="Route"
+                                        name="route"
+                                        value={values.route}
+                                        options={routeOptions}
+                                        onChange={(e) => {
+                                            setFieldValue("route", e.target.value);
+                                        }}
+                                        error={touched.route && errors.route}
+                                    />
+                                    {touched.route && errors.route && (
+                                        <div className="text-red-500 text-xs mt-1">
+                                            {errors.route}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <InputFields
+                                        required
+                                        isSingle={false}
+                                        label="Salesman"
+                                        name="salesman"
+                                        value={values.salesman}
+                                        options={salesmanOptions}
+                                        onChange={(e) => {
+                                            setFieldValue("salesman", e.target.value);
+                                        }}
+                                        error={touched.salesman && errors.salesman}
+                                    />
+                                    {touched.salesman && errors.salesman && (
+                                        <div className="text-red-500 text-xs mt-1">
+                                            {errors.salesman}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <InputFields
+                                        required
+                                        isSingle={false}
+                                        label="Region"
+                                        name="region"
+                                        value={values.region}
+                                        options={regionOptions}
+                                        onChange={(e) => {
+                                            setFieldValue("region", e.target.value);
+                                        }}
+                                        error={touched.region && errors.region}
+                                    />
+                                    {touched.region && errors.region && (
+                                        <div className="text-red-500 text-xs mt-1">
+                                            {errors.region}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <InputFields
+                                        required
+                                        isSingle={false}
+                                        label="Area"
+                                        name="area"
+                                        value={values.area}
+                                        options={areaOptions}
+                                        onChange={(e) => {
+                                            setFieldValue("area", e.target.value);
+                                        }}
+                                        error={touched.area && errors.area}
+                                    />
+                                    {touched.area && errors.area && (
+                                        <div className="text-red-500 text-xs mt-1">
+                                            {errors.area}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <InputFields
+                                        required
+                                        isSingle={false}
+                                        label="Outlet Channel"
+                                        name="outlet_channel"
+                                        value={values.outlet_channel}
+                                        options={channelOptions}
+                                        onChange={(e) => {
+                                            setFieldValue("outlet_channel", e.target.value);
+                                        }}
+                                        error={touched.outlet_channel && errors.outlet_channel}
+                                    />
+                                    {touched.outlet_channel && errors.outlet_channel && (
+                                        <div className="text-red-500 text-xs mt-1">
+                                            {errors.outlet_channel}
                                         </div>
                                     )}
                                 </div>
