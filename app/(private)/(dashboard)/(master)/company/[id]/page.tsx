@@ -57,6 +57,8 @@ interface CompanyFormValues {
   status: string;
 }
 
+interface contactCountry { name: string; code?: string; flag?: string; }
+
 // 🔹 Full form schema (used on submit)
 const CompanySchema = Yup.object().shape({
   company_name: Yup.string().required("Company name is required"),
@@ -166,6 +168,10 @@ export default function AddEditCompany() {
   const router = useRouter();
   const params = useParams();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [country, setCountry] = useState<Record<string, contactCountry>>({
+    primary_contact: { name: "Kenya", code: "+254", flag: "🇰🇪" },
+    toll_free_no: { name: "Kenya", code: "+254", flag: "🇰🇪" },
+  });
   const [initialValues, setInitialValues] = useState<CompanyFormValues>({
     company_name: "",
     company_code: "",
@@ -375,11 +381,6 @@ export default function AddEditCompany() {
                   onChange={(e) =>
                     setFieldValue("company_name", e.target.value)
                   }
-                  error={
-                    errors?.company_name && touched.company_name
-                      ? errors.company_name
-                      : false
-                  }
                 />
                 {errors?.company_name && touched?.company_name && (
                   <p className="text-red-500 text-sm mt-1">
@@ -399,7 +400,6 @@ export default function AddEditCompany() {
                     { value: "manufacturing", label: "Manufacturing" },
                     { value: "trading", label: "Trading" },
                   ]}
-                  error={touched.company_type && errors.company_type}
                 />
                 {errors.company_type && (
                   <p className="text-red-500 text-sm mt-1">{errors.company_type}</p>
@@ -413,7 +413,6 @@ export default function AddEditCompany() {
                   name="website"
                   value={values.website}
                   onChange={(e) => setFieldValue("website", e.target.value)}
-                  error={touched.website && errors.website}
                 />
                 {errors.website && (
                   <p className="text-red-500 text-sm mt-1">{errors.website}</p>
@@ -421,12 +420,12 @@ export default function AddEditCompany() {
               </div>
               <div>
                 <InputFields
+                  required
                   label="Logo"
                   name="company_logo"
                   type="file"
                   value={values.company_logo}
                   onChange={(e) => setFieldValue("company_logo", e.target.value)}
-                  error={touched.company_logo && errors.company_logo}
                 />
                 {errors.company_logo && (
                   <p className="text-red-500 text-sm mt-1">{errors.company_logo}</p>
@@ -441,34 +440,50 @@ export default function AddEditCompany() {
           <ContainerCard>
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               <div>
-                <FormInputField
+                <InputFields
                   required
                   type="contact"
                   label="Primary Contact"
-                  contact={values.primary_contact}
-                  code={values.primary_code}
-                  onContactChange={(e) => handleNumericInput(e, "primary_contact", setFieldValue)}
-                  onCodeChange={(e) => setFieldValue("primary_code", e.target.value)}
-                  options={onlyCountryOptions}
-                  error={touched.primary_contact && errors.primary_contact}
-                />
+                  name="primary_contact"
+                  setSelectedCountry={(country: contactCountry) => setCountry((prev) => ({ ...prev, primary_contact: country }))}
+                  selectedCountry={country.primary_contact}
+                  value={values.primary_contact}
+                  onChange={(e) =>
+                      setFieldValue(
+                          "primary_contact",
+                          e.target.value
+                      )
+                  }
+                  error={
+                      touched.primary_contact &&
+                      errors.primary_contact
+                  }
+              />
                 {errors.primary_contact && (
                   <p className="text-red-500 text-sm mt-1">{errors.primary_contact}</p>
                 )}
               </div>
 
               <div>
-                <FormInputField
+                <InputFields
                   required
                   type="contact"
                   label="Toll Free Number"
-                  contact={values.toll_free_no}
-                  code={values.toll_free_code}
-                  onContactChange={(e) => handleNumericInput(e, "toll_free_no", setFieldValue)}
-                  onCodeChange={(e) => setFieldValue("toll_free_code", e.target.value)}
-                  options={onlyCountryOptions}
-                  error={touched.toll_free_no && errors.toll_free_no}
-                />
+                  name="toll_free_no"
+                  setSelectedCountry={(country: contactCountry) => setCountry((prev) => ({ ...prev, toll_free_no: country }))}
+                  selectedCountry={country.toll_free_no}
+                  value={values.toll_free_no}
+                  onChange={(e) =>
+                      setFieldValue(
+                          "toll_free_no",
+                          e.target.value
+                      )
+                  }
+                  error={
+                      touched.toll_free_no &&
+                      errors.toll_free_no
+                  }
+              />
                 {errors.toll_free_no && (
                   <p className="text-red-500 text-sm mt-1">{errors.toll_free_no}</p>
                 )}
