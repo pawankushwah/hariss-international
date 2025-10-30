@@ -315,7 +315,7 @@ export const initialLinkData: SidebarDataType[] = [
                 children: [
                     {
                         isActive: false,
-                        href: "/agentTransaction/agentCustomerOrder",
+                        href: "/agentCustomerOrder",
                         label: "Agent Order",
                         leadingIcon: "mdi:package-variant",
                         iconColor: "text-cyan-500"
@@ -331,6 +331,20 @@ export const initialLinkData: SidebarDataType[] = [
                         isActive: false,
                         href: "/invoice",
                         label: "Invoice",
+                        leadingIcon: "mdi:package-variant",
+                        iconColor: "text-cyan-500"
+                    },
+                    {
+                        isActive: false,
+                        href: "/salesmanLoad",
+                        label: "Salesman Load",
+                        leadingIcon: "mdi:package-variant",
+                        iconColor: "text-cyan-500"
+                    },
+                    {
+                        isActive: false,
+                        href: "/salesmanUnload",
+                        label: "Salesman Unload",
                         leadingIcon: "mdi:package-variant",
                         iconColor: "text-cyan-500"
                     },
