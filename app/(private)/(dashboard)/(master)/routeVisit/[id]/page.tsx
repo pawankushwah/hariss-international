@@ -222,7 +222,6 @@ export default function AddEditRouteVisit() {
         res = await agentCustomerList();
       }
 
-      console.log(res, selectedCustomerType);
       if (res?.data) {
         setCustomers(res.data);
       }
@@ -408,7 +407,7 @@ export default function AddEditRouteVisit() {
         res = await saveRouteVisit(payload);
       }
 
-      console.log(res)
+      console.log(res);
 
       if (res?.error) {
         showSnackbar("Failed to save route visit");
@@ -548,6 +547,12 @@ export default function AddEditRouteVisit() {
             Customer Schedule
           </h2>
           <Table
+            searchQuery={{
+              customer_type: commonData.customer_type,
+              from_date: commonData.from_date,
+              to_date: commonData.to_date,
+              status: commonData.status,
+            }}
             isEditMode={isEditMode}
             selectedCustomerType={
               selectedCustomerType ? selectedCustomerType : "Agent Customer"

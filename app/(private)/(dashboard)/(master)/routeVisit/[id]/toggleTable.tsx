@@ -1,4 +1,5 @@
 "use client";
+import ContainerCard from "@/app/components/containerCard";
 import Loading from "@/app/components/Loading";
 import { getRouteVisitList } from "@/app/services/allApi";
 import { useState, useEffect } from "react";
@@ -76,6 +77,12 @@ type CustomerSchedule = {
 };
 
 type TableProps = {
+  searchQuery: {
+    from_date: string | null;
+    to_date: string | null;
+    customer_type: string | null;
+    status: string | null;
+  };
   isEditMode: boolean;
   customers: CustomerItem[];
   onScheduleUpdate?: (schedules: CustomerSchedule[]) => void;
@@ -84,6 +91,7 @@ type TableProps = {
 };
 
 export default function Table({
+  searchQuery,
   isEditMode,
   selectedCustomerType,
   customers,
@@ -93,36 +101,60 @@ export default function Table({
   const [editModeData, setEditModeData] = useState<TransformedEditCustomer[]>(
     []
   );
+  const [addModeData, setAddModeData] = useState<TransformedCustomer[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // ✅ For ADD mode: use the existing transform function
-  const addModeData = transformCustomerList(customers);
+  useEffect(() => {
+    // ✅ If customers is null or undefined, show loading and exit early
+    if (!customers) {
+      setLoading(true);
+      return;
+    }
+
+    // ✅ If customers array is empty, still show loading (no data yet)
+    if (customers.length === 0) {
+      setLoading(true);
+      return;
+    }
+
+    // ✅ Customers available — process data
+    setLoading(true);
+    const data = transformCustomerList(customers);
+    setAddModeData(data);
+    setLoading(false);
+  }, [customers]);
 
   // ✅ For EDIT mode: fetch and transform data from route visit list API
   useEffect(() => {
-    if (isEditMode) {
-      const fetchEditData = async () => {
-        setLoading(true);
-        try {
-          const res = await getRouteVisitList();
-          console.log("Edit mode data:", res);
-          if (res?.data) {
-            console.log(res.data);
-            const transformedData = transformEditCustomerList(
-              res.data as RouteVisitItem[]
-            );
-            setEditModeData(transformedData);
-          }
-        } catch (error) {
-          console.error("Failed to fetch edit mode data:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
+    // ✅ Ensure we're in edit mode
+    if (!isEditMode) return;
 
-      fetchEditData();
-    }
-  }, [isEditMode]);
+    // ✅ Ensure all required search params exist before calling API
+    const { from_date, to_date, customer_type, status } = searchQuery || {};
+
+    const hasValidParams = from_date && to_date && customer_type && status;
+
+    if (!hasValidParams) return; // ⛔ Skip API call if any param is missing
+
+    const fetchEditData = async () => {
+      setLoading(true);
+      try {
+        const res = await getRouteVisitList(searchQuery);
+        if (res?.data) {
+          const transformedData = transformEditCustomerList(
+            res.data as RouteVisitItem[]
+          );
+          setEditModeData(transformedData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch edit mode data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEditData();
+  }, [isEditMode, JSON.stringify(searchQuery)]);
 
   // ✅ Initialize state from props or edit mode data
   const initialRowStates = isEditMode
@@ -214,14 +246,23 @@ export default function Table({
     });
   };
 
-  // ✅ Determine which data to display
-  const displayData = isEditMode ? editModeData : addModeData;
-
   if (loading) {
     return <Loading />;
   }
 
-  // ✅ Responsive table
+  const hasEditData = editModeData && editModeData.length > 0;
+  const displayData = isEditMode ? editModeData : addModeData;
+
+  // ✅ If in edit mode and no data, show "No Data Found"
+  if (isEditMode && !hasEditData) {
+    return (
+      <ContainerCard className="w-full flex font-semibold justify-center items-center py-10 text-black">
+        No Data Found
+      </ContainerCard>
+    );
+  }
+
+  // ✅ Otherwise, show the table
   return (
     <div className="w-full flex flex-col">
       <div className="rounded-lg border border-[#E9EAEB] overflow-hidden">
