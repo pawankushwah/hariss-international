@@ -552,7 +552,6 @@ export default function UserAddEdit() {
                       setSkeleton((s) => ({ ...s, warehouse: false }));
                     }
 
-                    // Clear dependent selects if no warehouses returned or current warehouse not present
                     const newWarehouseOptions = (warehouseOptions as Array<Record<string, unknown>> | undefined) ?? [];
                     const curWarehouse = values.warehouse;
                     const warehouseExists = newWarehouseOptions.some(opt => String(opt?.value ?? "") === String(curWarehouse ?? ""));
