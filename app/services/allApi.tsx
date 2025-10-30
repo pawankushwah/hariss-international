@@ -455,9 +455,15 @@ export const saveRouteVisit = async (body: object) => {
   }
 };
 
-export const getRouteVisitList = async () => {
+export const getRouteVisitList = async (params: {
+  from_date: string | null;
+  to_date: string | null;
+  customer_type: string | null;
+  status: string | null;
+}) => {
   try {
-    const res = await API.get("/api/master/route-visits/list");
+    console.log(params);
+    const res = await API.get("/api/master/route-visits/list", { params });
     return res.data;
   } catch (error) {
     return handleError(error);
