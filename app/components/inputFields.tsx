@@ -129,8 +129,10 @@ const countries: { name?: string; code?: string; flag?: string }[] = [
       safeOnChange({ target: { value: `${phone}`, name } } as React.ChangeEvent<HTMLInputElement>);
     };
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setPhone(e.target.value);
-      safeOnChange({ target: { value: `${e.target.value}`, name } } as React.ChangeEvent<HTMLInputElement>);
+      // Allow only digits by removing any non-digit characters from the input value
+      const cleaned = e.target.value.replace(/\D/g, "");
+      setPhone(cleaned);
+      safeOnChange({ target: { value: `${cleaned}`, name } } as React.ChangeEvent<HTMLInputElement>);
     };
 
   const filteredOptions = (options?.filter(opt => {
@@ -602,7 +604,6 @@ useEffect(() => {
                         disabled={disabled}
                         required={required}
                         onBlur={onBlur}
-                        
                         minLength={9}
                         maxLength={13}
                       />
