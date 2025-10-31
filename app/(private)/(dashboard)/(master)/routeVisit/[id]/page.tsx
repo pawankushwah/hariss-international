@@ -546,13 +546,13 @@ export default function AddEditRouteVisit() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Customer Schedule
           </h2>
-          <Table
-            searchQuery={{
-              customer_type: commonData.customer_type,
-              from_date: commonData.from_date,
-              to_date: commonData.to_date,
-              status: commonData.status,
-            }}
+          {/* <Table
+            // searchQuery={{
+            //   customer_type: commonData.customer_type,
+            //   from_date: commonData.from_date,
+            //   to_date: commonData.to_date,
+            //   status: commonData.status,
+            // }}
             isEditMode={isEditMode}
             selectedCustomerType={
               selectedCustomerType ? selectedCustomerType : "Agent Customer"
@@ -560,7 +560,7 @@ export default function AddEditRouteVisit() {
             customers={customers}
             onScheduleUpdate={handleCustomerScheduleUpdate}
             initialSchedules={customerSchedules}
-          />
+          /> */}
         </div>
 
         {/* Submit Button */}
