@@ -580,7 +580,9 @@ const res = isEditMode
                   // error={touched.itemName && errors.itemName}
                 />
                 {touched.itemName && errors.itemName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.itemName}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {/* {errors.itemName} */}
+                  </p>
                 )}
               </div>
               <div>
@@ -593,7 +595,9 @@ const res = isEditMode
                   // error={touched.itemDesc && errors.itemDesc}
                 />
                 {touched.itemDesc && errors.itemDesc && (
-                  <p className="text-red-500 text-sm mt-1">{errors.itemDesc}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {/* {errors.itemDesc} */}
+                    </p>
                 )}
               </div>
               <div>
@@ -606,7 +610,9 @@ const res = isEditMode
                   // error={touched.brand && errors.brand}
                 />
                 {touched.brand && errors.brand && (
-                  <p className="text-red-500 text-sm mt-1">{errors.brand}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {/* {errors.brand} */}
+                    </p>
                 )}
               </div>
               <div>
@@ -634,7 +640,7 @@ const res = isEditMode
                 />
                 {touched.itemCategory && errors.itemCategory && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.itemCategory}
+                    {/* {errors.itemCategory} */}
                   </p>
                 )}
               </div>
@@ -658,7 +664,7 @@ const res = isEditMode
                 />
                 {touched.itemSubCategory && errors.itemSubCategory && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.itemSubCategory}
+                    {/* {errors.itemSubCategory} */}
                   </p>
                 )}
               </div>
@@ -683,7 +689,7 @@ const res = isEditMode
                 />
                 {touched.itemWeight && errors.itemWeight && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.itemWeight}
+                    {/* {errors.itemWeight} */}
                   </p>
                 )}
               </div>
@@ -699,7 +705,7 @@ const res = isEditMode
                 />
                 {touched.shelfLife && errors.shelfLife && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.shelfLife}
+                    {/* {errors.shelfLife} */}
                   </p>
                 )}
               </div>
@@ -714,7 +720,9 @@ const res = isEditMode
                   // error={touched.volume && errors.volume}
                 />
                 {touched.volume && errors.volume && (
-                  <p className="text-red-500 text-sm mt-1">{errors.volume}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {/* {errors.volume} */}
+                    </p>
                 )}
               </div>
               <div>
@@ -728,7 +736,9 @@ const res = isEditMode
                   onChange={handleChange}
                 />
                 {errors.excise && (
-                  <p className="text-red-500 text-sm mt-1">{errors.excise}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {/* {errors.excise} */}
+                    </p>
                 )}
               </div>
               <div>
@@ -744,7 +754,7 @@ const res = isEditMode
                 />
                 {touched.commodity_goods_code && errors.commodity_goods_code && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.commodity_goods_code}
+                    {/* {errors.commodity_goods_code} */}
                   </p>
                 )}
               </div>
@@ -759,7 +769,7 @@ const res = isEditMode
                 />
                 {touched.excise_duty_code && errors.excise_duty_code && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.excise_duty_code}
+                    {/* {errors.excise_duty_code} */}
                   </p>
                 )}
               </div>
