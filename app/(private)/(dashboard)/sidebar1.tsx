@@ -1,6 +1,6 @@
 import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { LinkDataType, SidebarDataType } from "../data/dashboardLinks";
 import Link from "next/link";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
@@ -39,10 +39,26 @@ export default function Sidebar({
     const pathname = usePathname();
     const [secondSidebarChildren, setSecondSidebarChildren] = useState([] as LinkDataType[]);
     const [activeHref, setActiveHref] = useState<string>("");
+    const wrapperRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
         // keep local activeHref in sync with router pathname
         setActiveHref(pathname ?? window.location.pathname);
     }, [pathname]);
+
+    // Collapse second sidebar when clicking outside the whole sidebar area
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            const target = event.target as Node | null;
+            if (!wrapperRef.current) return;
+            if (target && !wrapperRef.current.contains(target) && isOpen) {
+                setIsOpen(false);
+                setCurrentPageForSecondSidebar("");
+                setSecondSidebarChildren([]);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [isOpen]);
 
     const miscLinks = [
     {
@@ -82,7 +98,7 @@ export default function Sidebar({
 
 
     return (
-        <div className="flex">
+    <div className="flex" ref={wrapperRef}>
             {/* first side bar */}
             <div className="w-[40px] h-screen bg-[#121D33] text-white flex flex-col justify-between items-center">
                 {/* upper part */}
