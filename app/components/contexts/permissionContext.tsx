@@ -76,7 +76,7 @@ export async function fetchFilteredMenu(allMenus: LinkDataType[] | null,type:str
     const res = await getRoleById(rid);
     if (res?.error || !res?.data) return [];
     if(type==="settings"){
-       let rolesSettings = res.data.menus.filter((menu: any) =>  menu.menu.name == "Settings")[0].submenu;
+       const rolesSettings = res.data.menus.filter((menu: any) =>  menu.menu.name == "Settings")[0].submenu;
        console.log(rolesSettings,"rolesSettings");
        console.log(filterMenusByRole(allMenus ,rolesSettings),"filtered settings menu",rolesSettings);
        return filterMenusByRole(allMenus ,rolesSettings)
