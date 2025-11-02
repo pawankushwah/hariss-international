@@ -142,11 +142,15 @@ export default function AddEditSalesmanLoad() {
             label: "Qty",
             render: (row: TableDataType) => (
                 <div className="w-[100px]">
-                    <input
+                   <input
                         type="number"
                         className="border border-gray-300 rounded-md px-2 py-1 w-full text-sm"
-                        // value={()}
-                        onChange={(e) => handleQtyChange(row.id, e.target.value)}
+                        value={(data ?? "")}
+                        onChange={(e) => {
+                            console.log(e)
+                            setData(e.target.value.toString())
+                            handleQtyChange(row.id, e.target.value)
+                        }}
                     />
                 </div>
             ),
