@@ -2975,7 +2975,45 @@ export const updateAuthUser = async (uuid: string, body: object) => {
 
 export const addPayment = async (body?: any) => {
   try {
-    const res = await API.post("api/agent_transaction/advancepayments/create", body);
+    const res = await API.post(
+      "api/agent_transaction/advancepayments/create",
+      body
+    );
+    console.log(res);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const updatePaymentById = async (uuid: string, body?: any) => {
+  try {
+    const res = await API.put(
+      `api/agent_transaction/advancepayments/update/${uuid}`,
+      body
+    );
+    console.log(res);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getPaymentById = async (uuid: string) => {
+  try {
+    const res = await API.get(
+      `api/agent_transaction/advancepayments/show/${uuid}`
+    );
+    console.log(res);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const allPaymentList = async (body?: any) => {
+  try {
+    const res = await API.get("api/agent_transaction/advancepayments/list");
     console.log(res);
     return res.data;
   } catch (error: unknown) {
