@@ -35,20 +35,20 @@ export default function NewCustomer() {
     },
     { key: "outlet_name", label: "Outlet Name", showByDefault: true },
     { key: "owner_name", label: "Owner Name" },
-    // {
-    //     key: "customer_type",
-    //     label: "Customer Type",
-    //     render: (row: TableDataType) => {
-    //         if (
-    //             typeof row.customer_type === "object" &&
-    //             row.customer_type !== null &&
-    //             "name" in row.customer_type
-    //         ) {
-    //             return (row.customer_type as { name?: string }).name || "-";
-    //         }
-    //         return row.customer_type || "-";
-    //     },
-    // },
+    {
+        key: "customer_type",
+        label: "Customer Type",
+        render: (row: TableDataType) => {
+            if (
+                typeof row.customer_type === "object" &&
+                row.customer_type !== null &&
+                "name" in row.customer_type
+            ) {
+                return (row.customer_type as { name?: string }).name || "-";
+            }
+            return row.customer_type || "-";
+        },
+    },
     {
         key: "category",
         label: "Customer Category",
@@ -157,7 +157,18 @@ export default function NewCustomer() {
     { key: "contact_no", label: "Contact No." },
     { key: "whatsapp_no", label: "Whatsapp No." },
     { key: "buyertype", label: "Buyer Type", render: (row: TableDataType) => (row.buyertype === "0" ? "B2B" : "B2C") },
-    { key: "payment_type", label: "Payment Type" },
+{
+  key: "payment_type",
+  label: "Payment Type",
+  render: (row: TableDataType) => {
+    const paymentTypes: Record<string, string> = {
+      "1": "Cash",
+      "2": "Credit",
+      "3": "bill Tobill", // add more if needed
+    };
+    return paymentTypes[String(row.payment_type)] || "-";
+  },
+},
     {
         key: "status",
         label: "Status",

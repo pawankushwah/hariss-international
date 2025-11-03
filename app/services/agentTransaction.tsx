@@ -89,6 +89,15 @@ export const newCustomerStatusUpdate = async (body: object) => {
   }
 };
 
+export const approveOrRejectCustomer  = async (body: object) => {
+  try {
+    const res = await API.post(`/api/agent_transaction/new-customer/add`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 export const addNewtCustomer = async (payload: object) => {
   try {
     const res = await API.post("/api/agent_transaction/new-customer/add", payload);
