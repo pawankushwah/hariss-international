@@ -32,6 +32,7 @@ interface Payment {
   recipt_image: string | null;
   cheque_no: string | null;
   cheque_date: string | null;
+  status: number;
 }
 
 export default function PaymentListPage() {
@@ -45,37 +46,48 @@ export default function PaymentListPage() {
     { key: "amount", label: "Amount", showByDefault: true },
     { key: "recipt_no", label: "Receipt Number", showByDefault: true },
     { key: "recipt_date", label: "Receipt Date", showByDefault: true },
-    { 
-      key: "Agent_bank_name", 
-      label: "Agent Bank", 
+    {
+      key: "Agent_bank_name",
+      label: "Agent Bank",
       showByDefault: true,
       render: (row: TableDataType) => {
         return row.Agent_bank_name || "-";
-      }
+      },
     },
-    { 
-      key: "bank_account_number", 
-      label: "Agent Account", 
+    {
+      key: "bank_account_number",
+      label: "Agent Account",
       showByDefault: false,
       render: (row: TableDataType) => {
         return row.bank_account_number || "-";
-      }
+      },
     },
-    { 
-      key: "cheque_no", 
-      label: "Cheque Number", 
+    {
+      key: "cheque_no",
+      label: "Cheque Number",
       showByDefault: false,
       render: (row: TableDataType) => {
         return row.cheque_no || "-";
-      }
+      },
     },
-    { 
-      key: "cheque_date", 
-      label: "Cheque Date", 
+    {
+      key: "cheque_date",
+      label: "Cheque Date",
       showByDefault: false,
       render: (row: TableDataType) => {
         return row.cheque_date || "-";
-      }
+      },
+    },
+    {
+      key: "status",
+      label: "Status",
+      showByDefault: true,
+      render: (row: TableDataType) => {
+        // ✅ ADDED: Render status properly
+        const isActive =
+          row.status == "1" || row.status === "active";
+        return <StatusBtn isActive={isActive} />;
+      },
     },
   ];
 
@@ -95,23 +107,29 @@ export default function PaymentListPage() {
 
         const listRes = await allPaymentList({
           page,
-          limit: pageSize
+          limit: pageSize,
         });
 
         console.log("Payments API Response:", listRes);
 
         setLoading(false);
-        
+
         // Handle API response based on your API structure
         if (listRes?.status === "success" || listRes?.success === true) {
           return {
             data: Array.isArray(listRes.data) ? listRes.data : [],
-            total: listRes?.pagination?.totalPages || listRes?.pagination?.totalRecords || 1,
+            total:
+              listRes?.pagination?.totalPages ||
+              listRes?.pagination?.totalRecords ||
+              1,
             currentPage: listRes?.pagination?.page || page,
             pageSize: listRes?.pagination?.limit || pageSize,
           };
         } else {
-          showSnackbar(listRes?.message || "Failed to fetch payment data", "error");
+          showSnackbar(
+            listRes?.message || "Failed to fetch payment data",
+            "error"
+          );
           return {
             data: [],
             total: 1,
@@ -139,7 +157,7 @@ export default function PaymentListPage() {
   }, [setLoading]);
 
   const refreshTable = () => {
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((prev) => prev + 1);
   };
 
   return (
@@ -150,16 +168,16 @@ export default function PaymentListPage() {
           config={{
             api: { list: fetchPayments },
             header: {
-              title: "Payments",
+              title: "Advance Payments",
               searchBar: false,
               columnFilter: true,
               actions: [
                 <SidebarBtn
                   key={0}
-                  href="/settings/payment/add"
+                  href="/advancePayment/add"
                   isActive
                   leadingIcon="lucide:plus"
-                  label="Add Payment"
+                  label="Add"
                   labelTw="hidden sm:block"
                 />,
               ],
@@ -173,7 +191,14 @@ export default function PaymentListPage() {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
                   const row = data as TableRow;
-                  router.push(`/settings/payment/${row.uuid}`);
+                  router.push(`/advancePayment/${row.uuid}`);
+                },
+              },
+              {
+                icon: "lucide:eye",
+                onClick: (data: object) => {
+                  const row = data as TableRow;
+                  router.push(`/advancePayment/details/${row.uuid}`);
                 },
               },
             ],

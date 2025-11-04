@@ -183,6 +183,7 @@ export default function AddPaymentPage() {
     validationSchema,
     onSubmit: async (values, { setSubmitting }) => {
       try {
+        console.log(values);
         // Map payment type to numeric values
         const paymentTypeMap: { [key: string]: number } = {
           cash: 1,
@@ -199,7 +200,6 @@ export default function AddPaymentPage() {
           recipt_date: values.recipt_date,
           osa_code: values.osa_code,
           status: values.status === "active" ? 1 : 0,
-          // ✅ CHANGED: Always include agent_id for ALL payment types
           agent_id: values.agent_id ? Number(values.agent_id) : null,
         };
 
@@ -233,12 +233,7 @@ export default function AddPaymentPage() {
         console.log("API Response:", res);
 
         // Check for successful response
-        const isSuccess =
-          res?.data !== undefined ||
-          res?.status === "success" ||
-          res?.success === true ||
-          res?.code === 200 ||
-          res?.code === 201;
+        const isSuccess = res?.status === "success";
 
         if (isSuccess) {
           showSnackbar(
@@ -249,7 +244,7 @@ export default function AddPaymentPage() {
             "success"
           );
           setTimeout(() => {
-            router.push("/settings/payment");
+            router.push("/advancePayment");
           }, 1500);
         } else {
           showSnackbar(res?.message || "Failed to submit form", "error");
@@ -353,7 +348,7 @@ export default function AddPaymentPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-[20px]">
         <div className="flex items-center gap-[16px]">
-          <Link href="/settings/payment">
+          <Link href="/advancePayment">
             <Icon icon="lucide:arrow-left" width={24} />
           </Link>
           <h1 className="text-[20px] font-semibold text-[#181D27] flex items-center leading-[30px] mb-[5px]">
@@ -549,7 +544,7 @@ export default function AddPaymentPage() {
             <button
               className="px-4 py-2 h-[40px] w-[80px] rounded-md font-semibold border border-gray-300 text-gray-700 hover:bg-gray-100"
               type="button"
-              onClick={() => router.push("/settings/payment")}
+              onClick={() => router.push("/advancePayment")}
             >
               Cancel
             </button>
