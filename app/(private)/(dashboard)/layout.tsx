@@ -112,7 +112,21 @@ function LayoutSelector({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!loading) {
-            const isAllowed = Boolean(allowedPaths && allowedPaths.has(pathname));
+            const normalize = (p: string) => (p.startsWith("/") ? p : `/${p}`);
+            const current = normalize(pathname || "");
+
+            let isAllowed = false;
+            if (allowedPaths) {
+                const entries = Array.isArray(allowedPaths)
+                    ? allowedPaths
+                    : Array.from(allowedPaths);
+                isAllowed = entries.some((ap) => {
+                    const allowed = normalize(ap);
+                    // allow exact match or allowed path being a prefix of the current pathname
+                    return current === allowed || current.startsWith(allowed);
+                });
+            }
+
             if (!isAllowed) {
                 router.replace("/");
                 console.error("You are not allowed to access this page.");
