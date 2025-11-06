@@ -74,7 +74,7 @@ export default function ViewPage() {
     const [warehouseVehicle, setWarehouseVehicle] = useState<TableDataType[]>([]);
     const [warehouseSalesman, setWarehouseSalesman] = useState<TableDataType[]>([]);
     const [warehouseCustomer, setWarehouseCustomer] = useState<TableDataType[]>([]);
-    const [nestedLoading, setNestedLoading] = useState<Boolean>(false);
+    const [nestedLoading, setNestedLoading] = useState<boolean>(false);
 
     const params = useParams();
     let id: string = "";
@@ -462,9 +462,9 @@ export default function ViewPage() {
                 columnName?: string
             ): Promise<searchReturnType> => {
                 setNestedLoading(true);
-                let result;
+            
               
-                result = await getCustomerInWarehouse(id,{
+                const result = await getCustomerInWarehouse(id,{
                     query: searchQuery,
                 });
                 
@@ -491,9 +491,9 @@ export default function ViewPage() {
                 columnName?: string
             ): Promise<searchReturnType> => {
                 setNestedLoading(true);
-                let result;
+               
               
-                result = await getRouteInWarehouse(id,{
+                const result = await getRouteInWarehouse(id,{
                     query: searchQuery,
                 });
                 
@@ -520,9 +520,9 @@ export default function ViewPage() {
                 columnName?: string
             ): Promise<searchReturnType> => {
                 setNestedLoading(true);
-                let result;
+               
               
-                result = await getSalesmanInWarehouse(id,{
+                const result = await getSalesmanInWarehouse(id,{
                     query: searchQuery,
                 });
                 
