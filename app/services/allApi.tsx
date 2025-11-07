@@ -3054,3 +3054,13 @@ export const getWarehouseStockById = async (uuid: string) => {
     return handleError(error);
   }
 };
+
+export const projectList = async (params: Params) => {
+  try {
+    const res = await API.get(`api/settings/projects-list`, {params:params});
+
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};

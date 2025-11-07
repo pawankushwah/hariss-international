@@ -103,6 +103,7 @@ export default function InputFields({
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pointerDownRef = useRef(false);
   const isMulti = (options && options.length > 0 && typeof isSingle !== 'undefined' && isSingle === false) || (loading && isSingle === false);
@@ -163,6 +164,11 @@ const countries: { name?: string; code?: string; flag?: string }[] = [
     if (label.startsWith('select ')) return false;
     return label.includes(search.toLowerCase());
   })) || [];
+
+  // Reset highlighted index when filtered options change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [search, filteredOptions.length]);
 
 useEffect(() => {
     const dropdown = dropdownRef.current;
@@ -347,12 +353,29 @@ useEffect(() => {
                         className={`flex-1 truncate text-sm outline-none border-none min-w-0 ${hasSelection ? 'text-gray-900' : 'text-gray-400'}`}
                         style={hasSelection ? { color: '#111827' } : undefined}
                         onKeyDown={e => {
-                          if (e.key === 'Enter') {
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            if (!dropdownOpen) {
+                              setDropdownOpen(true);
+                            } else {
+                              setHighlightedIndex(prev => 
+                                prev < filteredOptions.length - 1 ? prev + 1 : prev
+                              );
+                            }
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
+                          } else if (e.key === 'Enter') {
                             e.preventDefault();
                             if (!loading && filteredOptions.length > 0) {
-                              // select first match for searchable Enter
-                              handleCheckbox(filteredOptions[0].value);
+                              // select highlighted item or first match
+                              const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
+                              handleCheckbox(filteredOptions[indexToSelect].value);
                             }
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setDropdownOpen(false);
+                            setHighlightedIndex(-1);
                           }
                         }}
                       />
@@ -381,12 +404,29 @@ useEffect(() => {
                     className={`flex-1 truncate text-sm outline-none border-none ${hasSelection ? 'text-gray-900' : 'text-gray-400'}`}
                     style={hasSelection ? { color: '#111827' } : undefined}
                     onKeyDown={e => {
-                      if (e.key === 'Enter') {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (!dropdownOpen) {
+                          setDropdownOpen(true);
+                        } else {
+                          setHighlightedIndex(prev => 
+                            prev < filteredOptions.length - 1 ? prev + 1 : prev
+                          );
+                        }
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
+                      } else if (e.key === 'Enter') {
                         e.preventDefault();
                         if (!loading && filteredOptions.length > 0) {
-                          // select first match for searchable Enter
-                          handleCheckbox(filteredOptions[0].value);
+                          // select highlighted item or first match
+                          const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
+                          handleCheckbox(filteredOptions[indexToSelect].value);
                         }
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setDropdownOpen(false);
+                        setHighlightedIndex(-1);
                       }
                     }}
                   />
@@ -474,11 +514,14 @@ useEffect(() => {
                   ) : filteredOptions.map((opt, idx) => (
                     <div
                       key={opt.value + idx}
-                      className={`flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer ${
+                        highlightedIndex === idx ? 'bg-[#FFF0F2]' : ''
+                      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       onClick={e => {
                         e.preventDefault();
                         if (!disabled) handleCheckbox(opt.value);
                       }}
+                      onMouseEnter={() => setHighlightedIndex(idx)}
                     >
                       <input
                         type="checkbox"
@@ -545,13 +588,33 @@ useEffect(() => {
                     className={`flex-1 truncate text-sm outline-none border-none ${hasSelection ? 'text-gray-900' : 'text-gray-400'}`}
                     style={hasSelection ? { color: '#111827' } : undefined}
                     onKeyDown={e => {
-                      if (e.key === 'Enter') {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (!dropdownOpen) {
+                          setDropdownOpen(true);
+                        } else {
+                          setHighlightedIndex(prev => 
+                            prev < filteredOptions.length - 1 ? prev + 1 : prev
+                          );
+                        }
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
+                      } else if (e.key === 'Enter') {
                         e.preventDefault();
                         if (!loading && filteredOptions.length > 0) {
-                          safeOnChange(createSingleSelectEvent(filteredOptions[0].value));
+                          // select highlighted item or first match
+                          const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
+                          safeOnChange(createSingleSelectEvent(filteredOptions[indexToSelect].value));
                           setDropdownOpen(false);
                           setSearch("");
+                          setHighlightedIndex(-1);
                         }
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setDropdownOpen(false);
+                        setSearch("");
+                        setHighlightedIndex(-1);
                       }
                     }}
                   />
@@ -589,12 +652,16 @@ useEffect(() => {
                 ) : filteredOptions.map((opt, idx) => (
                   <div
                     key={opt.value + idx}
-                    className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${value === opt.value ? "bg-gray-50" : ""}`}
+                    className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${
+                      value === opt.value ? "bg-gray-50" : ""
+                    } ${highlightedIndex === idx ? 'bg-[#FFF0F2]' : ''}`}
                     onClick={() => {
                       safeOnChange(createSingleSelectEvent(opt.value));
                       setDropdownOpen(false);
                       setSearch("");
+                      setHighlightedIndex(-1);
                     }}
+                    onMouseEnter={() => setHighlightedIndex(idx)}
                   >
                     <div className="text-sm text-gray-800">{opt.label}</div>
                   </div>

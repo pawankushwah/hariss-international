@@ -308,3 +308,12 @@ export const updateInvoice = async (uuid: string, body: object) => {
     return handleError(error);
   }
 };
+
+export const createReturn= async (body: object) => {
+  try {
+    const res = await API.post(`/api/agent_transaction/retuns/create`,  body );
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
