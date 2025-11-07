@@ -2365,6 +2365,15 @@ export const pricingHeaderGenerateCode = async () => {
   }
 };
 
+export const pricingHeaderGetItemPrice = async (params?: Params) => {
+  try {
+    const res = await API.post(`/api/master/pricing-headers/getItemPrice`, {}, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 export const pricingDetailList = async (params?: Params) => {
   try {
     const res = await API.get("/api/master/pricing-details/list", {

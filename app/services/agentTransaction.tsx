@@ -309,9 +309,74 @@ export const updateInvoice = async (uuid: string, body: object) => {
   }
 };
 
-export const createReturn= async (body: object) => {
+
+// Agent Customer Order
+export const agentOrderList = async (params: Params) => {
   try {
-    const res = await API.post(`/api/agent_transaction/retuns/create`,  body );
+    const res = await API.get(`/api/agent_transaction/orders/list`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const agentOrderByUUID = async (uuid: string, params: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/orders/${uuid}`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const deleteAgentOrder = async (uuid: string) => {
+  try {
+    const res = await API.delete(`/api/agent_transaction/orders/${uuid}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const addAgentOrder = async (body: object) => {
+  try {
+    const res = await API.post(`/api/agent_transaction/orders/add`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const updateAgentOrder = async (uuid: string, body: object) => {
+  try {
+    const res = await API.put(`/api/agent_transaction/orders/update/${uuid}`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const agentOrderStatistics = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/orders/statistics`, params);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const changeStatusAgentOrder = async (body: object) => {
+  try {
+    const res = await API.post(`/api/agent_transaction/orders/update-status`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const createReturn = async (body: object) => {
+  try {
+    const res = await API.post(`/api/agent_transaction/retuns/create`, body);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

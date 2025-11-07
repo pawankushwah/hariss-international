@@ -37,8 +37,8 @@ export type configType = {
             search: string,
             pageSize: number,
             columnName?: string
-        ) => Promise<searchReturnType> | searchReturnType;
-        list?: (
+        ) => Promise<listReturnType> | listReturnType;
+        list: (
             pageNo: number,
             pageSize: number
         ) => Promise<listReturnType> | listReturnType;
