@@ -367,13 +367,17 @@ useEffect(() => {
                     onChange={e => {
                       const v = (e.target as HTMLInputElement).value;
                       setSearch(v);
-                      if (!dropdownOpen) setDropdownOpen(true);
+                      if (v !== '' && !dropdownOpen) setDropdownOpen(true);
                       if (v === '') {
-                        // user cleared the input -> clear selected values for multi-select
+                        // user cleared the input -> clear selected values for multi-select and close dropdown
                         safeOnChange(createMultiSelectEvent([]));
+                        setDropdownOpen(false);
                       }
                     }}
-                    onFocus={() => setDropdownOpen(true)}
+                    onFocus={() => {
+                      // Only open dropdown if there's search text
+                      if (search !== '') setDropdownOpen(true);
+                    }}
                     className={`flex-1 truncate text-sm outline-none border-none ${hasSelection ? 'text-gray-900' : 'text-gray-400'}`}
                     style={hasSelection ? { color: '#111827' } : undefined}
                     onKeyDown={e => {
@@ -430,7 +434,7 @@ useEffect(() => {
               <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
             )}
           </div>
-          {dropdownOpen && !loading && dropdownProperties.width !== "0" && (
+          {dropdownOpen && !loading && dropdownProperties.width !== "0" && (isSearchable ? search !== '' : true) && (
             <>
               <div style={dropdownProperties} className="fixed z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
                 {!isSearchable && (
@@ -527,13 +531,17 @@ useEffect(() => {
                       if(disabled) return;
                       const v = (e.target as HTMLInputElement).value;
                       setSearch(v);
-                      if (!dropdownOpen) setDropdownOpen(true);
+                      if (v !== '' && !dropdownOpen) setDropdownOpen(true);
                       if (v === '') {
-                        // user cleared the input -> clear selected value for single-select
+                        // user cleared the input -> clear selected value and close dropdown
                         safeOnChange(createSingleSelectEvent(''));
+                        setDropdownOpen(false);
                       }
                     }}
-                    onFocus={() => setDropdownOpen(true)}
+                    onFocus={() => {
+                      // Only open dropdown if there's search text
+                      if (search !== '') setDropdownOpen(true);
+                    }}
                     className={`flex-1 truncate text-sm outline-none border-none ${hasSelection ? 'text-gray-900' : 'text-gray-400'}`}
                     style={hasSelection ? { color: '#111827' } : undefined}
                     onKeyDown={e => {
@@ -560,7 +568,7 @@ useEffect(() => {
               <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
             )}
           </div>
-          {dropdownOpen && !loading && dropdownProperties.width !== "0" && (
+          {dropdownOpen && !loading && dropdownProperties.width !== "0" && (isSearchable ? search !== '' : true) && (
             <div style={dropdownProperties} className="fixed z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-80 overflow-auto">
               {!isSearchable && (
                 <div className="px-3 py-2 border-b flex items-center" style={{ borderBottomColor: '#9ca3af' }}>

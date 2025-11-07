@@ -138,7 +138,8 @@ export default function OrderAddEditPage() {
               
               const qty = detail.quantity || 0;
               const price = parseFloat(itemPrice);
-              const total = qty * price;
+              const discount = parseFloat(detail.discount) || 0;
+              const total = (qty * price) - discount;
               const vat = total * 0.18;
               const net = total - vat;
               
@@ -148,9 +149,9 @@ export default function OrderAddEditPage() {
                 UOM: uomId,
                 uom_id: uomId,
                 Quantity: String(qty),
-                Price: String(price),
-                Excise: detail.excise || "0",
-                Discount: detail.discount || "0",
+                Price: (Number(price) || 0).toFixed(2),
+                Excise: detail.excise || "0.00",
+                Discount: (Number(discount) || 0).toFixed(2),
                 Net: net.toFixed(2),
                 Vat: vat.toFixed(2),
                 Total: total.toFixed(2),
@@ -286,7 +287,7 @@ export default function OrderAddEditPage() {
     (sum, item) => sum + Number(item.Discount || 0),
     0
   );
-  const finalTotal = grossTotal + totalVat;
+  const finalTotal = (totalVat + netAmount );
 
   // --- Create Payload for API
   const generatePayload = () => {
@@ -453,6 +454,7 @@ export default function OrderAddEditPage() {
               name="warehouse"
               value={form.warehouse}
               options={warehouseOptions}
+              searchable={true}
               onChange={(e) => {
                 const val = e.target.value;
                 handleChange(e);
@@ -619,10 +621,10 @@ export default function OrderAddEditPage() {
                 )
               },
               {
-                key: "discount",
+                key: "Discount",
                 label: "Discount",
                 render: (row) => (
-                  row.discount || "0.00"
+                  row.Discount || "0.00"
                 )
                 
               },
