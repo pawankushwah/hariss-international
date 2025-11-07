@@ -480,7 +480,7 @@ export default function OrderAddEditPage() {
               required
               name="warehouse"
               value={form.warehouse}
-              options={searchedWarehouseOptions.length > 0 ? searchedWarehouseOptions : warehouseOptions}
+              options={searchedWarehouseOptions}
               searchable={true}
               onSearchChange={handleWarehouseSearch}
               onChange={(e) => {

@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import KeyValueData from "@/app/components/keyValueData";
 import InputFields from "@/app/components/inputFields";
+import AutoSuggestion from "@/app/components/autoSuggestion";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import { agentCustomerList, genearateCode, getCompanyCustomers, itemById, itemList, pricingHeaderGetItemPrice, routeList, saveFinalCode, warehouseList, warehouseListGlobalSearch } from "@/app/services/allApi";
 import { addAgentOrder } from "@/app/services/agentTransaction";
@@ -202,6 +203,7 @@ export default function OrderAddEditPage() {
     }));
     setItemsOptions(options);
     setSkeleton({ ...skeleton, item: false });
+    return options;
   };
 
   const codeGeneratedRef = useRef(false);
@@ -451,6 +453,7 @@ export default function OrderAddEditPage() {
     }));
     setFilteredCustomerOptions(options);
     setSkeleton({ ...skeleton, customer: false });
+    return options;
   }
 
   const fetchWarehouse = async (searchQuery?: string) => {
@@ -470,6 +473,7 @@ export default function OrderAddEditPage() {
       label: warehouse.warehouse_name
     }));
     setFilteredWarehouseOptions(options);
+    return options;
   }
 
   const fetchPrice = async (item_id: string, customer_id: string, warehouse_id?: string, route_id?: string) => {
@@ -531,21 +535,28 @@ export default function OrderAddEditPage() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 mb-10">
                   <div>
-                    <InputFields
+                    <AutoSuggestion
                       required
                       label="Warehouse"
                       name="warehouse"
-                      searchable={true}
-                      value={values?.warehouse || ""}
-                      options={filteredWarehouseOptions}
-                      onSearch={(search) => fetchWarehouse(search) }
-                      onChange={(e) => {
-                        setFieldValue("warehouse", e.target.value);
-                        if (values.warehouse !== e.target.value) {
+                      placeholder="Search warehouse"
+                      onSearch={(q) => fetchWarehouse(q)}
+                      initialValue={filteredWarehouseOptions.find(o => o.value === String(values?.warehouse))?.label || ""}
+                      onSelect={(opt) => {
+                        if (values.warehouse !== opt.value) {
+                          setFieldValue("warehouse", opt.value);
                           setSkeleton((prev) => ({ ...prev, customer: true }));
                           setFieldValue("customer", "");
-                          fetchAgentCustomers(values, "");
+                          fetchAgentCustomers({ ...values, warehouse: opt.value }, "");
+                        } else {
+                          setFieldValue("warehouse", opt.value);
                         }
+                      }}
+                      onClear={() => {
+                        setFieldValue("warehouse", "");
+                        setFieldValue("customer", "");
+                        setFilteredCustomerOptions([]);
+                        setSkeleton((prev) => ({ ...prev, customer: false }));
                       }}
                       error={
                         touched.warehouse &&
@@ -575,18 +586,26 @@ export default function OrderAddEditPage() {
                     />
                   </div> */}
                   <div>
-                    <InputFields
+                    <AutoSuggestion
                       required
                       label="Customer"
                       name="customer"
-                      value={values.customer}
+                      placeholder="Search customer"
+                      onSearch={(q) => fetchAgentCustomers(values, q)}
+                      initialValue={filteredCustomerOptions.find(o => o.value === String(values?.customer))?.label || ""}
+                      onSelect={(opt) => {
+                        if (values.customer !== opt.value) {
+                          setFieldValue("customer", opt.value);
+                        } else {
+                          setFieldValue("customer", opt.value);
+                        }
+                      }}
+                      onClear={() => {
+                        setFieldValue("customer", "");
+                      }}
                       disabled={filteredCustomerOptions.length === 0}
-                      showSkeleton={skeleton.customer}
-                      options={filteredCustomerOptions}
-                      searchable={true}
-                      onSearch={(search) => {fetchAgentCustomers(values, search);}}
-                      onChange={handleChange}
                       error={touched.customer && (errors.customer as string)}
+                      className="w-full"
                     />
                   </div>
                   <div>
@@ -631,20 +650,30 @@ export default function OrderAddEditPage() {
                           ));
                           return (
                             <div>
-                              <InputFields
+                              <AutoSuggestion
                                 label=""
-                                name="item_id"
-                                options={filteredOptions}
-                                disabled={filteredOptions.length === 0 || !values.customer}
-                                searchable={true}
-                                value={row.item_id}
-                                onChange={(e) => {
-                                  if (e.target.value !== row.item_id) {
-                                    recalculateItem(Number(row.idx), "item_id", e.target.value);
+                                name={`item_id_${row.idx}`}
+                                placeholder="Search item"
+                                onSearch={(q) => fetchItem(q)}
+                                initialValue={
+                                  itemsOptions.find(o => o.value === row.item_id)?.label
+                                  || orderData.find(o => String(o.id) === row.item_id)?.name || ""
+                                }
+                                onSelect={(opt) => {
+                                  if (opt.value !== row.item_id) {
+                                    recalculateItem(Number(row.idx), "item_id", opt.value);
                                     setFieldValue("uom_id", "");
+                                  } else {
+                                    recalculateItem(Number(row.idx), "item_id", opt.value);
                                   }
                                 }}
+                                onClear={() => {
+                                  recalculateItem(Number(row.idx), "item_id", "");
+                                  setFieldValue("uom_id", "");
+                                }}
+                                disabled={!values.customer}
                                 error={err && err}
+                                className="w-full"
                               />
                             </div>
                           );

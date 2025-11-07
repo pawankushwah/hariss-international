@@ -132,6 +132,7 @@ export default function InputFields({
     // Add more countries as needed
   ];
   const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   // const [selectedCountry, setSelectedCountry] = useState<{ name: string; code: string; flag?: string }>(defaultCountry);
   const [phone, setPhone] = useState(value);
   useEffect(() => { setPhone(value) }, [value])
