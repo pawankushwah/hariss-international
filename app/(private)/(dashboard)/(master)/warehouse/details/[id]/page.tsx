@@ -432,6 +432,7 @@ export default function ViewPage() {
                 }
                 return row.customer_type || "-";
             },
+              showByDefault: true,
         },
          {
             key: "outlet_channel",
