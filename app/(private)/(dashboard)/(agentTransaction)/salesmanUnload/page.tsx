@@ -233,7 +233,7 @@ export default function SalesmanUnloadPage() {
           api: { list: fetchSalesmanUnloadHeader },
           header: {
             // title: "Salesman Unload",
-            searchBar: false,
+            searchBar: true,
             columnFilter: true,
             filterByFields: [
               {
