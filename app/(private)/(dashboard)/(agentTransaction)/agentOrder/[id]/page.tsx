@@ -197,9 +197,9 @@ export default function OrderAddEditPage() {
     }
     const data = res?.data || [];
     setOrderData(data);
-    const options = data.map((item: { id: number; name: string; }) => ({
+    const options = data.map((item: { id: number; name: string; item_code: string; }) => ({
       value: String(item.id),
-      label: item.name
+      label: item.item_code + " - " + item.name
     }));
     setItemsOptions(options);
     setSkeleton({ ...skeleton, item: false });
@@ -470,7 +470,7 @@ export default function OrderAddEditPage() {
     const data = res?.data || [];
     const options = data.map((warehouse: { id: number; warehouse_code: string; warehouse_name: string }) => ({
       value: String(warehouse.id),
-      label: warehouse.warehouse_name
+      label:  warehouse.warehouse_code + " - " + warehouse.warehouse_name
     }));
     setFilteredWarehouseOptions(options);
     return options;
@@ -547,7 +547,6 @@ export default function OrderAddEditPage() {
                           setFieldValue("warehouse", opt.value);
                           setSkeleton((prev) => ({ ...prev, customer: true }));
                           setFieldValue("customer", "");
-                          fetchAgentCustomers({ ...values, warehouse: opt.value }, "");
                         } else {
                           setFieldValue("warehouse", opt.value);
                         }
@@ -603,7 +602,7 @@ export default function OrderAddEditPage() {
                       onClear={() => {
                         setFieldValue("customer", "");
                       }}
-                      disabled={filteredCustomerOptions.length === 0}
+                      disabled={values.warehouse === ""}
                       error={touched.customer && (errors.customer as string)}
                       className="w-full"
                     />
@@ -662,14 +661,14 @@ export default function OrderAddEditPage() {
                                 onSelect={(opt) => {
                                   if (opt.value !== row.item_id) {
                                     recalculateItem(Number(row.idx), "item_id", opt.value);
-                                    setFieldValue("uom_id", "");
+                                    recalculateItem(Number(row.idx), "uom_id", "");
                                   } else {
                                     recalculateItem(Number(row.idx), "item_id", opt.value);
                                   }
                                 }}
                                 onClear={() => {
                                   recalculateItem(Number(row.idx), "item_id", "");
-                                  setFieldValue("uom_id", "");
+                                  recalculateItem(Number(row.idx), "uom_id", "");
                                 }}
                                 disabled={!values.customer}
                                 error={err && err}
@@ -686,16 +685,17 @@ export default function OrderAddEditPage() {
                         render: (row) => {
                           const idx = Number(row.idx);
                           const err = itemErrors[idx]?.uom_id;
-                          const options = JSON.parse(row.UOM ?? "[]");
+                          const options = JSON.parse(row.UOM ?? "[value:'', label:'']");
                           return (
                             <div>
                               <InputFields
                                 label=""
-                                name="UOM"
                                 value={row.uom_id}
                                 placeholder="Select UOM"
+                                width="max-w-[150px]"
                                 options={options}
-                                disabled={options.length === 0 && !values.customer}
+                                searchable={true}
+                                disabled={options.length === 0 || !values.customer}
                                 showSkeleton={Boolean(itemLoading[idx]?.uom)}
                                 onChange={(e) => {
                                   recalculateItem(Number(row.idx), "uom_id", e.target.value)
@@ -731,7 +731,8 @@ export default function OrderAddEditPage() {
                                   const sanitized = intPart === '' ? '' : String(Math.max(0, parseInt(intPart, 10) || 0));
                                   recalculateItem(Number(row.idx), "Quantity", sanitized);
                                 }}
-                                // numberMin={0}
+                                min={1}
+                                integerOnly={true}
                                 error={err && err}
                               />
                             </div>
@@ -754,7 +755,7 @@ export default function OrderAddEditPage() {
                           return <span>{price}</span>;
                         }
                       },
-                      { key: "excise", label: "Excise", render: (row) => <span>{toInternationalNumber(row.Excise) || "0.00"}</span> },
+                      // { key: "excise", label: "Excise", render: (row) => <span>{toInternationalNumber(row.Excise) || "0.00"}</span> },
                       { key: "discount", label: "Discount", render: (row) => <span>{toInternationalNumber(row.Discount) || "0.00"}</span> },
                       { key: "Net", label: "Net", render: (row) => <span>{toInternationalNumber(row.Net) || "0.00"}</span> },
                       { key: "gross", label: "Gross", render: (row) => <span>{toInternationalNumber(row.gross) || "0.00"}</span> },

@@ -10,7 +10,7 @@ import Table, {
 } from "@/app/components/customTable";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
-import { agentOrderList, deleteAgentOrder } from "@/app/services/agentTransaction";
+import { agentOrderList, changeStatusAgentOrder, deleteAgentOrder } from "@/app/services/agentTransaction";
 import { agentCustomerStatusUpdate } from "@/app/services/allApi";
 import StatusBtn from "@/app/components/statusBtn2";
 
@@ -68,7 +68,7 @@ export default function CustomerInvoicePage() {
 
     const handleStatusChange = async (order_ids: (string | number)[] | undefined, status: number) => {
         if (!order_ids || order_ids.length === 0) return;
-        const res = await agentCustomerStatusUpdate({
+        const res = await changeStatusAgentOrder({
             order_ids,
             status: Number(status)
         });
@@ -109,7 +109,7 @@ export default function CustomerInvoicePage() {
                                             if(!status.includes(currentStatus)){
                                                 status.push(currentStatus);
                                             }
-                                            return data[id].id;
+                                            return data[id].uuid;
                                         })
                                         handleStatusChange(ids, Number(0));
                                     },
@@ -130,7 +130,7 @@ export default function CustomerInvoicePage() {
                                             if(!status.includes(currentStatus)){
                                                 status.push(currentStatus);
                                             }
-                                            return data[id].id;
+                                            return data[id].uuid;
                                         })
                                         handleStatusChange(ids, Number(1));
                                     },

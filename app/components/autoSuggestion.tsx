@@ -1,4 +1,5 @@
 "use client";
+import Skeleton from "@mui/material/Skeleton";
 import React, { useEffect, useRef, useState } from "react";
 
 export type Option = {
@@ -38,7 +39,7 @@ export default function AutoSuggestion({
   onSearch,
   onSelect,
   minSearchLength = 1,
-  debounceMs = 300,
+  debounceMs = 500,
   className = "w-full",
   initialValue = "",
   renderOption,
@@ -67,6 +68,10 @@ export default function AutoSuggestion({
   const debounceRef = useRef<number | null>(null);
   const onSearchRef = useRef(onSearch);
   const onClearRef = useRef(onClear);
+  // when we programmatically set the query (for example after selecting an option),
+  // we want to avoid retriggering the search effect and reopening the dropdown.
+  const skipSearchRef = useRef(false);
+  // NOTE: removed programmaticSetRef — Backspace will behave normally even after programmatic set
 
   // keep a stable reference to onSearch to avoid re-triggering effects when parent recreates the function each render
   useEffect(() => {
@@ -90,7 +95,20 @@ export default function AutoSuggestion({
       return;
     }
 
+    // if a selection just updated the query programmatically, skip running
+    // the search and avoid reopening the dropdown immediately
+    if (skipSearchRef.current) {
+      skipSearchRef.current = false;
+      setOptions([]);
+      setOpen(false);
+      setLoading(false);
+      return;
+    }
+
+    // show loading state and ensure dropdown is open immediately so
+    // the user sees the "Loading..." indicator even for the first letter
     setLoading(true);
+    setOpen(true);
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
       (async () => {
@@ -145,6 +163,7 @@ export default function AutoSuggestion({
   }, [open, options.length]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Backspace: allow normal behavior (no special clearing on programmatic set)
     if (!open) {
       if (e.key === "ArrowDown") {
         setOpen(true);
@@ -185,6 +204,10 @@ export default function AutoSuggestion({
       // notify parent about single-select action as well for compatibility
       try { onSelect(opt); } catch (err) {}
     } else {
+      // avoid re-triggering the search effect when we programmatically set
+      // the query after a selection — the effect would reopen the dropdown
+      // because the label length usually meets minSearchLength
+      skipSearchRef.current = true;
       setQuery(opt.label);
       setOpen(false);
       setOptions([]);
@@ -278,7 +301,10 @@ export default function AutoSuggestion({
           className={`z-50 bg-white mt-[6px] rounded-md shadow-lg max-h-60 overflow-auto scrollbar-none`}
         >
           {loading ? (
-            <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+            <div className="px-3 py-2 text-sm text-gray-500">
+              <Skeleton ></Skeleton>
+              <Skeleton ></Skeleton>
+            </div>
           ) : options.length === 0 ? (
             <div className="px-3 py-2 text-sm text-gray-400">{noOptionsMessage}</div>
           ) : (
