@@ -217,6 +217,10 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
     const { selectedRow, setSelectedRow } = useContext(SelectedRow);
     const [showDropdown, setShowDropdown] = useState(false);
     const [displayedData, setDisplayedData] = useState<TableDataType[]>([]);
+    // ordering of columns (array of original column indices). initialized from config.columns
+    const [columnOrder, setColumnOrder] = useState<number[]>(
+        () => (config.columns || []).map((_, i) => i)
+    );
 
     async function checkForData() {
         // if data is passed, use default values
@@ -283,6 +287,8 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
         setSelectedRow([]);
     }, [data, refreshKey]);
 
+    const orderedColumns = (columnOrder || []).map((i) => config.columns[i]).filter(Boolean);
+
     return (
         <>
             {(config.header?.title || config.header?.wholeTableActions || config.header?.tableActions) && (
@@ -345,7 +351,7 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
             )}
             <div className="flex flex-col bg-white w-full border-[1px] border-[#E9EAEB] rounded-[8px] overflow-hidden">
                 <TableHeader />
-                <TableBody />
+                <TableBody orderedColumns={orderedColumns} setColumnOrder={setColumnOrder} />
                 <TableFooter />
             </div>
         </>
@@ -541,15 +547,12 @@ function ColumnFilter() {
 }
 
 
-function TableBody() {
+function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configType['columns']; setColumnOrder: React.Dispatch<React.SetStateAction<number[]>> }) {
     const { config } = useContext(Config);
-    const {
-        api,
-        columns,
-        rowSelection,
-        rowActions,
-        pageSize = defaultPageSize,
-    } = config;
+    const { api, rowSelection, rowActions, pageSize = defaultPageSize } = config;
+    // columns is derived from orderedColumns passed from TableContainer; fallback to config.columns
+    const columns = orderedColumns && orderedColumns.length > 0 ? orderedColumns : config.columns;
+    const dragIndex = useRef<number | null>(null);
     const { tableDetails } = useContext(TableDetails);
     const tableData = tableDetails.data || [];
 
@@ -655,10 +658,47 @@ function TableBody() {
 
                             {/* main data */}
                             {columns &&
-                                columns.map((col, index) => {
+                                columns.map((col, orderIdx) => {
+                                    // find original index in config.columns to check selectedColumns
+                                    const originalIndex = config.columns?.findIndex((c) => c.key === col.key);
+                                    if (!selectedColumns.includes(originalIndex)) return null;
                                     return (
-                                        selectedColumns.includes(index) && (
                                             <th
+                                                // enable native drag only when config.dragableColumn is true
+                                                draggable={!!config.dragableColumn}
+                                                onDragStart={(e) => {
+                                                    if (!config.dragableColumn) return;
+                                                    dragIndex.current = orderIdx;
+                                                    try {
+                                                        e.dataTransfer?.setData('text/plain', String(orderIdx));
+                                                        e.dataTransfer!.effectAllowed = 'move';
+                                                    } catch (err) {
+                                                        /* ignore */
+                                                    }
+                                                }}
+                                                onDragOver={(e) => {
+                                                    if (!config.dragableColumn) return;
+                                                    e.preventDefault();
+                                                    try { e.dataTransfer!.dropEffect = 'move'; } catch (err) { }
+                                                }}
+                                                onDrop={(e) => {
+                                                    if (!config.dragableColumn) return;
+                                                    e.preventDefault();
+                                                    const from = dragIndex.current;
+                                                    const to = orderIdx;
+                                                    if (from == null) return;
+                                                    if (from === to) {
+                                                        dragIndex.current = null;
+                                                        return;
+                                                    }
+                                                    setColumnOrder((prev) => {
+                                                        const next = [...prev];
+                                                        const item = next.splice(from, 1)[0];
+                                                        next.splice(to, 0, item);
+                                                        return next;
+                                                    });
+                                                    dragIndex.current = null;
+                                                }}
                                                 className={`w-[${col.width
                                                     }px] ${col.sticky ? "z-10 md:sticky" : ""} ${col.sticky === "left"
                                                         ? "left-0"
@@ -666,44 +706,43 @@ function TableBody() {
                                                     } ${col.sticky === "right"
                                                         ? "right-0"
                                                         : ""
-                                                    } px-[24px] py-[12px] bg-[#FAFAFA] font-[500] whitespace-nowrap`}
-                                                key={index}
+                                                    } px-[24px] py-[12px] bg-[#FAFAFA] font-[500] whitespace-nowrap ${config.dragableColumn ? 'cursor-move' : ''}`}
+                                                key={col.key}
                                             >
-                                                <div className="flex items-center gap-[4px] capitalize">
-                                                    {col.label}{" "}
-                                                    {col.filter && (
-                                                        <FilterTableHeader
-                                                            column={col.key}
-                                                            dimensions={col.filter}
-                                                            filterConfig={col.filter}
-                                                        >
-                                                            {col.filter.render
-                                                                ? col.filter.render(tableData, api?.search)
-                                                                : null}
-                                                        </FilterTableHeader>
-                                                    )}
-                                                    {col.isSortable && (
-                                                        <Icon
-                                                            className="cursor-pointer"
-                                                            icon={
-                                                                tableOrder.order ===
-                                                                    "asc" &&
-                                                                    tableOrder.column ===
-                                                                    col.key
-                                                                    ? "mdi-light:arrow-up"
-                                                                    : "mdi-light:arrow-down"
-                                                            }
-                                                            width={16}
-                                                            onClick={() =>
-                                                                handleSort(
-                                                                    col.key
-                                                                )
-                                                            }
-                                                        />
-                                                    )}
-                                                </div>
-                                            </th>
-                                        )
+                                            <div className="flex items-center gap-[4px] capitalize">
+                                                {col.label}{" "}
+                                                {col.filter && (
+                                                    <FilterTableHeader
+                                                        column={col.key}
+                                                        dimensions={col.filter}
+                                                        filterConfig={col.filter}
+                                                    >
+                                                        {col.filter.render
+                                                            ? col.filter.render(tableData, api?.search)
+                                                            : null}
+                                                    </FilterTableHeader>
+                                                )}
+                                                {col.isSortable && (
+                                                    <Icon
+                                                        className="cursor-pointer"
+                                                        icon={
+                                                            tableOrder.order ===
+                                                                "asc" &&
+                                                                tableOrder.column ===
+                                                                col.key
+                                                                ? "mdi-light:arrow-up"
+                                                                : "mdi-light:arrow-down"
+                                                        }
+                                                        width={16}
+                                                        onClick={() =>
+                                                            handleSort(
+                                                                col.key
+                                                            )
+                                                        }
+                                                    />
+                                                )}
+                                            </div>
+                                        </th>
                                     );
                                 })}
 
@@ -754,38 +793,31 @@ function TableBody() {
                                             </td>
                                         )}
 
-                                    {columns.map(
-                                        (
-                                            col: configType["columns"][0],
-                                            index
-                                        ) => {
-                                            return (
-                                                selectedColumns.includes(
-                                                    index
-                                                ) && (
-                                                    <td
-                                                        key={index}
-                                                        width={col.width}
-                                                        className={`px-[24px] py-[12px] bg-white ${col.sticky ? "z-10 md:sticky" : ""} ${col.sticky === "left"
-                                                            ? "left-0"
-                                                            : ""
-                                                            } ${col.sticky === "right"
-                                                                ? "right-0"
-                                                                : ""
-                                                            }`}
-                                                    >
-                                                        {col.render ? (
-                                                            col.render(row)
-                                                        ) : (
-                                                            <div className="flex items-center">
-                                                                {row[col.key] || "-"}
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                )
-                                            );
-                                        }
-                                    )}
+                                    {columns.map((col: configType["columns"][0], orderIdx) => {
+                                        const originalIndex = config.columns.findIndex((c) => c.key === col.key);
+                                        if (!selectedColumns.includes(originalIndex)) return null;
+                                        return (
+                                            <td
+                                                key={col.key}
+                                                width={col.width}
+                                                className={`px-[24px] py-[12px] bg-white ${col.sticky ? "z-10 md:sticky" : ""} ${col.sticky === "left"
+                                                    ? "left-0"
+                                                    : ""
+                                                } ${col.sticky === "right"
+                                                    ? "right-0"
+                                                    : ""
+                                                }`}
+                                            >
+                                                {col.render ? (
+                                                    col.render(row)
+                                                ) : (
+                                                    <div className="flex items-center">
+                                                        {row[col.key] || "-"}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        );
+                                    })}
 
                                     {rowActions &&
                                         selectedColumns.length > 0 && (
