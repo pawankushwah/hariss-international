@@ -7,12 +7,15 @@ import Table from "@/app/components/customTable";
 import Logo from "@/app/components/logo";
 import { Icon } from "@iconify-icon/react";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { deliveryByUuid } from "@/app/services/agentTransaction";
+import { useState, useEffect, useRef } from "react";
+import { returnByUuid } from "@/app/services/agentTransaction";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
+import toInternationalNumber from "@/app/(private)/utils/formatNumber";
+import { TableDataType } from "@/app/components/customTable";
+import PrintButton from "@/app/components/printButton";
 
 interface DeliveryDetail {
   id: number;
@@ -21,7 +24,7 @@ interface DeliveryDetail {
     code: string;
     name: string;
   };
-  uom: number | string;
+  uom_name: number | string;
   quantity: number;
   item_price: string;
   excise?: string;
@@ -38,7 +41,7 @@ interface DeliveryData {
     name?: string;
     code?: string;
     address?: string;
-    phone?: string;
+    contact_no?: string;
     email?: string;
   };
   route?: {
@@ -50,8 +53,12 @@ interface DeliveryData {
     name?: string;
   };
   warehouse?: {
+    id?: number;
     code?: string;
     name?: string;
+    owner_email?: string | null;
+    owner_number?: string;
+    address?: string | null;
   };
   details?: DeliveryDetail[];
   gross_total?: string;
@@ -89,12 +96,12 @@ const columns = [
   { key: "itemName", label: "Product Name", width: 250 },
   { key: "UOM", label: "UOM" },
   { key: "Quantity", label: "Quantity" },
-  { key: "Price", label: "Price" },
-  { key: "Excise", label: "Excise" },
-  { key: "Discount", label: "Discount" },
-  { key: "Net", label: "Net" },
-  { key: "Vat", label: "Vat" },
-  { key: "Total", label: "Total" },
+  { key: "Price", label: "Price", render: (value: TableDataType) => <>{toInternationalNumber(value.Price) || '0.00'}</> },
+  // { key: "Excise", label: "Excise", render: (value: TableDataType) => <>{toInternationalNumber(value.Excise) || '0.00'}</> },
+  // { key: "Discount", label: "Discount", render: (value: TableDataType) => <>{toInternationalNumber(value.Discount) || '0.00'}</> },
+  { key: "Net", label: "Net", render: (value: TableDataType) => <>{toInternationalNumber(value.Net) || '0.00'}</> },
+  { key: "Vat", label: "Vat", render: (value: TableDataType) => <>{toInternationalNumber(value.Vat) || '0.00'}</> },
+  { key: "Total", label: "Total", render: (value: TableDataType) => <>{toInternationalNumber(value.Total) || '0.00'}</> },
 ];
 
 export default function OrderDetailPage() {
@@ -114,7 +121,7 @@ export default function OrderDetailPage() {
       (async () => {
         try {
           setLoading(true);
-          const response = await deliveryByUuid(uuid);
+          const response = await returnByUuid(uuid);
           const data = response?.data ?? response;
           setDeliveryData(data);
           
@@ -124,7 +131,7 @@ export default function OrderDetailPage() {
               id: (index + 1).toString(),
               itemCode: detail.item?.code || "-",
               itemName: detail.item?.name || "-",
-              UOM: detail.uom ? (typeof detail.uom === 'string' ? detail.uom : detail.uom.toString()) : "-",
+              UOM: detail.uom_name ? (typeof detail.uom_name === 'string' ? detail.uom_name : detail.uom_name.toString()) : "-",
               Quantity: detail.quantity?.toString() || "0",
               Price: detail.item_price || "0",
               Excise: detail.excise || "0",
@@ -145,14 +152,38 @@ export default function OrderDetailPage() {
     }
   }, [uuid, setLoading, showSnackbar]);
 
+  // Calculate totals from details if API doesn't provide them
+  const calculatedGrossTotal = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.net_total || 0),
+    0
+  ) ?? 0;
+
+  const calculatedVat = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.vat || 0),
+    0
+  ) ?? 0;
+
+  const calculatedTotal = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.total || 0),
+    0
+  ) ?? 0;
+
+  // Use API values if available, otherwise use calculated values
+  const grossTotal = Number(deliveryData?.gross_total || calculatedGrossTotal || 0);
+  const vat = Number(deliveryData?.vat || calculatedVat || 0);
+  const netTotal = Number(deliveryData?.net_total || calculatedGrossTotal || 0);
+  const finalTotal = Number(deliveryData?.total || calculatedTotal || 0);
+
   const keyValueData = [
-    { key: "Gross Total", value: `AED ${deliveryData?.gross_total || "0.00"}` },
-    { key: "Discount", value: `AED ${deliveryData?.discount || "0.00"}` },
-    { key: "Net Total", value: `AED ${deliveryData?.net_total || "0.00"}` },
-    { key: "Excise", value: `AED ${deliveryData?.excise || "0.00"}` },
-    { key: "Vat", value: `AED ${deliveryData?.vat || "0.00"}` },
-    { key: "Delivery Charges", value: `AED ${deliveryData?.delivery_charges || "0.00"}` },
+    { key: "Gross Total", value: `AED ${toInternationalNumber(grossTotal)}` },
+    // { key: "Discount", value: `AED ${toInternationalNumber(Number(deliveryData?.discount || 0))}` },
+    { key: "Net Total", value: `AED ${toInternationalNumber(netTotal)}` },
+    // { key: "Excise", value: `AED ${toInternationalNumber(Number(deliveryData?.excise || 0))}` },
+    { key: "Vat", value: `AED ${toInternationalNumber(vat)}` },
+    // { key: "Delivery Charges", value: `AED ${toInternationalNumber(Number(deliveryData?.delivery_charges || 0))}` },
   ];
+
+  const targetRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <>
@@ -200,6 +231,7 @@ export default function OrderDetailPage() {
       </div>
 
       {/* ---------- Order Info Card ---------- */}
+      <div ref={targetRef}>
       <ContainerCard className="rounded-[10px] space-y-[40px]">
         <div className="flex justify-between flex-wrap gap-[20px]">
           <div className="flex flex-col gap-[10px]">
@@ -229,10 +261,9 @@ export default function OrderDetailPage() {
             <div className="flex flex-col space-y-[12px] text-primary-bold text-[14px] border-b md:border-b-0 pb-4 md:pb-0">
               <span>From (Seller)</span>
               <div className="flex flex-col space-y-[10px]">
-                <span className="font-semibold">Hariss Store</span>
-                <span>Business Bay, Dubai - UAE</span>
-                <span>
-                  Phone: +971 123456789 <br /> Email: support@hariss.com
+                <span className="font-semibold">
+                  {deliveryData?.warehouse?.code && deliveryData?.warehouse?.name
+                    ? `${deliveryData.warehouse.code} - ${deliveryData.warehouse.name}`: "-"}
                 </span>
               </div>
             </div>
@@ -243,11 +274,12 @@ export default function OrderDetailPage() {
             <div className="flex flex-col space-y-[12px] text-primary-bold text-[14px]">
               <span>To (Customer)</span>
               <div className="flex flex-col space-y-[10px]">
-                <span className="font-semibold">{deliveryData?.customer?.name || "-"}</span>
-                <span>{deliveryData?.customer?.address || "-"}</span>
+                <span className="font-semibold">{deliveryData?.customer?.code && deliveryData?.customer?.name
+                  ? `${deliveryData.customer.code} - ${deliveryData.customer.name}` : "-"}</span>
+                <span>{deliveryData?.customer?.address }</span>
                 <span>
-                  Phone: {deliveryData?.customer?.phone || "-"} <br /> 
-                  Email: {deliveryData?.customer?.email || "-"}
+                  Phone: {deliveryData?.customer?.contact_no } <br /> 
+                  Email: {deliveryData?.customer?.email }
                 </span>
               </div>
             </div>
@@ -260,10 +292,10 @@ export default function OrderDetailPage() {
                 Delivery Date: <span className="font-bold">{deliveryData?.delivery_date ? new Date(deliveryData.delivery_date).toLocaleDateString('en-GB') : "-"}</span>
               </div>
               <div className="mt-2">
-                Route: <span className="font-bold">{deliveryData?.route?.code || "-"} - {deliveryData?.route?.name || "-"}</span>
+                Route: <span className="font-bold">{deliveryData?.route?.code }  {deliveryData?.route?.name }</span>
               </div>
               <div className="mt-2">
-                Salesman: <span className="font-bold">{deliveryData?.salesman?.code || "-"} - {deliveryData?.salesman?.name || "-"}</span>
+                Salesman: <span className="font-bold">{deliveryData?.salesman?.code}  {deliveryData?.salesman?.name}</span>
               </div>
             </div>
           </div>
@@ -310,7 +342,7 @@ export default function OrderDetailPage() {
               {/* <hr className="text-[#D5D7DA]" /> */}
               <div className="font-semibold text-[#181D27] py-2 text-[18px] flex justify-between">
                 <span>Total</span>
-                <span>AED {deliveryData?.total || "0.00"}</span>
+                <span>AED {toInternationalNumber(finalTotal)}</span>
               </div>
             </div>
 
@@ -332,23 +364,19 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        <hr className="text-[#D5D7DA]" />
+        <hr className="text-[#D5D7DA] print:hidden" />
 
         {/* ---------- Footer Buttons ---------- */}
-        <div className="flex flex-wrap justify-end gap-[20px]">
+        <div className="flex flex-wrap justify-end gap-[20px] print:hidden">
           <SidebarBtn
             leadingIcon={"lucide:download"}
             leadingIconSize={20}
             label="Download"
           />
-          <SidebarBtn
-            isActive
-            leadingIcon={"lucide:printer"}
-            leadingIconSize={20}
-            label="Print Now"
-          />
+          <PrintButton targetRef={targetRef as React.RefObject<HTMLDivElement>} />
         </div>
       </ContainerCard>
+      </div>
     </>
   );
 }

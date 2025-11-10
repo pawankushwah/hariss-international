@@ -389,3 +389,23 @@ export const createReturn = async (body: object) => {
     return handleError(error);
   }
 };
+
+
+export const returnByUuid = async (uuid: string) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/returns/show/${uuid}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+// export const deliveryByUuid = async (uuid: string) => {
+//   try {
+//     const res = await API.get(`/api/agent_transaction/agent-delivery/${uuid}`);
+//     return res.data;
+//   } catch (error: unknown) {
+//     return handleError(error);
+//   }
+// };

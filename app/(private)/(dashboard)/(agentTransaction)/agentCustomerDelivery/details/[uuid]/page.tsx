@@ -149,14 +149,36 @@ export default function OrderDetailPage() {
     }
   }, [uuid, setLoading, showSnackbar]);
 
+  // Calculate totals from details if API doesn't provide them
+  const calculatedNetTotal = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.net_total || 0),
+    0
+  ) ?? 0;
+
+  const calculatedVat = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.vat || 0),
+    0
+  ) ?? 0;
+
+  const calculatedTotal = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.total || 0),
+    0
+  ) ?? 0;
+
+  // Use API values if available, otherwise use calculated values
+  const netTotal = Number(deliveryData?.net_total || deliveryData?.gross_total || calculatedNetTotal || 0);
+  const vat = Number(deliveryData?.vat || calculatedVat || 0);
+  const preVat = netTotal - vat;
+  const finalTotal = Number(deliveryData?.total || calculatedTotal || (netTotal + vat) || 0);
+
   const keyValueData = [
-    // { key: "Gross Total", value: `AED ${deliveryData?.gross_total || "0.00"}` },
-    // { key: "Discount", value: `AED ${deliveryData?.discount || "0.00"}` },
-    { key: "Net Total", value: `AED ${toInternationalNumber(Number(deliveryData?.gross_total || 0)) || "0.00"}` },
-    // { key: "Excise", value: `AED ${deliveryData?.excise || "0.00"}` },
-    { key: "Vat", value: `AED ${toInternationalNumber(Number(deliveryData?.vat || 0)) || "0.00"}` },
-    { key: "preVat", value: `AED ${toInternationalNumber(Number(deliveryData?.gross_total || 0) - Number(deliveryData?.vat || 0)) || "0.00"}` },
-    // { key: "Delivery Charges", value: `AED ${deliveryData?.delivery_charges || "0.00"}` },
+    // { key: "Gross Total", value: `AED ${toInternationalNumber(grossTotal)}` },
+    // { key: "Discount", value: `AED ${toInternationalNumber(Number(deliveryData?.discount || 0))}` },
+    { key: "Net Total", value: `AED ${toInternationalNumber(netTotal)}` },
+    // { key: "Excise", value: `AED ${toInternationalNumber(Number(deliveryData?.excise || 0))}` },
+    { key: "VAT", value: `AED ${toInternationalNumber(vat)}` },
+    { key: "Pre VAT", value: `AED ${toInternationalNumber(preVat)}` },
+    // { key: "Delivery Charges", value: `AED ${toInternationalNumber(Number(deliveryData?.delivery_charges || 0))}` },
   ];
   const targetRef = useRef<HTMLDivElement | null>(null);
 
@@ -251,7 +273,7 @@ export default function OrderDetailPage() {
               <div className="flex flex-col space-y-[12px] text-primary-bold text-[14px]">
                 <span>To (Customer)</span>
                 <div className="flex flex-col space-y-[10px]">
-                  <span className="font-semibold">{deliveryData?.customer?.name && deliveryData?.customer?.name}</span>
+                  <span className="font-semibold">{deliveryData?.customer?.code && deliveryData?.customer?.name ?`${deliveryData.customer.code} - ${deliveryData.customer.name}` : ""}</span>
                   <span>{deliveryData?.customer?.address && deliveryData?.customer?.address}</span>
                   <span>
                     {deliveryData?.customer?.phone && <>Phone: {deliveryData?.customer?.phone || "-"}</>} <br />
@@ -315,7 +337,7 @@ export default function OrderDetailPage() {
                 {/* <hr className="text-[#D5D7DA]" /> */}
                 <div className="font-semibold text-[#181D27] py-2 text-[18px] flex justify-between">
                   <span>Total</span>
-                  <span>AED {toInternationalNumber(deliveryData?.total) || "0.00"}</span>
+                  <span>AED {toInternationalNumber(finalTotal)}</span>
                 </div>
               </div>
 
