@@ -32,7 +32,7 @@ import {
   updateSalesman,
 } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
-import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData ccc";
+import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
 interface SalesmanFormValues {
   osa_code: string;
