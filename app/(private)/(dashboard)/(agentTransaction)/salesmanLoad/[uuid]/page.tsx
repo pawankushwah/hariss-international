@@ -13,12 +13,12 @@ import {
   salesmanLoadHeaderById,
   salesmanLoadHeaderUpdate,
 } from "@/app/services/agentTransaction";
-import { itemList } from "@/app/services/allApi";
+import { genearateCode, itemList } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { Icon } from "@iconify-icon/react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as yup from "yup";
 
 export default function AddEditSalesmanLoad() {
@@ -96,6 +96,8 @@ export default function AddEditSalesmanLoad() {
   const [isItemsLoaded, setIsItemsLoaded] = useState(false);
   const [itemOptions, setItemsOptions] = useState();
   const [orderData, setOrderData] = useState<FormData[]>([]);
+  const [skeleton, setSkeleton] = useState({});
+  const codeGeneratedRef = useRef(false);
 
   // ✅ Load items on mount
   // ✅ Load all items
@@ -104,7 +106,7 @@ export default function AddEditSalesmanLoad() {
       (async () => {
         try {
           setLoading(true);
-          const res = await itemList({ page: "1" });
+          const res = await itemList({ allData: "true" });
           const data = res.data.map((item: any) => ({
             id: item.id,
             item_code: item.item_code,
@@ -137,7 +139,7 @@ export default function AddEditSalesmanLoad() {
 
 
   const fetchItem = async (searchTerm: string) => {
-    const res = await itemList({ per_page: "10", name: searchTerm });
+    const res = await itemList({ allData: "true" });
     if (res.error) {
       showSnackbar(res.data?.message || "Failed to fetch items", "error");
 
@@ -155,6 +157,26 @@ export default function AddEditSalesmanLoad() {
 
   useEffect(() => {
     fetchItem("");
+  }, []);
+
+  const [code, setCode] = useState("");
+  useEffect(() => {
+    setSkeleton({ ...skeleton, item: true });
+    fetchItem("");
+
+    // generate code
+    if (!codeGeneratedRef.current) {
+      codeGeneratedRef.current = true;
+      (async () => {
+        const res = await genearateCode({
+          model_name: "salesman_load",
+        });
+        if (res?.code) {
+          setCode(res.code);
+        }
+        setLoading(false);
+      })();
+    }
   }, []);
 
   // ✅ Fetch existing data in edit mode
@@ -260,14 +282,14 @@ export default function AddEditSalesmanLoad() {
 
 
       const payload = {
-  salesman_type: Number(form.salesman_type),
-  project_type: form.project_type ? Number(form.project_type) : null, // ✅ fix here
-  warehouse_id: Number(form.warehouse),
-  route_id: Number(form.route),
-  salesman_id: Number(form.salesman),
-  status: 1,
-  details: details,
-};
+        salesman_type: Number(form.salesman_type),
+        project_type: form.project_type ? Number(form.project_type) : null, // ✅ fix here
+        warehouse_id: Number(form.warehouse),
+        route_id: Number(form.route),
+        salesman_id: Number(form.salesman),
+        status: 1,
+        details: details,
+      };
 
 
       console.log("📦 Final Payload:", JSON.stringify(payload, null, 2));
@@ -356,12 +378,12 @@ export default function AddEditSalesmanLoad() {
               Emma-Köhler-Allee 4c, Germering - 13907
             </span> */}
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col items-end">
             <span className="text-[42px] uppercase text-[#A4A7AE] mb-[10px]">
               Load
             </span>
             <span className="text-primary text-[14px] tracking-[10px]">
-              #L0201
+              #{code}
             </span>
           </div>
         </div>
@@ -509,6 +531,7 @@ export default function AddEditSalesmanLoad() {
                 ),
               },
             ],
+            pageSize: itemData.length
           }}
         />
 

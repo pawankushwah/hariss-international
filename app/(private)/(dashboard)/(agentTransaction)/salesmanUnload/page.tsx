@@ -110,6 +110,42 @@ export default function SalesmanUnloadPage() {
     [setLoading, isFiltered, form]
   );
 
+   const filterBy = useCallback(
+            async (
+                payload: Record<string, string | number | null>,
+                pageSize: number
+            ): Promise<listReturnType> => {
+                let result;
+                setLoading(true);
+                try {
+                    const params: Record<string, string> = { };
+                    Object.keys(payload || {}).forEach((k) => {
+                        const v = payload[k as keyof typeof payload];
+                        if (v !== null && typeof v !== "undefined" && String(v) !== "") {
+                            params[k] = String(v);
+                        }
+                    });
+                    result = await salesmanUnloadList(params);
+                } finally {
+                    setLoading(false);
+                }
+    
+                if (result?.error) throw new Error(result.data?.message || "Filter failed");
+                else {
+                    const pagination = result.pagination?.pagination || result.pagination || {};
+                    return {
+                        data: result.data || [],
+                        total: pagination.last_page || result.pagination?.last_page || 0,
+                        totalRecords: pagination.total || result.pagination?.total || 0,
+                        currentPage: pagination.current_page || result.pagination?.currentPage || 0,
+                        pageSize: pagination.limit || pageSize,
+                    };
+                }
+            },
+            [setLoading]
+        );
+
+
   // ✅ Table Columns
   const columns: configType["columns"] = [
     { key: "unload_date", label: "Unload Date" },
@@ -168,7 +204,7 @@ export default function SalesmanUnloadPage() {
         config={{
           api: { list: fetchSalesmanUnloadHeader },
           header: {
-            searchBar: true,
+            searchBar: false,
             columnFilter: true,
             filterByFields: [
               {

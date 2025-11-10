@@ -310,7 +310,7 @@
         <div className="flex justify-between items-center mb-[20px]">
           <div className="flex items-center gap-[16px]">
             <Icon icon="lucide:arrow-left" width={24} onClick={() => router.back()} />
-            <h1 className="text-[20px] font-semibold text-[#181D27]">Customer Approvals Details</h1>
+            <h1 className="text-[20px] font-semibold text-[#181D27]">Approval Customers </h1>
           </div>
           <div className="flex items-center gap-[10px] border border-[#D5D7DA] relative rounded-lg px-1 bg-[#FFFFFF] opacity-100">
             {/* 3-dot menu button */}

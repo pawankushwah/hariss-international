@@ -355,7 +355,7 @@ export default function NewCustomer() {
                             search: search,
                         },
                         header: {
-                            title: " Customer Approvals",
+                            title: "Approval Customers",
                             threeDot: [
                                 {
                                     icon: "gala:file-document",

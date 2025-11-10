@@ -305,18 +305,18 @@ export const initialLinkData: SidebarDataType[] = [
                         leadingIcon: "carbon:delivery-parcel",
                         iconColor: "text-cyan-500"
                     },
-                    // {
-                    //     isActive: false,
-                    //     href: "/agentTransaction/agentCustomerInvoice",
-                    //     label: "Agent Invoice",
-                    //     leadingIcon: "mdi:package-variant",
-                    //     iconColor: "text-cyan-500"
-                    // },
                     {
                         isActive: false,
                         href: "/invoice",
                         label: "Invoice",
                         leadingIcon: "hugeicons:invoice",
+                        iconColor: "text-cyan-500"
+                    },
+                    {
+                        isActive: false,
+                        href: "/capsCollection",
+                        label: "CAPS Master Collection",
+                        leadingIcon: "hugeicons:collection",
                         iconColor: "text-cyan-500"
                     },
                     {
@@ -336,8 +336,15 @@ export const initialLinkData: SidebarDataType[] = [
                       {
                         isActive: false,
                         href: "/newCustomer",
-                        label: "New Customer",
+                        label: "Approval Customers",
                         leadingIcon: "mdi:truck-remove-outline",
+                        iconColor: "text-cyan-500"
+                    },
+                    {
+                        isActive: false,
+                        href: "/advancePayment",
+                        label: "Advance Payment",
+                        leadingIcon: "mdi:package-variant",
                         iconColor: "text-cyan-500"
                     },
                 ]
