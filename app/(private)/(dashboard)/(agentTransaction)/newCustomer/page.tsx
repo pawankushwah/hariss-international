@@ -150,19 +150,8 @@ export default function NewCustomer() {
         showByDefault: true,
     },
     { key: "contact_no", label: "Contact No." },
-    { key: "reject_reason", label: "Reject Reason" },
- {
-    key: "approval_status",
-    label: "Approval Status",
-    render: (row: TableDataType) => {
-        const statusMap: Record<string, string> = {
-            "1": "Approved",
-            "2": "Pending",
-            "3": "Rejected"
-        };
-        return statusMap[String(row.approval_status)] || "-";
-    }
-},
+  
+
 
     { key: "whatsapp_no", label: "Whatsapp No." },
     { key: "buyertype", label: "Buyer Type", render: (row: TableDataType) => (row.buyertype === "0" ? "B2B" : "B2C") },
@@ -188,6 +177,33 @@ export default function NewCustomer() {
     };
     return paymentTypes[String(row.payment_type)] || "-";
   },
+},
+
+    //   { key: "reject_reason", label: "Reject Reason" },
+  {
+  key: "approval_status",
+  label: "Approval Status",
+  render: (row) => {
+    const value = String(row.approval_status);
+
+    const statusMap: Record<string, { label: string; color: string }> = {
+      "1": { label: "Approved", color: "bg-green-100 text-green-700" },
+      "2": { label: "Pending", color: "bg-yellow-100 text-yellow-700" },
+      "3": { label: "Rejected", color: "bg-red-100 text-red-700" }
+    };
+
+    const status = statusMap[value];
+
+    if (!status) return "-";
+
+    return (
+      <span
+        className={`px-3 py-1 rounded-full text-sm font-semibold ${status.color}`}
+      >
+        {status.label}
+      </span>
+    );
+  }
 },
     {
         key: "status",
@@ -339,7 +355,7 @@ export default function NewCustomer() {
                             search: search,
                         },
                         header: {
-                            title: " Customer Approvals",
+                            title: "Approval Customers",
                             threeDot: [
                                 {
                                     icon: "gala:file-document",

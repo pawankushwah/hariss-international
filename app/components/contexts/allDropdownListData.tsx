@@ -338,7 +338,6 @@ export const useAllDropdownListData = () => {
   if (!context) {
     throw new Error('useAllDropdownListData must be used within AllDropdownListDataProvider');
   }
-  return context;
 };
 
 export const AllDropdownListDataProvider = ({ children }: { children: ReactNode }) => {
