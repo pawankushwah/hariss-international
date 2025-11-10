@@ -62,7 +62,6 @@ export default function AddEditSalesmanUnload() {
             id: item.id,
             item_code: item.item_code,
             name: item.name,
-            uoms: item.uom || [],
             qty: "",
             uom_id: "",
           }));
@@ -106,7 +105,6 @@ export default function AddEditSalesmanUnload() {
                   ? {
                     ...item,
                     qty: matched.qty?.toString() || "",
-                    uom_id: matched.uom?.toString() || "",
                   }
                   : item;
               })
@@ -156,7 +154,6 @@ export default function AddEditSalesmanUnload() {
         .filter((i) => i.qty && Number(i.qty) > 0)
         .map((i) => ({
           item_id: i.id,
-          uom: i.uom_id ? Number(i.uom_id) : null,
           qty: String(i.qty || "0"),
           status: 1,
         }));
@@ -261,7 +258,7 @@ export default function AddEditSalesmanUnload() {
           </div>
 
           {/* Show Project List only when salesman_type id = 36 */}
-          {form.salesman_type === "36" && (
+          {form.salesman_type === "6" && (
             <div className="flex flex-col w-full sm:w-[30%]">
               <InputFields
                 label="Project List"
@@ -352,34 +349,6 @@ export default function AddEditSalesmanUnload() {
                       : row.item_code || row.name || "-"}
                   </span>
                 ),
-              },
-              {
-                key: "UOM",
-                label: "UOM",
-                render: (row) => {
-                  const currentItem = itemData.find((i) => i.id === row.id);
-                  const uomOptions = Array.isArray(currentItem?.uoms)
-                    ? currentItem.uoms.map((u: any) => ({
-                      label: u.name,
-                      value: u.id.toString(),
-                    }))
-                    : [];
-                  return (
-                    <InputFields
-                      label=""
-                      name="uom_id"
-                      value={row.uom_id || ""}
-                      options={uomOptions}
-                      onChange={(e) =>
-                        recalculateItem(
-                          Number(row.idx),
-                          "uom_id",
-                          e.target.value
-                        )
-                      }
-                    />
-                  );
-                },
               },
               { key: "cse", label: "CSE" },
               {
