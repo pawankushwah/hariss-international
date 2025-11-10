@@ -138,7 +138,7 @@ export default function InputFields({
   // const [selectedCountry, setSelectedCountry] = useState<{ name: string; code: string; flag?: string }>(defaultCountry);
   const [phone, setPhone] = useState(value);
   useEffect(() => { setPhone(value) }, [value])
-  const toggleDropdown = () => setIsOpen((prev) => !prev);
+  // const toggleDropdown = () => setIsOpen((prev) => !prev);
   const computeDropdownProps = () => {
     const dropdown = dropdownRef.current;
     if (!dropdown) return;
@@ -171,7 +171,7 @@ export default function InputFields({
     const gap = 8; // px
 
     // initial top (will be corrected after measurement if possible)
-    let top = placement === "bottom" ? inputBottom : Math.max(margin, inputTop - maxHeight - gap);
+    const top = placement === "bottom" ? inputBottom : Math.max(margin, inputTop - maxHeight - gap);
 
     setDropdownProperties({ width: `${w}px`, top: `${top}px`, left: `${l}px`, maxHeight: `${maxHeight}px`, placement });
     setDropdownPropertiesString(`!w-[${w}px] !top-[${Math.floor(top)}px] !left-[${l}px]`);
