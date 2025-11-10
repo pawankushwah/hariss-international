@@ -1,24 +1,23 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import { Icon } from "@iconify-icon/react";
-import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
 import Loading from "@/app/components/Loading";
+import ContainerCard from "@/app/components/containerCard";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import InputFields from "@/app/components/inputFields";
-import { useSnackbar } from "@/app/services/snackbarContext";
-import {
-  getbankList,
-  addPayment,
-  getCompanyCustomers,
-  updatePaymentById,
-  getPaymentById,
-  genearateCode,
-} from "@/app/services/allApi";
 import Logo from "@/app/components/logo";
+import {
+  addPayment,
+  genearateCode,
+  getbankList,
+  getCompanyCustomers
+} from "@/app/services/allApi";
+import { useSnackbar } from "@/app/services/snackbarContext";
+import { Icon } from "@iconify-icon/react";
+import { useFormik } from "formik";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import * as Yup from "yup";
 
 interface PaymentFormValues {
   osa_code: string;
@@ -47,7 +46,7 @@ interface Bank {
 interface Customer {
   id: number;
   sap_code: string;
-  customer_code: string;
+  osa_code: string;
   business_name: string;
   customer_type: string;
   owner_name: string;
@@ -136,6 +135,8 @@ export default function AddPaymentPage() {
         const customersData = Array.isArray(res.data) ? res.data : [];
         setCustomers(customersData);
 
+        // console.log(customersData)
+
         if (customersData.length === 0) {
           showSnackbar("No customers found", "info");
         }
@@ -151,6 +152,8 @@ export default function AddPaymentPage() {
       setLoadingCustomers(false);
     }
   };
+
+  console.log(customers)
 
   // Handle bank selection change
   const handleBankChange = (bankId: string) => {
@@ -361,7 +364,7 @@ export default function AddPaymentPage() {
 
         // Log FormData contents for debugging
         console.log("FormData contents:");
-        for (let [key, value] of formData.entries()) {
+        for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
             console.log(
               key,
@@ -383,9 +386,9 @@ export default function AddPaymentPage() {
         if (isSuccess) {
           showSnackbar(
             res?.message ||
-              (isEditMode
-                ? "Payment Updated Successfully"
-                : "Payment Created Successfully"),
+            (isEditMode
+              ? "Payment Updated Successfully"
+              : "Payment Created Successfully"),
             "success"
           );
           setTimeout(() => {
@@ -436,326 +439,330 @@ export default function AddPaymentPage() {
       {loading ? (
         <Loading />
       ) : (
+
         <form
           onSubmit={formik.handleSubmit}
           className="border border-gray-300 rounded-lg mb-10"
         >
-          <div className="flex justify-between mb-10 px-5 py-10 flex-wrap gap-[20px] border-b border-gray-300">
-            <div className="flex flex-col gap-[10px]">
-              <Logo type="full" />
+          <ContainerCard>
+            <div className="flex justify-between mb-10 px-5 py-10 flex-wrap gap-[20px] border-b border-gray-300">
+              <div className="flex flex-col gap-[10px]">
+                <Logo type="full" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[42px] uppercase text-[#A4A7AE] mb-[10px]">
+                  PAYMENT
+                </span>
+                <span className="text-primary text-end text-[14px] tracking-[10px]">
+                  {"#" + formik.values.osa_code}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[42px] uppercase text-[#A4A7AE] mb-[10px]">
-                PAYMENT
-              </span>
-              <span className="text-primary text-end text-[14px] tracking-[10px]">
-                {"#" + formik.values.osa_code}
-              </span>
-            </div>
-          </div>
 
-          <div className="m-10">
-            <h2 className="text-lg font-semibold mb-6">Payment Details</h2>
+            <div className="m-10">
+              <h2 className="text-lg font-semibold mb-6">Payment Details</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* OSA Code */}
-              <InputFields
-                label="OSA Code"
-                name="osa_code"
-                value={formik.values.osa_code}
-                onChange={formik.handleChange}
-                disabled={codeMode === "auto"}
-                error={formik.touched.osa_code && formik.errors.osa_code}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {/* OSA Code */}
+                <InputFields
+                  label="OSA Code"
+                  name="osa_code"
+                  value={formik.values.osa_code}
+                  onChange={formik.handleChange}
+                  disabled={codeMode === "auto"}
+                  error={formik.touched.osa_code && formik.errors.osa_code}
+                />
 
-              {/* Payment Type */}
-              <InputFields
-                required
-                type="select"
-                name="payment_type"
-                label="Payment Type"
-                value={formik.values.payment_type}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={
-                  formik.touched.payment_type && formik.errors.payment_type
-                }
-                options={[
-                  { value: "cash", label: "Cash" },
-                  { value: "cheque", label: "Cheque" },
-                  { value: "transfer", label: "Transfer" },
-                ]}
-              />
-
-              {/* Bank Selection - Show for all payment types */}
-              {(formik.values.payment_type === "cash" ||
-                formik.values.payment_type === "cheque" ||
-                formik.values.payment_type === "transfer") && (
+                {/* Payment Type */}
                 <InputFields
                   required
                   type="select"
-                  name="companybank_id"
-                  label="Bank"
-                  value={formik.values.companybank_id}
-                  onChange={(e) => handleBankChange(e.target.value)}
+                  name="payment_type"
+                  label="Payment Type"
+                  value={formik.values.payment_type}
+                  onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  options={banks.map((bank) => ({
-                    value: bank.id.toString(),
-                    label: `${bank.bank_name} - ${bank.branch}`,
-                  }))}
-                  loading={loadingBanks}
                   error={
-                    formik.touched.companybank_id &&
-                    formik.errors.companybank_id
+                    formik.touched.payment_type && formik.errors.payment_type
                   }
-                  placeholder="Select Bank"
+                  options={[
+                    { value: "cash", label: "Cash" },
+                    { value: "cheque", label: "Cheque" },
+                    { value: "transfer", label: "Transfer" },
+                  ]}
                 />
-              )}
 
-              {/* Bank Information Display Fields */}
-              {formik.values.companybank_id && (
-                <>
-                  <div className="flex flex-col gap-2 w-full">
-                    <label className="text-sm font-medium text-gray-700">
-                      Company Bank Name
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedBankInfo.bank_name}
-                      disabled
-                      className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
-                      placeholder="Bank name will appear here"
+                {/* Bank Selection - Show for all payment types */}
+                {(formik.values.payment_type === "cash" ||
+                  formik.values.payment_type === "cheque" ||
+                  formik.values.payment_type === "transfer") && (
+                    <InputFields
+                      required
+                      type="select"
+                      name="companybank_id"
+                      label="Bank"
+                      value={formik.values.companybank_id}
+                      onChange={(e) => handleBankChange(e.target.value)}
+                      onBlur={formik.handleBlur}
+                      options={banks.map((bank) => ({
+                        value: bank.id.toString(),
+                        label: `${bank.bank_name} - ${bank.branch}`,
+                      }))}
+                      loading={loadingBanks}
+                      error={
+                        formik.touched.companybank_id &&
+                        formik.errors.companybank_id
+                      }
+                      placeholder="Select Bank"
                     />
-                  </div>
+                  )}
 
-                  <div className="flex flex-col gap-2 w-full">
-                    <label className="text-sm font-medium text-gray-700">
-                      Company Branch
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedBankInfo.branch}
-                      disabled
-                      className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
-                      placeholder="Branch will appear here"
-                    />
-                  </div>
+                {/* Bank Information Display Fields */}
+                {formik.values.companybank_id && (
+                  <>
+                    <div className="flex flex-col gap-2 w-full">
+                      <label className="text-sm font-medium text-gray-700">
+                        Company Bank Name
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedBankInfo.bank_name}
+                        disabled
+                        className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
+                        placeholder="Bank name will appear here"
+                      />
+                    </div>
 
-                  <div className="flex flex-col gap-2 w-full">
-                    <label className="text-sm font-medium text-gray-700">
-                      Company Account Number
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedBankInfo.account_number}
-                      disabled
-                      className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
-                      placeholder="Account number will appear here"
-                    />
-                  </div>
-                </>
-              )}
+                    <div className="flex flex-col gap-2 w-full">
+                      <label className="text-sm font-medium text-gray-700">
+                        Company Branch
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedBankInfo.branch}
+                        disabled
+                        className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
+                        placeholder="Branch will appear here"
+                      />
+                    </div>
 
-              {/* Cheque Number - Only for cheque payments */}
-              {formik.values.payment_type === "cheque" && (
+                    <div className="flex flex-col gap-2 w-full">
+                      <label className="text-sm font-medium text-gray-700">
+                        Company Account Number
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedBankInfo.account_number}
+                        disabled
+                        className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
+                        placeholder="Account number will appear here"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Cheque Number - Only for cheque payments */}
+                {formik.values.payment_type === "cheque" && (
+                  <InputFields
+                    required
+                    type="text"
+                    name="cheque_no"
+                    label="Cheque Number"
+                    value={formik.values.cheque_no}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.cheque_no && formik.errors.cheque_no}
+                    placeholder="Enter cheque number"
+                  />
+                )}
+
+                {/* Cheque Date - Only for cheque payments */}
+                {formik.values.payment_type === "cheque" && (
+                  <InputFields
+                    required
+                    type="date"
+                    name="cheque_date"
+                    label="Cheque Date"
+                    value={formik.values.cheque_date}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={
+                      formik.touched.cheque_date && formik.errors.cheque_date
+                    }
+                  />
+                )}
+
+                {/* Customer Selection */}
+                <InputFields
+                  required
+                  name="agent_id"
+                  label="Customer"
+                  value={formik.values.agent_id}
+                  onChange={(e) => handleCustomerChange(e.target.value)}
+                  onBlur={formik.handleBlur}
+                  options={customers.map((customer) => ({
+                    value: customer.id.toString(),
+                    label: `${customer.osa_code} - ${customer.business_name}`,
+                  }))}
+                  loading={loadingCustomers}
+                  error={formik.touched.agent_id && formik.errors.agent_id}
+                  placeholder="Select Customer"
+                />
+
+                {/* Customer Bank Information Display Fields */}
+                {formik.values.agent_id && (
+                  <>
+                    <div className="flex flex-col gap-2 w-full">
+                      <label className="text-sm font-medium text-gray-700">
+                        Customer Bank Name
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedCustomerBankInfo.bank_name}
+                        disabled
+                        className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
+                        placeholder="Customer bank name will appear here"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2 w-full">
+                      <label className="text-sm font-medium text-gray-700">
+                        Customer Account Number
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedCustomerBankInfo.account_number}
+                        disabled
+                        className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
+                        placeholder="Customer account number will appear here"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Common Fields */}
+                <InputFields
+                  required
+                  type="number"
+                  name="amount"
+                  label="Amount"
+                  value={formik.values.amount}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.amount && formik.errors.amount}
+                  placeholder="Enter amount"
+                />
+
                 <InputFields
                   required
                   type="text"
-                  name="cheque_no"
-                  label="Cheque Number"
-                  value={formik.values.cheque_no}
+                  name="recipt_no"
+                  label="Receipt Number"
+                  value={formik.values.recipt_no}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.cheque_no && formik.errors.cheque_no}
-                  placeholder="Enter cheque number"
+                  error={formik.touched.recipt_no && formik.errors.recipt_no}
+                  placeholder="Enter receipt number"
                 />
-              )}
 
-              {/* Cheque Date - Only for cheque payments */}
-              {formik.values.payment_type === "cheque" && (
                 <InputFields
                   required
                   type="date"
-                  name="cheque_date"
-                  label="Cheque Date"
-                  value={formik.values.cheque_date}
+                  name="recipt_date"
+                  label="Receipt Date"
+                  value={formik.values.recipt_date}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={
-                    formik.touched.cheque_date && formik.errors.cheque_date
-                  }
+                  error={formik.touched.recipt_date && formik.errors.recipt_date}
                 />
-              )}
 
-              {/* Customer Selection */}
-              <InputFields
-                required
-                type="select"
-                name="agent_id"
-                label="Customer"
-                value={formik.values.agent_id}
-                onChange={(e) => handleCustomerChange(e.target.value)}
-                onBlur={formik.handleBlur}
-                options={customers.map((customer) => ({
-                  value: customer.id.toString(),
-                  label: `${customer.business_name} (${customer.customer_code}) - ${customer.owner_name}`,
-                }))}
-                loading={loadingCustomers}
-                error={formik.touched.agent_id && formik.errors.agent_id}
-                placeholder="Select Customer"
-              />
+                {/* Receipt Image Upload */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label
+                    htmlFor="recipt_image"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Receipt Image
+                  </label>
+                  <input
+                    id="recipt_image"
+                    type="file"
+                    name="recipt_image"
+                    onChange={handleFileChange}
+                    onBlur={formik.handleBlur}
+                    className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold border-gray-300"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Accepted formats: JPG, JPEG, PNG, PDF (Max 5MB)
+                  </p>
+                  {formik.touched.recipt_image && formik.errors.recipt_image && (
+                    <span className="text-xs text-red-500">
+                      {formik.errors.recipt_image}
+                    </span>
+                  )}
 
-              {/* Customer Bank Information Display Fields */}
-              {formik.values.agent_id && (
-                <>
-                  <div className="flex flex-col gap-2 w-full">
-                    <label className="text-sm font-medium text-gray-700">
-                      Customer Bank Name
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedCustomerBankInfo.bank_name}
-                      disabled
-                      className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
-                      placeholder="Customer bank name will appear here"
-                    />
-                  </div>
+                  {/* Image Preview */}
+                  {imagePreview && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                      <img
+                        src={imagePreview}
+                        alt="Receipt preview"
+                        className="h-32 w-32 object-cover rounded-lg border"
+                      />
+                    </div>
+                  )}
 
-                  <div className="flex flex-col gap-2 w-full">
-                    <label className="text-sm font-medium text-gray-700">
-                      Customer Account Number
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedCustomerBankInfo.account_number}
-                      disabled
-                      className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] bg-gray-100 text-gray-600 cursor-not-allowed"
-                      placeholder="Customer account number will appear here"
-                    />
-                  </div>
-                </>
-              )}
+                  {/* Show file name if selected */}
+                  {formik.values.recipt_image && !imagePreview && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600">
+                        Selected file: {formik.values.recipt_image.name}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-              {/* Common Fields */}
-              <InputFields
-                required
-                type="number"
-                name="amount"
-                label="Amount"
-                value={formik.values.amount}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.amount && formik.errors.amount}
-                placeholder="Enter amount"
-              />
-
-              <InputFields
-                required
-                type="text"
-                name="recipt_no"
-                label="Receipt Number"
-                value={formik.values.recipt_no}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.recipt_no && formik.errors.recipt_no}
-                placeholder="Enter receipt number"
-              />
-
-              <InputFields
-                required
-                type="date"
-                name="recipt_date"
-                label="Receipt Date"
-                value={formik.values.recipt_date}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.recipt_date && formik.errors.recipt_date}
-              />
-
-              {/* Receipt Image Upload */}
-              <div className="flex flex-col gap-2 w-full">
-                <label
-                  htmlFor="recipt_image"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Receipt Image
-                </label>
-                <input
-                  id="recipt_image"
-                  type="file"
-                  name="recipt_image"
-                  onChange={handleFileChange}
+                {/* Status */}
+                <InputFields
+                  type="radio"
+                  name="status"
+                  label="Status"
+                  value={formik.values.status}
+                  onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="border h-[44px] w-full rounded-md px-3 py-1 mt-[6px] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold border-gray-300"
-                  accept=".jpg,.jpeg,.png,.pdf"
+                  error={formik.touched.status && formik.errors.status}
+                  options={[
+                    { value: "active", label: "Active" },
+                    { value: "inactive", label: "Inactive" },
+                  ]}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Accepted formats: JPG, JPEG, PNG, PDF (Max 5MB)
-                </p>
-                {formik.touched.recipt_image && formik.errors.recipt_image && (
-                  <span className="text-xs text-red-500">
-                    {formik.errors.recipt_image}
-                  </span>
-                )}
-
-                {/* Image Preview */}
-                {imagePreview && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                    <img
-                      src={imagePreview}
-                      alt="Receipt preview"
-                      className="h-32 w-32 object-cover rounded-lg border"
-                    />
-                  </div>
-                )}
-
-                {/* Show file name if selected */}
-                {formik.values.recipt_image && !imagePreview && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-600">
-                      Selected file: {formik.values.recipt_image.name}
-                    </p>
-                  </div>
-                )}
               </div>
 
-              {/* Status */}
-              <InputFields
-                type="radio"
-                name="status"
-                label="Status"
-                value={formik.values.status}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.status && formik.errors.status}
-                options={[
-                  { value: "active", label: "Active" },
-                  { value: "inactive", label: "Inactive" },
-                ]}
-              />
-            </div>
+              {/* Footer Actions - Moved inside the form with proper spacing */}
+              <div className="flex justify-end gap-3 mt-10 pt-6 border-t border-gray-200">
+                <button
+                  className="px-6 py-2 h-[44px] min-w-[100px] rounded-md font-semibold border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
+                  type="button"
+                  onClick={() => router.push("/advancePayment")}
+                >
+                  Cancel
+                </button>
 
-            {/* Footer Actions - Moved inside the form with proper spacing */}
-            <div className="flex justify-end gap-3 mt-10 pt-6 border-t border-gray-200">
-              <button
-                className="px-6 py-2 h-[44px] min-w-[100px] rounded-md font-semibold border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
-                type="button"
-                onClick={() => router.push("/advancePayment")}
-              >
-                Cancel
-              </button>
-
-              <SidebarBtn
-                label={formik.isSubmitting ? "Submitting..." : "Submit"}
-                isActive={!formik.isSubmitting}
-                leadingIcon="mdi:check"
-                type="submit"
-                disabled={formik.isSubmitting}
-              />
+                <SidebarBtn
+                  label={formik.isSubmitting ? "Submitting..." : "Submit"}
+                  isActive={!formik.isSubmitting}
+                  leadingIcon="mdi:check"
+                  type="submit"
+                  disabled={formik.isSubmitting}
+                />
+              </div>
             </div>
-          </div>
+          </ContainerCard>
         </form>
+
+
       )}
     </>
   );
