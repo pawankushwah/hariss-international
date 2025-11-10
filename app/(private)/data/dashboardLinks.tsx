@@ -323,6 +323,13 @@ export const initialLinkData: SidebarDataType[] = [
                         leadingIcon: "mdi:truck-remove-outline",
                         iconColor: "text-cyan-500"
                     },
+                      {
+                        isActive: false,
+                        href: "/exchange",
+                        label: "Exchange",
+                        leadingIcon: "mdi:truck-remove-outline",
+                        iconColor: "text-cyan-500"
+                    },
                 ]
             },
             // {

@@ -57,6 +57,8 @@ interface DeliveryData {
   warehouse?: {
     code?: string;
     name?: string;
+    owner_number?: string;
+    owner_email?: string;
   };
   details?: DeliveryDetail[];
   gross_total?: string;
@@ -235,10 +237,10 @@ export default function OrderDetailPage() {
               <div className="flex flex-col space-y-[12px] text-primary-bold text-[14px] border-b md:border-b-0 pb-4 md:pb-0">
                 <span>From (Seller)</span>
                 <div className="flex flex-col space-y-[10px]">
-                  <span className="font-semibold">{deliveryData?.warehouse?.name || "-"}</span>
-                  {/* <span>{deliveryData?.warehouse ?? ""} {deliveryData?.warehouse && ", "}</span> */}
+                  <span className="font-semibold">{deliveryData?.warehouse?.code ? deliveryData?.warehouse?.code : ""} {deliveryData?.warehouse?.name ? deliveryData?.warehouse?.name : "-"}</span>
+                  {/* <span>{deliveryData?.warehouse.owner_number ? deliveryData?.warehouse.owner_number : ""}</span> */}
                   <span>
-                    {/* {deliveryData?.warehouse_contact && <>Phone: {deliveryData?.warehouse_contact}</>} <br /> {data?.warehouse_email && <>Email: {data?.warehouse_email}</>} */}
+                    {deliveryData?.warehouse?.owner_number && <>Phone: {deliveryData?.warehouse.owner_number}</>} <br /> {deliveryData?.warehouse?.owner_email && <>Email: {deliveryData?.warehouse.owner_email}</>}
                   </span>
                 </div>
               </div>
