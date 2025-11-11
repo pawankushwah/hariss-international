@@ -181,30 +181,15 @@ export default function OrderDetailPage() {
 
   // Build key-value data using simple/normal presence checks (no hasValue).
   // Compute Pre Vat when API doesn't provide it directly.
-  // Be tolerant of alternate field names and string values like "null", "-", etc.
   const computedPreVat = (() => {
-    const rawCandidates = [
-      (deliveryData as any)?.preVat,
-      (deliveryData as any)?.pre_vat,
-      (deliveryData as any)?.pre_vat_amount,
-      (deliveryData as any)?.preVatAmount,
-    ];
-
-    for (const raw of rawCandidates) {
-      if (raw === undefined || raw === null) continue;
-      const s = String(raw).trim().toLowerCase();
-      if (s === "" || s === "null" || s === "-" || s === "n/a" || s === "undefined") continue;
-      const num = Number(raw);
-      if (!isNaN(num)) return num;
+    if (deliveryData && (deliveryData as any).preVat !== undefined && (deliveryData as any).preVat !== null) {
+      return Number((deliveryData as any).preVat);
     }
-
-    // Fallback: compute from net_total - vat if both exist and are numeric
-    const netRaw = (deliveryData as any)?.net_total ?? (deliveryData as any)?.net_amount ?? (deliveryData as any)?.gross_total;
-    const vatRaw = (deliveryData as any)?.vat ?? (deliveryData as any)?.total_vat;
-    const net = Number(netRaw ?? NaN);
-    const vat = Number(vatRaw ?? NaN);
-    if (!isNaN(net) && !isNaN(vat)) return net - vat;
-
+    if (deliveryData?.net_total && deliveryData?.vat) {
+      const n = Number(deliveryData?.net_total ?? 0);
+      const v = Number(deliveryData?.vat ?? 0);
+      if (!isNaN(n) && !isNaN(v)) return n - v;
+    }
     return undefined;
   })();
 
