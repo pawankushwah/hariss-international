@@ -1,5 +1,4 @@
 "use client";
-
 import BorderIconButton from "@/app/components/borderIconButton";
 import ContainerCard from "@/app/components/containerCard";
 import CustomDropdown from "@/app/components/customDropdown";
@@ -7,13 +6,14 @@ import Table from "@/app/components/customTable";
 import Logo from "@/app/components/logo";
 import { Icon } from "@iconify-icon/react";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, RefObject } from "react";
 import { deliveryByUuid } from "@/app/services/agentTransaction";
 import toInternationalNumber from "@/app/(private)/utils/formatNumber";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
+import PrintButton from "@/app/components/printButton";
 
 interface DeliveryDetail {
   id: number;
@@ -61,6 +61,7 @@ interface DeliveryData {
     owner_number?: string;
     owner_email?: string;
   };
+  comment?: string;
   details?: DeliveryDetail[];
   gross_total?: string;
   discount?: string;
@@ -179,33 +180,51 @@ export default function OrderDetailPage() {
     return true;
   };
 
-  // Build key-value data using simple/normal presence checks (no hasValue).
-  // Compute Pre Vat when API doesn't provide it directly.
+  // Calculate totals from details if API doesn't provide them
+  const calculatedGrossTotal = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.net_total ?? item.total ?? 0),
+    0
+  ) ?? 0;
+
+  const calculatedVat = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.vat ?? 0),
+    0
+  ) ?? 0;
+
+  const calculatedTotal = deliveryData?.details?.reduce(
+    (sum, item) => sum + Number(item.total ?? 0),
+    0
+  ) ?? 0;
+
+  // Prefer API values, fall back to calculated values
+  const grossTotal = Number(deliveryData?.gross_total ?? calculatedGrossTotal ?? 0);
+  const vatTotal = Number(deliveryData?.vat ?? calculatedVat ?? 0);
+  const netTotal = Number(deliveryData?.net_total ?? deliveryData?.net_amount ?? grossTotal ?? 0);
+  const finalTotal = Number(deliveryData?.total ?? calculatedTotal ?? 0);
+
+  // Calculate Pre Vat: use API value or compute from net_total - vat
   const computedPreVat = (() => {
-    if (deliveryData && (deliveryData as any).preVat !== undefined && (deliveryData as any).preVat !== null) {
-      return Number((deliveryData as any).preVat);
+    if (deliveryData?.preVat !== undefined && deliveryData?.preVat !== null) {
+      return Number(deliveryData.preVat);
     }
-    if (deliveryData?.net_total && deliveryData?.vat) {
-      const n = Number(deliveryData?.net_total ?? 0);
-      const v = Number(deliveryData?.vat ?? 0);
-      if (!isNaN(n) && !isNaN(v)) return n - v;
+    if (netTotal > 0 && vatTotal > 0) {
+      return netTotal - vatTotal;
     }
-    return undefined;
+    return 0;
   })();
 
+  // Always show these fields (not conditionally hidden)
   const keyValueData = [
-    (deliveryData?.gross_total) && { key: "Gross Total", value: `AED ${toInternationalNumber(Number(deliveryData?.gross_total ?? 0))}` },
-    (deliveryData?.net_total || deliveryData?.net_amount) && {
-      key: "Net Total",
-      value: `AED ${toInternationalNumber(Number(deliveryData?.net_total ?? deliveryData?.net_amount ?? 0))}`,
-    },
-    (deliveryData?.vat) && { key: "Vat", value: `AED ${toInternationalNumber(Number(deliveryData?.vat ?? 0))}` },
-    (computedPreVat !== undefined && computedPreVat !== null) && { key: "Pre Vat", value: `AED ${toInternationalNumber(Number(computedPreVat ?? 0))}` },
+    { key: "Gross Total", value: `AED ${toInternationalNumber(grossTotal)}` },
+    { key: "VAT", value: `AED ${toInternationalNumber(vatTotal)}` },
+    { key: "Pre VAT", value: `AED ${toInternationalNumber(computedPreVat)}` },
     (deliveryData?.delivery_charges) && {
       key: "Delivery Charges",
       value: `AED ${toInternationalNumber(Number(deliveryData?.delivery_charges ?? 0))}`,
     },
   ].filter(Boolean) as Array<{ key: string; value: string }>;
+
+  const targetRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <>
@@ -228,6 +247,7 @@ export default function OrderDetailPage() {
           {/* Uncomment if needed */}
         </div>
       </div>
+      {/* < ref={targetRef}> */}
 
       {/* ---------- Order Info Card ---------- */}
       <ContainerCard className="rounded-[10px] space-y-[40px]">
@@ -386,18 +406,18 @@ export default function OrderDetailPage() {
               ))}
               <div className="font-semibold text-[#181D27] py-2 text-[18px] flex justify-between">
                 <span>Total</span>
-                <span>AED {toInternationalNumber(Number(deliveryData?.total ?? 0))}</span>
+                <span>AED {toInternationalNumber(finalTotal)}</span>
               </div>
             </div>
 
             {/* Notes (Mobile) - Hidden for now */}
             <div className="hidden flex-col justify-end gap-[20px] w-full lg:hidden lg:w-[400px]">
-              <div className="flex flex-col space-y-[10px]">
+            {deliveryData?.comment  &&  <div className="flex flex-col space-y-[10px]">
                 <div className="font-semibold text-[#181D27]">Customer Note</div>
                 <div>
-                  Please deliver between 10 AM to 1 PM. Contact before delivery.
-                </div>
-              </div>
+                 {deliveryData?.comment}
+                </div>  
+              </div>}
             </div>
           </div>
         </div>
@@ -411,13 +431,13 @@ export default function OrderDetailPage() {
             leadingIconSize={20}
             label="Download"
           />
-
-          <SidebarBtn
+ <PrintButton targetRef={targetRef as unknown as RefObject<HTMLElement>} />
+          {/* <SidebarBtn
             isActive
             leadingIcon={"lucide:printer"}
             leadingIconSize={20}
             label="Print Now"
-          />
+          /> */}
         </div>
       </ContainerCard>
     </>
