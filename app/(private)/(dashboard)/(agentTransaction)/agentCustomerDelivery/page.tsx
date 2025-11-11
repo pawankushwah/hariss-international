@@ -115,7 +115,7 @@ export default function CustomerInvoicePage() {
     // 🔹 Fetch Invoices
     const fetchInvoices = useCallback(async (
         page: number = 1,
-        pageSize: number = 10
+        pageSize: number = 50
     ): Promise<listReturnType> => {
         try {
             setLoading(true);
@@ -151,7 +151,7 @@ export default function CustomerInvoicePage() {
             return {
                 data: [],
                 currentPage: 1,
-                pageSize: 10,
+                pageSize: 50,
                 total: 0,
             };
         } finally {
@@ -305,7 +305,7 @@ export default function CustomerInvoicePage() {
                         //         ),
                         // },
                     ],
-                    pageSize: 10,
+                    pageSize: 50,
                 }}
             />
         </div>
