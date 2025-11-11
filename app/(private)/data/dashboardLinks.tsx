@@ -300,7 +300,7 @@ export const initialLinkData: SidebarDataType[] = [
                 children: [
                     {
                         isActive: false,
-                        href: "/agentCustomerOrder",
+                        href: "/agentOrder",
                         label: "Agent Order",
                         leadingIcon: "carbon:delivery-parcel",
                         iconColor: "text-cyan-500"
