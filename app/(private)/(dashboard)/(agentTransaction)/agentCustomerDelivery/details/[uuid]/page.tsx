@@ -9,6 +9,7 @@ import { Icon } from "@iconify-icon/react";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { deliveryByUuid } from "@/app/services/agentTransaction";
+import toInternationalNumber from "@/app/(private)/utils/formatNumber";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import { useLoading } from "@/app/services/loadingContext";
@@ -67,6 +68,7 @@ interface DeliveryData {
   net_amount?: string;
   excise?: string;
   vat?: string;
+  preVat?: string;
   delivery_charges?: string;
   total?: string;
 }
@@ -96,12 +98,24 @@ const columns = [
   { key: "itemName", label: "Product Name", width: 250 },
   { key: "name", label: "UOM" },
   { key: "Quantity", label: "Quantity" },
-  { key: "Price", label: "Price" },
+  {
+    key: "Price",
+    label: "Price",
+    render: (value: any) => <>{toInternationalNumber(Number(value.Price ?? 0)) || "0.00"}</>,
+  },
   { key: "Excise", label: "Excise" },
-  { key: "Discount", label: "Discount" },
-  { key: "Net", label: "Net" },
-  { key: "Vat", label: "Vat" },
-  { key: "Total", label: "Total" },
+  {
+    key: "Discount",
+    label: "Discount",
+    render: (value: any) => <>{toInternationalNumber(Number(value.Discount ?? 0)) || "0.00"}</>,
+  },
+  {
+    key: "Net",
+    label: "Net",
+    render: (value: any) => <>{toInternationalNumber(Number(value.Net ?? 0)) || "0.00"}</>,
+  },
+  { key: "Vat", label: "Vat", render: (value: any) => <>{toInternationalNumber(Number(value.Vat ?? 0)) || "0.00"}</> },
+  { key: "Total", label: "Total", render: (value: any) => <>{toInternationalNumber(Number(value.Total ?? 0)) || "0.00"}</> },
 ];
 
 export default function OrderDetailPage() {
@@ -134,7 +148,7 @@ export default function OrderDetailPage() {
               name: detail.uom_name || "-", // Fixed: use uom_name from API
               Quantity: detail.quantity?.toString() || "0",
               Price: detail.item_price || "0",
-              Excise: detail.excise || "0",
+              // Excise: detail.excise || "0",
               Discount: detail.discount || "0",
               Net: detail.net_total || "0",
               Vat: detail.vat || "0",
@@ -154,24 +168,59 @@ export default function OrderDetailPage() {
 
   // Helper function to check if value exists and is not null/empty
   const hasValue = (value: any) => {
-    return value !== null && value !== undefined && value !== "" && value !== "0" && value !== "0.00";
+    if (value === null || value === undefined) return false;
+    if (typeof value === "string") {
+      const v = value.trim().toLowerCase();
+      return v !== "" && v !== "0" && v !== "0.00" && v !== "null" && v !== "undefined";
+    }
+    if (typeof value === "number") {
+      return !isNaN(value);
+    }
+    return true;
   };
 
-  // Build key-value data dynamically based on available values
+  // Build key-value data using simple/normal presence checks (no hasValue).
+  // Compute Pre Vat when API doesn't provide it directly.
+  // Be tolerant of alternate field names and string values like "null", "-", etc.
+  const computedPreVat = (() => {
+    const rawCandidates = [
+      (deliveryData as any)?.preVat,
+      (deliveryData as any)?.pre_vat,
+      (deliveryData as any)?.pre_vat_amount,
+      (deliveryData as any)?.preVatAmount,
+    ];
+
+    for (const raw of rawCandidates) {
+      if (raw === undefined || raw === null) continue;
+      const s = String(raw).trim().toLowerCase();
+      if (s === "" || s === "null" || s === "-" || s === "n/a" || s === "undefined") continue;
+      const num = Number(raw);
+      if (!isNaN(num)) return num;
+    }
+
+    // Fallback: compute from net_total - vat if both exist and are numeric
+    const netRaw = (deliveryData as any)?.net_total ?? (deliveryData as any)?.net_amount ?? (deliveryData as any)?.gross_total;
+    const vatRaw = (deliveryData as any)?.vat ?? (deliveryData as any)?.total_vat;
+    const net = Number(netRaw ?? NaN);
+    const vat = Number(vatRaw ?? NaN);
+    if (!isNaN(net) && !isNaN(vat)) return net - vat;
+
+    return undefined;
+  })();
+
   const keyValueData = [
-    hasValue(deliveryData?.gross_total) && { key: "Gross Total", value: `AED ${deliveryData?.gross_total}` },
-    // hasValue(deliveryData?.discount) && { key: "Discount", value: `AED ${deliveryData?.discount}` },
-    hasValue(deliveryData?.net_total || deliveryData?.net_amount) && { 
-      key: "Net Total", 
-      value: `AED ${deliveryData?.net_total || deliveryData?.net_amount || "0.00"}` 
+    (deliveryData?.gross_total) && { key: "Gross Total", value: `AED ${toInternationalNumber(Number(deliveryData?.gross_total ?? 0))}` },
+    (deliveryData?.net_total || deliveryData?.net_amount) && {
+      key: "Net Total",
+      value: `AED ${toInternationalNumber(Number(deliveryData?.net_total ?? deliveryData?.net_amount ?? 0))}`,
     },
-    // hasValue(deliveryData?.excise) && { key: "Excise", value: `AED ${deliveryData?.excise}` },
-    hasValue(deliveryData?.vat) && { key: "Vat", value: `AED ${deliveryData?.vat}` },
-    hasValue(deliveryData?.delivery_charges) && { 
-      key: "Delivery Charges", 
-      value: `AED ${deliveryData?.delivery_charges}` 
+    (deliveryData?.vat) && { key: "Vat", value: `AED ${toInternationalNumber(Number(deliveryData?.vat ?? 0))}` },
+    (computedPreVat !== undefined && computedPreVat !== null) && { key: "Pre Vat", value: `AED ${toInternationalNumber(Number(computedPreVat ?? 0))}` },
+    (deliveryData?.delivery_charges) && {
+      key: "Delivery Charges",
+      value: `AED ${toInternationalNumber(Number(deliveryData?.delivery_charges ?? 0))}`,
     },
-  ].filter(Boolean); // Remove null/false entries
+  ].filter(Boolean) as Array<{ key: string; value: string }>;
 
   return (
     <>
@@ -336,7 +385,6 @@ export default function OrderDetailPage() {
                 <div className="font-semibold text-[#181D27]">
                   Payment Method
                 </div>
-                <div>Cash on Delivery</div>
               </div>
             </div>
 
@@ -353,7 +401,7 @@ export default function OrderDetailPage() {
               ))}
               <div className="font-semibold text-[#181D27] py-2 text-[18px] flex justify-between">
                 <span>Total</span>
-                <span>AED {deliveryData?.total || "0.00"}</span>
+                <span>AED {toInternationalNumber(Number(deliveryData?.total ?? 0))}</span>
               </div>
             </div>
 
@@ -364,12 +412,6 @@ export default function OrderDetailPage() {
                 <div>
                   Please deliver between 10 AM to 1 PM. Contact before delivery.
                 </div>
-              </div>
-              <div className="flex flex-col space-y-[10px]">
-                <div className="font-semibold text-[#181D27]">
-                  Payment Method
-                </div>
-                <div>Cash on Delivery</div>
               </div>
             </div>
           </div>
@@ -384,6 +426,7 @@ export default function OrderDetailPage() {
             leadingIconSize={20}
             label="Download"
           />
+
           <SidebarBtn
             isActive
             leadingIcon={"lucide:printer"}
