@@ -20,6 +20,7 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import StatusBtn from "@/app/components/statusBtn2";
 import { useLoading } from "@/app/services/loadingContext";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
+import { i } from "framer-motion/client";
 
 
 export default function Route() {
@@ -119,6 +120,7 @@ export default function Route() {
     {
         key: "status",
         label: "Status",
+        isSortable: true,
         render: (row: TableDataType) => (
             <StatusBtn
                 isActive={

@@ -268,6 +268,11 @@ export default function AddEditItem() {
             excise_duty_code: data.excise_duty_code || "",
             status: data.status === 1 ? "active" : "inactive",
           });
+          let newItems = []
+          data.item_uoms.map((item:any)=>{
+
+          })
+          // setUomList(data.item_uoms)
 
           interface UomItem {
             id: number;
@@ -278,24 +283,35 @@ export default function AddEditItem() {
             is_stock_keeping: boolean | number;
             upc?: string | null;
             enable_for: string | string[];
+            keeping_quantity?: number;
           }
 
           // Prefill UOM table
-          if (Array.isArray(data.uom)) {
-            setUomList(
-              data.uom.map((u: UomItem) => ({
-                uom: u.name || "",
+          if (Array.isArray(data.item_uoms)) {
+
+            let uomListData: UomRow[] = [];
+
+            data.item_uoms.map((u: any) => {
+              console.log(u,"uomitem")
+              uomListData.push({
+                uom: u.uom.toString() || "",
                 uomType: u.uom_type || "primary",
                 upc: u.upc || "",
-                price: u.price?.toString() || "",
+                price: u.uom_price || "",
+                quantity:u.keeping_quantity?.toString() || "",
                 isStockKeepingUnit: u.is_stock_keeping ? "yes" : "no",
                 enableFor:
                   typeof u.enable_for === "string"
                     ? u.enable_for
                     : u.enable_for.join(", "),
-              }))
-            );
+              })})
+
+
+            setUomList(uomListData);
+           
           }
+
+
         }
         setLoading(false);
       })();
@@ -373,6 +389,7 @@ export default function AddEditItem() {
 
   const handleEditUom = (index: number) => {
     const u = uomList[index];
+    console.log(u,"uomedit")
     setUomData(u);
     setEditingIndex(index);
   };
@@ -986,14 +1003,21 @@ export default function AddEditItem() {
             <div className="w-full xl:w-7/12 p-6">
               <h2 className="text-xl font-bold mb-4">UOM List</h2>
               <Table
-                data={uomList.map((row, idx) => ({
-                  ...row,
-                  idx: idx.toString(),
-                }))}
+                data={uomList.map((row, idx) =>{ console.log(row,"row") 
+                  return({ ...row, idx: idx.toString() })})}
                 config={{
                   showNestedLoading: false,
                   columns: [
-                    { key: "uom", label: "UOM" },
+                    { key: "uom", label: "UOM",render:(row)=>{
+                    
+                    
+                      
+                    
+                    return(<span>{uomOptions.map((uom)=>{
+                        if(uom.value==row.uom){
+                          return(<span>{uom.label.split("-")[1]}</span>)
+                        }
+                      }) }</span>) }},
                     { key: "uomType", label: "UOM Type" },
                     { key: "upc", label: "UPC" },
                     { key: "price", label: "Price", width: 80 },
