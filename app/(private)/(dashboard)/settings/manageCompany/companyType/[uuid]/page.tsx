@@ -195,11 +195,7 @@ const router = useRouter();
                   type="button"
                   className="px-4 py-2 border rounded-lg"
                   onClick={() => {
-                    if (isEditMode) {
-                      router.back(); // go back on edit
-                    } else {
-                      resetForm(); // reset only on add
-                    }
+                      router.back();
                   }}
                 >
                   Cancel

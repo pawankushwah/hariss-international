@@ -139,6 +139,9 @@ export default function CompanyPage() {
             },
             localStorageKey: "company-type-table",
             footer: { nextPrevBtn: true, pagination: true },
+            table: {
+              height: 500,
+            },
             columns,
             rowSelection: true,
             rowActions: [
@@ -150,7 +153,7 @@ export default function CompanyPage() {
                 },
               },
             ],
-            pageSize: 5,
+            pageSize: 50,
           }}
         />
       </div>
