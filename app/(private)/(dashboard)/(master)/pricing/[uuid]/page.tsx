@@ -967,15 +967,7 @@ export default function AddPricing() {
         //   );
         // };
  // inner small loader removed — top-level full-page loader handles edit-mode
-  if (
-    isEditMode && loading
-  ) {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <Loading />
-      </div>
-    );
-  }       
+        
  return (
           <ContainerCard className="bg-[#fff] p-6 rounded-xl border border-[#E5E7EB]">
             <h2 className="text-xl font-semibold mb-6">Pricing</h2>
@@ -1228,7 +1220,15 @@ export default function AddPricing() {
         return null;
     }
   };
-
+if (
+    isEditMode && loading
+  ) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  } 
   return (
     <>
       <div className="flex items-center gap-2">
