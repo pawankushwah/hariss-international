@@ -552,6 +552,17 @@ export const warehouseListGlobalSearch = async (params?: Params) => {
     return handleError(error);
   }
 };
+
+export const routeVisitGlobalSearch = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/master/route-visits/global_search`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
 export const warehouseReturn = async (params?: Params) => {
   try {
     const res = await API.get(`/api/master/warehouse/returns`, {
@@ -3342,119 +3353,9 @@ export const getWarehouseStockById = async (uuid: string) => {
   }
 };
 
-export const userEmailVerification = async (query: string) => {
+export const getAgentCusByRoute = async (id: string) => {
   try {
-    const res = await API.get(`/api/master/auth/checkEmail?query=${query}`);
-
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-
-export const userListGlobalSearch = async (params: Params) => {
-  try {
-    const res = await API.get("/api/settings/user/global-search", { params });
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-export const locationList = async (params?: Params) => {
-  try {
-    const res = await API.get("/api/settings/locations/list", {
-      params: params,
-    });
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-
-
-
-export const addLocation = async (payload: object) => {
-  try {
-    const res = await API.post(`/api/settings/locations/add`, payload);
-
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-export const LocationById = async (uuid: string) => {
-  try {
-    const res = await API.get(`/api/settings/locations/${uuid}`);
-
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-export const editLocation = async (uuid: string, payload: object) => {
-  try {
-    const res = await API.put(
-      `/api/settings/locations/update/${uuid}`,
-      payload
-    );
-
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-// export const editWarehouseStock = async (uuid: string, payload: object) => {
-//   try {
-//     const res = await API.put(`/api/settings/warehouse-stocks/${uuid}`, payload);
-//     return res.data;
-//   } catch (error: unknown) {
-//     return handleError(error);
-//   }
-// };
-
-export const BrandList = async (params?: Params) => {
-  try {
-    const res = await API.get("/api/settings/brands/list", {
-      params: params,
-    });
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-
-
-
-export const addBrand = async (payload: object) => {
-  try {
-    const res = await API.post(`/api/settings/brands/add`, payload);
-
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-export const BrandById = async (uuid: string) => {
-  try {
-    const res = await API.get(`/api/settings/brands/show/${uuid}`);
-
-    return res.data;
-  } catch (error: unknown) {
-    return handleError(error);
-  }
-};
-
-export const editBrand = async (uuid: string, payload: object) => {
-  try {
-    const res = await API.put(`/api/settings/brands/update/${uuid}`, payload);
+    const res = await API.get(`/api/master/agent_customers/route/${id}`);
 
     return res.data;
   } catch (error: unknown) {
