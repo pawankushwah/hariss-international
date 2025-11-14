@@ -552,6 +552,17 @@ export const warehouseListGlobalSearch = async (params?: Params) => {
     return handleError(error);
   }
 };
+
+export const routeVisitGlobalSearch = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/master/route-visits/global_search`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
 export const warehouseReturn = async (params?: Params) => {
   try {
     const res = await API.get(`/api/master/warehouse/returns`, {
@@ -1772,9 +1783,9 @@ export const getSalesmanById = async (uuid: string) => {
   }
 };
 
-export const getSalesmanBySalesId = async (uuid: string) => {
+export const getSalesmanBySalesId = async (uuid: string,query:{from:string,to:string}) => {
   try {
-    const res = await API.get(`/api/master/salesmen/salespersalesman/${uuid}`);
+    const res = await API.get(`/api/master/salesmen/salespersalesman/${uuid}?from=${query.from}&to=${query.to}`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -1783,7 +1794,7 @@ export const getSalesmanBySalesId = async (uuid: string) => {
 
 export const getOrderOfSalesmen= async (uuid: string,query:{from:string,to:string}) => {
   try {
-    const res = await API.get(`/api/master/salesmen/orderpersalesman/${uuid}?from=2025-11-01?to=2025-11-12"`);
+    const res = await API.get(`/api/master/salesmen/orderpersalesman/${uuid}?from=${query.from}&to=${query.to}`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -3341,6 +3352,18 @@ export const getWarehouseStockById = async (uuid: string) => {
     return handleError(error);
   }
 };
+
+export const getAgentCusByRoute = async (id: string) => {
+  try {
+    const res = await API.get(`/api/master/agent_customers/route/${id}`);
+
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
 
 export const userEmailVerification = async (query: string) => {
   try {

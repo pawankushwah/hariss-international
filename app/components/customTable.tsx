@@ -36,7 +36,8 @@ export type configType = {
         search?: (
             search: string,
             pageSize: number,
-            columnName?: string
+            columnName?: string,
+            pageNo?: number,
         ) => Promise<listReturnType> | listReturnType;
         list: (
             pageNo: number,
@@ -115,7 +116,8 @@ export type configType = {
                 search?: (
                     search: string,
                     pageSize: number,
-                    columnName?: string
+                    columnName?: string,
+                    pageNo?: number,
                 ) => Promise<listReturnType> | listReturnType
             ) => React.ReactNode;
         };
@@ -159,6 +161,8 @@ export type TableDataType = {
 type tableDetailsContextType = {
     tableDetails: listReturnType;
     setTableDetails: React.Dispatch<React.SetStateAction<listReturnType>>;
+    nestedLoading: boolean;
+    setNestedLoading: React.Dispatch<React.SetStateAction<boolean>>;
 };
 const TableDetails = createContext<tableDetailsContextType>(
     {} as tableDetailsContextType
@@ -192,6 +196,7 @@ function ContextProvider({ children }: { children: React.ReactNode }) {
     const [selectedColumns, setSelectedColumns] = useState([] as number[]);
     const [selectedRow, setSelectedRow] = useState([] as number[]);
     const [tableDetails, setTableDetails] = useState({} as listReturnType);
+    const [nestedLoading, setNestedLoading] = useState(false);
     const [config, setConfig] = useState({} as configType);
 
     return (
@@ -201,7 +206,7 @@ function ContextProvider({ children }: { children: React.ReactNode }) {
             >
                 <SelectedRow.Provider value={{ selectedRow, setSelectedRow }}>
                     <TableDetails.Provider
-                        value={{ tableDetails, setTableDetails }}
+                        value={{ tableDetails, setTableDetails, nestedLoading, setNestedLoading }}
                     >
                         {children}
                     </TableDetails.Provider>
@@ -214,7 +219,7 @@ function ContextProvider({ children }: { children: React.ReactNode }) {
 function TableContainer({ refreshKey, data, config }: TableProps) {
     const { setSelectedColumns } = useContext(ColumnFilterConfig);
     const { setConfig } = useContext(Config);
-    const { setTableDetails } = useContext(TableDetails);
+    const { setTableDetails, setNestedLoading } = useContext(TableDetails);
     const { selectedRow, setSelectedRow } = useContext(SelectedRow);
     const [showDropdown, setShowDropdown] = useState(false);
     const [displayedData, setDisplayedData] = useState<TableDataType[]>([]);
@@ -239,20 +244,25 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
 
         // if api is passed, use default values
         else if (config.api?.list) {
-            const result = await config.api.list(
-                1,
-                config.pageSize || defaultPageSize
-            );
-            const resolvedResult =
-                result instanceof Promise ? await result : result;
-            const { data, total, currentPage } = resolvedResult;
-            setTableDetails({
-                data,
-                total,
-                currentPage: currentPage - 1,
-                pageSize: config.pageSize || defaultPageSize,
-            });
-            setDisplayedData(data);
+            try {
+                setNestedLoading(true);
+                const result = await config.api.list(
+                    1,
+                    config.pageSize || defaultPageSize
+                );
+                const resolvedResult =
+                    result instanceof Promise ? await result : result;
+                const { data, total, currentPage } = resolvedResult;
+                setTableDetails({
+                    data,
+                    total,
+                    currentPage: currentPage - 1,
+                    pageSize: config.pageSize || defaultPageSize,
+                });
+                setDisplayedData(data);
+            } finally {
+                setNestedLoading(false);
+            }
         }
 
         // nothing is passed
@@ -361,26 +371,40 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
 
 function TableHeader() {
     const { config } = useContext(Config);
-    const { tableDetails, setTableDetails } = useContext(TableDetails);
+    const { tableDetails, setTableDetails, setNestedLoading } = useContext(TableDetails);
     const [searchBarValue, setSearchBarValue] = useState("");
     console.log("Table Details in Header:", tableDetails);
 
     async function handleSearch() {
         if (!config.api?.search) return;
-        const result = await config.api.search(
-            searchBarValue,
-            config.pageSize || defaultPageSize
-        );
-        const resolvedResult =
-            result instanceof Promise ? await result : result;  
-        const { data, pageSize, total, currentPage } = resolvedResult;
-        console.log(resolvedResult);
-        setTableDetails({
-            data,
-            total: total || 0,
-            currentPage:    currentPage - 1 || 0,
-            pageSize: pageSize || defaultPageSize,
-        });
+        try {
+            setNestedLoading(true);
+            const result = await config.api.search(
+                searchBarValue,
+                config.pageSize || defaultPageSize
+            );
+            const resolvedResult = result instanceof Promise ? await result : result;  
+            const { data, pageSize, total, currentPage } = resolvedResult;
+            console.log(resolvedResult);
+            setTableDetails({
+                data,
+                total: total || 0,
+                currentPage: currentPage - 1 || 0,
+                pageSize: pageSize || defaultPageSize
+            });
+            // persist global search state so pagination can reuse it
+            try {
+                if (searchBarValue && String(searchBarValue).trim().length > 0) {
+                    (window as any).__customTableSearch = { applied: true, term: searchBarValue };
+                } else {
+                    (window as any).__customTableSearch = { applied: false, term: "" };
+                }
+            } catch (err) {
+                // ignore in non-browser environments
+            }
+        } finally {
+            setNestedLoading(false);
+        }
     }
 
     return (
@@ -556,11 +580,10 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
     // columns is derived from orderedColumns passed from TableContainer; fallback to config.columns
     const columns = orderedColumns && orderedColumns.length > 0 ? orderedColumns : config.columns;
     const dragIndex = useRef<number | null>(null);
-    const { tableDetails } = useContext(TableDetails);
+    const { tableDetails, nestedLoading, setNestedLoading } = useContext(TableDetails);
     const tableData = tableDetails.data || [];
 
     const [displayedData, setDisplayedData] = useState<TableDataType[]>([]);
-    const [nestedLoading, setNestedLoading] = useState(false)
     const [tableOrder, setTableOrder] = useState<{
         column: string;
         order: "asc" | "desc";
@@ -579,22 +602,13 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
     const isIndeterminate = selectedRow.length > 0 && !isAllSelected;
 
     useEffect(() => {
-        setNestedLoading(true)
+        setNestedLoading(true);
         if (!api?.list) {
             setDisplayedData(tableData.slice(startIndex, endIndex));
-
-            setTimeout(() => {
-                setNestedLoading(false)
-
-            }, 2000)
-
+            setTimeout(() => setNestedLoading(false), 2000);
         } else {
             setDisplayedData(tableData);
-            setTimeout(() => {
-                setNestedLoading(false)
-
-            }, 2000)
-
+            setTimeout(() => setNestedLoading(false), 2000);
         }
     }, [tableDetails]);
 
@@ -1046,7 +1060,7 @@ function FilterTableHeader({
 function TableFooter() {
     const { config } = useContext(Config);
     const { api, footer, pageSize = defaultPageSize } = config;
-    const { tableDetails, setTableDetails } = useContext(TableDetails);
+    const { tableDetails, setTableDetails, setNestedLoading } = useContext(TableDetails);
     const cPage = tableDetails.currentPage || 0;
     const totalPages = tableDetails.total || 1;
 
@@ -1060,6 +1074,52 @@ function TableFooter() {
         } catch (err) {
             // ignore if event dispatch fails in unusual environments
         }
+        // If a global search is active, prefer search-based paging
+        try {
+            const globalSearch = (typeof window !== 'undefined') ? (window as any).__customTableSearch : undefined;
+            if (globalSearch && globalSearch.applied && api?.search) {
+                const term = globalSearch.term ?? "";
+                const res = await api.search(term, pageSize, undefined, pageNo + 1);
+                const resolvedResult = res instanceof Promise ? await res : res;
+                const { data, total, currentPage } = resolvedResult;
+                setTableDetails({
+                    ...tableDetails,
+                    data,
+                    currentPage: currentPage - 1,
+                    total,
+                    pageSize,
+                });
+                return;
+            }
+        } catch (err) {
+            console.warn('Search-based pagination failed', err);
+        }
+
+        // If filters are applied (persisted globally) and filter API exists, call filter API for the page
+        try {
+            const globalFilter = (typeof window !== 'undefined') ? (window as any).__customTableFilter : undefined;
+            if (globalFilter && globalFilter.applied && api?.filterBy) {
+                // reuse payload and request the requested page; add page if backend expects it
+                const payload = { ...(globalFilter.payload || {}) } as Record<string, any>;
+                // include page param (1-based) so backend can return correct page
+                payload.page = pageNo + 1;
+                const res = await api.filterBy(payload, pageSize);
+                const resolvedResult = res instanceof Promise ? await res : res;
+                const { data, total, currentPage } = resolvedResult;
+                setTableDetails({
+                    ...tableDetails,
+                    data,
+                    currentPage: currentPage - 1,
+                    total,
+                    pageSize,
+                });
+                return;
+            }
+        } catch (err) {
+            // if filter-based paging fails, fall back to list or client-side
+            console.warn('Filter-based pagination failed', err);
+        }
+
         if (api?.list) {
             const result = await api.list(pageNo + 1, pageSize);
             const resolvedResult =
@@ -1224,7 +1284,7 @@ export function FilterOptionList({
 
 function FilterBy() {
     const { config } = useContext(Config);
-    const { tableDetails, setTableDetails } = useContext(TableDetails);
+    const { tableDetails, setTableDetails, setNestedLoading } = useContext(TableDetails);
     const [showDropdown, setShowDropdown] = useState(false);
     const buttonRef = useRef<HTMLDivElement | null>(null);
     const [searchBarValue, setSearchBarValue] = useState("");
@@ -1251,6 +1311,7 @@ function FilterBy() {
         // call API if provided
         if (config.api?.filterBy) {
             try {
+                setNestedLoading(true);
                 // convert array filter values into comma-separated strings for API
                 const payloadForApi: Record<string, string | number | null> = {};
                 Object.keys(filters || {}).forEach((k) => {
@@ -1261,6 +1322,13 @@ function FilterBy() {
                         payloadForApi[k] = v as string;
                     }
                 });
+
+                // persist applied filter payload globally so pagination can reuse it
+                try {
+                    (window as any).__customTableFilter = { applied: true, payload: payloadForApi };
+                } catch (err) {
+                    // ignore environments without window
+                }
 
                 const res = await config.api.filterBy(payloadForApi, config.pageSize || defaultPageSize);
                 const resolved = res instanceof Promise ? await res : res;
@@ -1278,6 +1346,8 @@ function FilterBy() {
                 setAppliedFilters(true);
             } catch (err) {
                 console.error("Filter API error", err);
+            } finally {
+                setNestedLoading(false);
             }
         } else {
             // fallback to client-side filtering
@@ -1318,6 +1388,7 @@ function FilterBy() {
         // If API exists, call it with cleared payload to refresh table
         if (config.api?.filterBy) {
             try {
+                setNestedLoading(true);
                 const payloadForApi: Record<string, string | number | null> = {};
                 Object.keys(cleared).forEach((k) => {
                     const v = cleared[k];
@@ -1327,6 +1398,9 @@ function FilterBy() {
                         payloadForApi[k] = v as string;
                     }
                 });
+                // clear global applied filter flag
+                try { (window as any).__customTableFilter = { applied: false, payload: {} }; } catch (err) { }
+
                 const res = await config.api.filterBy(payloadForApi, config.pageSize || defaultPageSize);
                 const resolved = res instanceof Promise ? await res : res;
                 setTableDetails({
@@ -1337,6 +1411,8 @@ function FilterBy() {
                 });
             } catch (err) {
                 console.error("Filter API error", err);
+            } finally {
+                setNestedLoading(false);
             }
         }
     };
@@ -1468,20 +1544,26 @@ function FilterBy() {
                     <button
                         type="button"
                         onClick={async () => {
-                            await clearAll(); setShowDropdown(false); if (config.api?.list) {
-                                const result = await config.api.list(
-                                    1,
-                                    config.pageSize || defaultPageSize
-                                );
-                                const resolvedResult =
-                                    result instanceof Promise ? await result : result;
-                                const { data, total, currentPage } = resolvedResult;
-                                setTableDetails({
-                                    data,
-                                    total,
-                                    currentPage: currentPage - 1,
-                                    pageSize: config.pageSize || defaultPageSize,
-                                });
+                            await clearAll(); setShowDropdown(false);
+                            if (config.api?.list) {
+                                try {
+                                    setNestedLoading(true);
+                                    const result = await config.api.list(
+                                        1,
+                                        config.pageSize || defaultPageSize
+                                    );
+                                    const resolvedResult =
+                                        result instanceof Promise ? await result : result;
+                                    const { data, total, currentPage } = resolvedResult;
+                                    setTableDetails({
+                                        data,
+                                        total,
+                                        currentPage: currentPage - 1,
+                                        pageSize: config.pageSize || defaultPageSize,
+                                    });
+                                } finally {
+                                    setNestedLoading(false);
+                                }
                             }
                         }}
                         className="ml-2 underline text-gray-600"
