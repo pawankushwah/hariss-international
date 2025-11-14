@@ -106,7 +106,7 @@ export default function ViewPage() {
     { key: "order_code", label: "Order Code", showByDefault: true },
     { key: "delivery_code", label: "Delivery Code", showByDefault: true },
     {
-      key: "warehouse_code", label: "Warehouse", showByDefault: true, render: (row: TableDataType) => {
+      key: "warehouse_code", label: "Distributor", showByDefault: true, render: (row: TableDataType) => {
         const code = row.warehouse_code || "";
         const name = row.warehouse_name || "";
         return `${code}${code && name ? " - " : ""}${name}`;
@@ -127,7 +127,7 @@ export default function ViewPage() {
       }
     },
     {
-      key: "salesman_code", label: "Salesman", showByDefault: true, render: (row: TableDataType) => {
+      key: "salesman_code", label: "Sales Team", showByDefault: true, render: (row: TableDataType) => {
         const code = row.salesman_code || "";
         const name = row.salesman_name || "";
         return `${code}${code && name ? " - " : ""}${name}`;

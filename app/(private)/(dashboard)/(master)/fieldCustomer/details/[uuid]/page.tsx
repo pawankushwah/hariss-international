@@ -448,7 +448,7 @@ export default function CustomerDetails() {
                                         },
 
                                     ],
-                                    searchBar: true,
+                                    searchBar: false,
                             },
                             showNestedLoading: true,
                             footer: { nextPrevBtn: true, pagination: true },
