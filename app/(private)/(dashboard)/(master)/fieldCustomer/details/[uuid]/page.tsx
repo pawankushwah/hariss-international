@@ -395,13 +395,18 @@ export default function CustomerDetails() {
                                 header: {
                                     filterByFields: [
                                         {
-                                            key: "date_change",
-                                            label: "Date Range",
+                                            key: "start_date",
+                                            label: "Start Date",
+                                            type: "dateChange"
+                                        },
+                                        {
+                                            key: "end_date",
+                                            label: "End Date",
                                             type: "dateChange"
                                         },
 
                                     ],
-                                    searchBar: true,
+                                    searchBar: false,
                                 },
                                 showNestedLoading: true,
                                 footer: { nextPrevBtn: true, pagination: true },

@@ -89,7 +89,7 @@ export default function WarehouseDetails({ values, errors, touched, handleChange
                         }
                     }}
                     options={[
-                        { value: "Agent Distributor", label: "Agent Distributor" },
+                        { value: "Distributor", label: "Agent Distributor" },
                         { value: "Company Outlet", label: "Company Outlet" },
                     ]}
                     error={errors?.warehouse_type && touched?.warehouse_type ? errors.warehouse_type : false}
@@ -98,7 +98,7 @@ export default function WarehouseDetails({ values, errors, touched, handleChange
             <div className="flex flex-col gap-2">
                 <InputFields
                     required
-                    label="Select Agent"
+                    label="Select Distributor"
                     name="agent_customer"
                     value={values.agent_customer}
                     options={companyCustomersOptions}
