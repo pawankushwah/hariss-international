@@ -123,26 +123,20 @@ const SalesmanPage = () => {
   const searchSalesman = useCallback(
     async (
       query: string,
-      page: number = 1,
+      pageSize: number = 50,
       columnName?: string,
-      pageSize: number = 50
+      page: number = 1,
     ): Promise<listReturnType> => {
       try {
         setLoading(true);
-        const res = await SalesmanListGlobalSearch({ query: query, per_page: pageSize.toString() });
+        const res = await SalesmanListGlobalSearch({ query: query, per_page: pageSize.toString(), page: page.toString() });
         setLoading(false);
-        console.log({
-          data: res.data || [],
-          total: res.pagination.totalPages || 1,
-          currentPage: res.pagination.page || 1,
-          pageSize: res.pagination.limit || pageSize,
-        }, "responses")
 
         return {
           data: res.data || [],
-          total: res.pagination.totalPages || 2,
-          currentPage: res.pagination.page || 50,
-          pageSize: res.pagination.limit || pageSize,
+          total: res?.pagination?.totalPages || 1,
+          currentPage: res?.pagination?.page || 1,
+          pageSize: res?.pagination?.limit || pageSize
         };
       } catch (error) {
         setLoading(false);

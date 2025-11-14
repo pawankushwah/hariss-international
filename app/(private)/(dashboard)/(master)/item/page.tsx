@@ -47,15 +47,15 @@ const columns = [
     render: (row: LocalTableDataType) => row.item_category?.category_name || "-",
   },
   {
-    key: "item_uoms",
+    key: "base_uom",
     label: "Base UOM",
     render: (row: LocalTableDataType) => {
       if (!row.item_uoms || row.item_uoms.length === 0) return "-";
-      return row.item_uoms[0]?.name ?? "-"; // ✔️ Base UOM
+      return row.item_uoms[0]?.name ?? "-";
     },
   },
   {
-    key: "item_uoms",
+    key: "base_uom_price",
     label: "Base UOM Price",
     render: (row: LocalTableDataType) => {
       if (!row.item_uoms || row.item_uoms.length === 0) return "-";
@@ -63,7 +63,7 @@ const columns = [
     },
   },
   {
-    key: "item_uoms",
+    key: "secondary_uom",
     label: "Secondary UOM",
     render: (row: LocalTableDataType) => {
       if (!row.item_uoms || row.item_uoms.length < 2) return "-";
@@ -71,7 +71,7 @@ const columns = [
     },
   },
   {
-    key: "item_uoms",
+    key: "secondary_uom_price",
     label: "Secondary UOM Price",
     render: (row: LocalTableDataType) => {
       if (!row.item_uoms || row.item_uoms.length < 2) return "-";
@@ -143,7 +143,7 @@ export default function Item() {
     ): Promise<listReturnType> => {
       try {
         setLoading(true);
-        const res = await itemGlobalSearch({ query: query, perPage: page.toString() });
+        const res = await itemGlobalSearch({ query: query, page: page.toString() });
         setLoading(false);
         const data = res.data.map((item: LocalTableDataType) => ({
           ...item,

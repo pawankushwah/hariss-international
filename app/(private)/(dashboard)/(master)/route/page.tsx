@@ -143,10 +143,10 @@ export default function Route() {
             }
             const listRes = await routeList(params);
             return {
-                data: listRes.data || [],
-                currentPage: listRes.pagination.page || pageNo,
-                pageSize: listRes.pagination.limit || pageSize,
-                total: listRes?.pagination.totalPages ?? 0,
+                data: listRes?.data || [],
+                currentPage: listRes?.pagination?.page || pageNo,
+                pageSize: listRes?.pagination?.limit || pageSize,
+                total: listRes?.pagination?.totalPages || 1,
             };
         } catch (error) {
             console.error("API Error:", error);
@@ -160,7 +160,8 @@ export default function Route() {
         async (
             searchQuery: string,
             pageSize: number = 10,
-            columnName?: string
+            columnName?: string,
+            page: number = 1
         ): Promise<searchReturnType> => {
             setLoading(true);
             let result;
@@ -168,21 +169,23 @@ export default function Route() {
                 result = await routeList({
                     per_page: pageSize.toString(),
                     [columnName]: searchQuery,
+                    page: page.toString(),
                 });
             } else {
                 result = await routeGlobalSearch({
                     search: searchQuery,
                     per_page: pageSize.toString(),
+                    page: page.toString(),
                 });
             }
             setLoading(false);
             if (result.error) throw new Error(result.data.message);
-            const pagination = result.pagination?.pagination || {};
+            const pagination = result?.pagination || result?.pagination?.pagination || {};
             return {
                 data: result.data || [],
-                total: pagination.totalPages || 10,
-                currentPage: pagination.page || 1,
-                pageSize: pagination.limit || 10,
+                total: pagination?.totalPages || 1,
+                currentPage: pagination?.page || 1,
+                pageSize: pagination?.limit || 1,
             };
         },
         []

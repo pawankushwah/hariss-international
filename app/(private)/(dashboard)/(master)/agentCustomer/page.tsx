@@ -259,20 +259,23 @@ export default function AgentCustomer() {
         async (
             searchQuery: string,
             pageSize: number,
-            columnName?: string
+            columnName?: string,
+            page: number = 1
         ): Promise<listReturnType> => {
             let result;
             setLoading(true);
             if (columnName) {
                 result = await agentCustomerList({
                     per_page: pageSize.toString(),
-                    [columnName]: searchQuery
+                    [columnName]: searchQuery,
+                    page: page.toString(),
                 });
             }
             else {
                 result = await agentCustomerGlobalSearch({
                     per_page: pageSize.toString(),
-                    query: searchQuery
+                    query: searchQuery,
+                    page: page.toString(),
                 });
             }
             setLoading(false);
@@ -286,10 +289,10 @@ export default function AgentCustomer() {
             //     };
             // }
             return {
-                data: result.data || [],
-                total: result.pagination?.last_page || 0,
-                currentPage: result.pagination?.current_page || 0,
-                pageSize: result.pagination?.per_page || pageSize,
+                data: result?.data || [],
+                total: result?.pagination?.totalPages || 1,
+                currentPage: result?.pagination?.page || 1,
+                pageSize: result?.pagination?.limit || pageSize,
             };
         },
         []

@@ -8,6 +8,7 @@ import { getWarehouse, deleteWarehouse, warehouseListGlobalSearch,exportWarehous
 import { useLoading } from "@/app/services/loadingContext";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
+import StatusBtn from "@/app/components/statusBtn2";
 
 
 type WarehouseRow = TableDataType & {
@@ -112,23 +113,9 @@ const columns = [
   {
     key: "status",
     label: "Status",
+    isSortable: true,
     showByDefault: true,
-    render: (row: WarehouseRow) => {
-      const value = row.status;
-      const strValue = value != null ? String(value) : "";
-      if (strValue === "1" || strValue === "Active" || strValue === "true" || strValue === "True" || value === 1 || value === true) {
-        return (
-          <span className="text-sm text-[#027A48] bg-[#ECFDF3] font-[500] p-1 px-4 rounded-xl text-[12px]">
-            Active
-          </span>
-        );
-      }
-      return (
-        <span className="text-sm text-red-700 bg-red-200 p-1 px-4 rounded-xl text-[12px]">
-          Inactive
-        </span>
-      );
-    },
+    render: (row: WarehouseRow) => <StatusBtn isActive={String(row.status) > "0"} />,
   },
 ];
 
@@ -211,20 +198,23 @@ export default function Warehouse() {
          const searchWarehouse = useCallback(
              async (
                  query: string,
-                 pageSize: number = 50
+                 pageSize: number = 50,
+                 columns?: string,
+                 page: number = 1
              ): Promise<listReturnType> => {
                  try {
                    setLoading(true);
                      const listRes = await warehouseListGlobalSearch({
                          query,
-                         per_page: pageSize.toString()
+                         per_page: pageSize.toString(),
+                         page: page.toString(),
                      });
                      setLoading(false);
                      return {
                          data: listRes.data || [],
-                         total: listRes.pagination.totalPages ,
-                         currentPage: listRes.pagination.page ,
-                         pageSize: listRes.pagination.limit ,
+                         total: listRes.pagination.last_page || 1,
+                         currentPage: listRes.pagination.current_page || 1,
+                         pageSize: listRes.pagination.limit || pageSize,
                      };
                  } catch (error: unknown) {
                      console.error("API Error:", error);

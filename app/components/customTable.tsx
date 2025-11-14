@@ -176,7 +176,7 @@ interface TableProps {
 
 const defaultPageSize = 50;
 
-export default function Table({ refreshKey = 0, data, config  }: TableProps) {
+export default function Table({ refreshKey = 0, data, config }: TableProps) {
     return (
         <ContextProvider>
             <TableContainer
@@ -373,7 +373,6 @@ function TableHeader() {
     const { config } = useContext(Config);
     const { tableDetails, setTableDetails, setNestedLoading } = useContext(TableDetails);
     const [searchBarValue, setSearchBarValue] = useState("");
-    console.log("Table Details in Header:", tableDetails);
 
     async function handleSearch() {
         if (!config.api?.search) return;
@@ -383,9 +382,9 @@ function TableHeader() {
                 searchBarValue,
                 config.pageSize || defaultPageSize
             );
-            const resolvedResult = result instanceof Promise ? await result : result;  
+            const resolvedResult = result instanceof Promise ? await result : result;
             const { data, pageSize, total, currentPage } = resolvedResult;
-            console.log(resolvedResult);
+            // console.log(resolvedResult);
             setTableDetails({
                 data,
                 total: total || 0,
@@ -587,7 +586,7 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
     const [tableOrder, setTableOrder] = useState<{
         column: string;
         order: "asc" | "desc";
-    }>({ column: "", order: "asc" });
+    }>({ column: "", order: "desc" });
 
     const startIndex = tableDetails.currentPage * pageSize;
     const endIndex = startIndex + pageSize;
@@ -602,15 +601,31 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
     const isIndeterminate = selectedRow.length > 0 && !isAllSelected;
 
     useEffect(() => {
-        setNestedLoading(true);
-        if (!api?.list) {
-            setDisplayedData(tableData.slice(startIndex, endIndex));
-            setTimeout(() => setNestedLoading(false), 2000);
-        } else {
-            setDisplayedData(tableData);
-            setTimeout(() => setNestedLoading(false), 2000);
-        }
+        (async () => {
+            setNestedLoading(true);
+            if (!api?.list) {
+                setDisplayedData(tableData.slice(startIndex, endIndex));
+                setTimeout(() => setNestedLoading(false), 2000);
+            } else {
+                setDisplayedData(tableData);
+                setTimeout(() => setNestedLoading(false), 2000);
+            }
+        })();
     }, [tableDetails]);
+
+    // If no sort column is set yet, initialize tableOrder to the first sortable column
+    // and apply sorting once data is available.
+    useEffect(() => {
+        if (displayedData.length === 0) return;
+        if (tableOrder && tableOrder.column) return;
+        const firstSortable = columns.find((c: any) => c.isSortable);
+        if (firstSortable) {
+            const colKey = firstSortable.key;
+            const defaultOrder: "asc" | "desc" = tableOrder.order || "desc";
+            setTableOrder({ column: colKey, order: defaultOrder });
+            setDisplayedData(naturalSort(displayedData, defaultOrder, colKey));
+        }
+    }, [displayedData, columns]);
 
     const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
@@ -629,15 +644,17 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
     };
 
     const handleSort = (column: string) => {
+        // compute next order first (avoid using stale state after setState)
+        let nextOrder: "asc" | "desc";
         if (tableOrder.column === column) {
-            setTableOrder({
-                column,
-                order: tableOrder.order === "asc" ? "desc" : "asc",
-            });
+            nextOrder = tableOrder.order === "asc" ? "desc" : "asc";
         } else {
-            setTableOrder({ column, order: "desc" });
+            // default order when switching to a new column
+            nextOrder = "desc";
         }
-        setDisplayedData(naturalSort(displayedData, tableOrder.order, column));
+        setTableOrder({ column, order: nextOrder });
+        // apply sorting using the computed order immediately
+        setDisplayedData(naturalSort(displayedData, nextOrder, column));
     };
 
     return (
@@ -680,45 +697,45 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
                                     const originalIndex = config.columns?.findIndex((c) => c.key === col.key);
                                     if (!selectedColumns.includes(originalIndex)) return null;
                                     return (
-                                            <th
-                                                // enable native drag only when config.dragableColumn is true
-                                                draggable={!!config.dragableColumn}
-                                                onDragStart={(e) => {
-                                                    if (!config.dragableColumn) return;
-                                                    dragIndex.current = orderIdx;
-                                                    try {
-                                                        e.dataTransfer?.setData('text/plain', String(orderIdx));
-                                                        e.dataTransfer!.effectAllowed = 'move';
-                                                    } catch (err) {
-                                                        /* ignore */
-                                                    }
-                                                }}
-                                                onDragOver={(e) => {
-                                                    if (!config.dragableColumn) return;
-                                                    e.preventDefault();
-                                                    try { e.dataTransfer!.dropEffect = 'move'; } catch (err) { }
-                                                }}
-                                                onDrop={(e) => {
-                                                    if (!config.dragableColumn) return;
-                                                    e.preventDefault();
-                                                    const from = dragIndex.current;
-                                                    const to = orderIdx;
-                                                    if (from == null) return;
-                                                    if (from === to) {
-                                                        dragIndex.current = null;
-                                                        return;
-                                                    }
-                                                    setColumnOrder((prev) => {
-                                                        const next = [...prev];
-                                                        const item = next.splice(from, 1)[0];
-                                                        next.splice(to, 0, item);
-                                                        return next;
-                                                    });
+                                        <th
+                                            // enable native drag only when config.dragableColumn is true
+                                            draggable={!!config.dragableColumn}
+                                            onDragStart={(e) => {
+                                                if (!config.dragableColumn) return;
+                                                dragIndex.current = orderIdx;
+                                                try {
+                                                    e.dataTransfer?.setData('text/plain', String(orderIdx));
+                                                    e.dataTransfer!.effectAllowed = 'move';
+                                                } catch (err) {
+                                                    /* ignore */
+                                                }
+                                            }}
+                                            onDragOver={(e) => {
+                                                if (!config.dragableColumn) return;
+                                                e.preventDefault();
+                                                try { e.dataTransfer!.dropEffect = 'move'; } catch (err) { }
+                                            }}
+                                            onDrop={(e) => {
+                                                if (!config.dragableColumn) return;
+                                                e.preventDefault();
+                                                const from = dragIndex.current;
+                                                const to = orderIdx;
+                                                if (from == null) return;
+                                                if (from === to) {
                                                     dragIndex.current = null;
-                                                }}
-                                                className={`${col.width ? `w-[${col.width}px]` : ""} ${col.sticky ? "z-20 md:sticky" : ""} ${col.sticky === "left" ? "left-0" : ""} ${col.sticky === "right" ? "right-0" : ""} px-[24px] py-[12px] bg-[#FAFAFA] font-[500] whitespace-nowrap ${config.dragableColumn ? '' : ''}`}
-                                                key={col.key}
-                                            >
+                                                    return;
+                                                }
+                                                setColumnOrder((prev) => {
+                                                    const next = [...prev];
+                                                    const item = next.splice(from, 1)[0];
+                                                    next.splice(to, 0, item);
+                                                    return next;
+                                                });
+                                                dragIndex.current = null;
+                                            }}
+                                            className={`${col.width ? `w-[${col.width}px]` : ""} ${col.sticky ? "z-20 md:sticky" : ""} ${col.sticky === "left" ? "left-0" : ""} ${col.sticky === "right" ? "right-0" : ""} px-[24px] py-[12px] bg-[#FAFAFA] font-[500] whitespace-nowrap ${config.dragableColumn ? '' : ''}`}
+                                            key={col.key}
+                                        >
                                             <div className="flex items-center gap-[4px] capitalize">
                                                 {col.label}{" "}
                                                 {col.filter && (
@@ -813,10 +830,10 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
                                                 className={`px-[24px] py-[12px] bg-white ${col.sticky ? "z-10 md:sticky" : ""} ${col.sticky === "left"
                                                     ? "left-0"
                                                     : ""
-                                                } ${col.sticky === "right"
-                                                    ? "right-0"
-                                                    : ""
-                                                }`}
+                                                    } ${col.sticky === "right"
+                                                        ? "right-0"
+                                                        : ""
+                                                    }`}
                                             >
                                                 {col.render ? (
                                                     col.render(row)
@@ -1331,16 +1348,16 @@ function FilterBy() {
                 }
 
                 const res = await config.api.filterBy(payloadForApi, config.pageSize || defaultPageSize);
-                const resolved = res instanceof Promise ? await res : res;
+                const { currentPage, totalRecords, pageSize, total, data } = res instanceof Promise ? await res : res;
                 // prefer totalRecords when provided by API
-                const totalRecords = (resolved as any).totalRecords ?? (resolved as any).total ?? 0;
-                const pageSize = resolved.pageSize || config.pageSize || defaultPageSize;
-                const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(totalRecords / pageSize)) : (resolved.total ?? 1);
+                const totalRecordsValue = totalRecords ?? total ?? 0;
+                const pageSizeValue = pageSize || config.pageSize || defaultPageSize;
+                const totalPages = pageSizeValue > 0 ? Math.max(1, Math.ceil(totalRecordsValue / pageSizeValue)) : (total ?? 1);
                 setTableDetails({
-                    data: resolved.data || [],
+                    data: data || [],
                     total: totalPages,
                     totalRecords: totalRecords,
-                    currentPage: resolved.currentPage ?? 0,
+                    currentPage: currentPage - 1 || 0,
                     pageSize: pageSize,
                 });
                 setAppliedFilters(true);

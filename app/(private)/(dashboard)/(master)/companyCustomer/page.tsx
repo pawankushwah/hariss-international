@@ -72,10 +72,10 @@ export default function CompanyCustomers() {
     }
   };
 
-  const search = async (searchQuery: string, pageSize: number, columnName?: string): Promise<searchReturnType> => {
+  const search = async (searchQuery: string, pageSize: number, columnName?: string, page: number = 1): Promise<searchReturnType> => {
     // if (!columnName) throw new Error("Column name is required for search");
     setLoading(true);
-    const res = await companyCustomersGlobalSearch({ query: searchQuery, pageSize: pageSize.toString() });
+    const res = await companyCustomersGlobalSearch({ query: searchQuery, pageSize: pageSize.toString(), page: page.toString() });
     setLoading(false);
     if (res.error) {
       showSnackbar(res.data.message || "Failed to fetch search results", "error");
@@ -83,9 +83,9 @@ export default function CompanyCustomers() {
     }
     return {
       data: res.data || [],
-      pageSize: res.data?.pagination?.per_page || pageSize,
-      total: res.data?.pagination?.last_page || 1,
-      currentPage: res.data?.pagination?.current_page || 1,
+      pageSize: res?.pagination?.per_page || pageSize,
+      total: res?.pagination?.last_page || 1,
+      currentPage: res?.pagination?.current_page || 1,
     }
   };
 
@@ -145,12 +145,9 @@ export default function CompanyCustomers() {
     {
       key: "status",
       label: "Status",
+      isSortable: true,
       render: (row: TableDataType) => {
-        const isActive =
-          String(row.status) === "1" ||
-          (typeof row.status === "string" &&
-            row.status.toLowerCase() === "active");
-        return <StatusBtn isActive={isActive} />;
+        return <StatusBtn isActive={String(row.status) > "0"} />;
       },
       showByDefault: true,
     },
@@ -166,7 +163,7 @@ export default function CompanyCustomers() {
         showSnackbar("Failed to get download URL", "error");
       }
     } catch (error) {
-      showSnackbar("Failed to download warehouse data", "error");
+      showSnackbar("Failed to download Company Customer data", "error");
     }
   }
 
