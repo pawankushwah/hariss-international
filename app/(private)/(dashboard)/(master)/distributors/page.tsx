@@ -123,6 +123,7 @@ const columns = [
     key: "status",
     label: "Status",
     showByDefault: true,
+    // isSortable: true,
     render: (row: WarehouseRow) => <StatusBtn isActive={String(row.status) > "0"} />,
   },
 ];
