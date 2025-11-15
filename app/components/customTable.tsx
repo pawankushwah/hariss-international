@@ -1480,6 +1480,7 @@ function FilterBy() {
 
     const clearAll = async () => {
         if (activeFilterCount === 0) return;
+        
         // build cleared state matching initialization (arrays for multi-selects)
         const cleared: Record<string, string | string[]> = {};
         (config.header?.filterByFields || []).forEach((f: FilterField) => {
