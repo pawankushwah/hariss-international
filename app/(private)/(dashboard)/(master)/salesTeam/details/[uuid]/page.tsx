@@ -21,6 +21,7 @@ import { useLoading } from "@/app/services/loadingContext";
 import Popup from "@/app/components/popUp";
 import Loading from "@/app/components/Loading";
 import Skeleton from "@mui/material/Skeleton";
+import Drawer from "@mui/material/Drawer";
 
 // import Attendance from "./attendance/page";
 
@@ -881,25 +882,25 @@ export default function Page() {
         </ContainerCard>
       )}
 
-      <Popup isOpen={openPopup} onClose={() => { setOpenPopup(false); }} >
+      <Drawer open={openPopup} anchor="right" onClose={() => { setOpenPopup(false); }} >
         <div className="flex flex-col h-full">
           <Table
+          
             data={salesman?.warehouses || []}
 
             config={{
+              table:{height:"100vh"},
               showNestedLoading: true,
               footer: { nextPrevBtn: true, pagination: true },
               columns: warehouseColumns,
-              table: {
-                height: 500,
-              },
+              
               rowSelection: false,
 
               pageSize: 50,
             }}
           />
         </div>
-      </Popup>
+      </Drawer>
       <br/>
     </>
   );

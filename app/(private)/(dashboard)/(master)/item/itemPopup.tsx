@@ -13,6 +13,9 @@ import Image from "next/image";
 import StatusBtn from "@/app/components/statusBtn2";
 import { useLoading } from "@/app/services/loadingContext";
 import Table, { TableDataType } from "@/app/components/customTable";
+import Drawer from "@mui/material/Drawer";
+import { CustomTableSkelton } from "@/app/components/customSkeleton";
+import { div } from "framer-motion/client";
 
 interface Item {
   id?: number;
@@ -73,11 +76,12 @@ export const tabList = [
   { name: "Market Return", key: "return" }
 ];
 
-export default function Page() {
+export default function ItemPage({id}: {id?: string}) {
   const [uomList, setUomList] = useState<Item[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
-  const { id, tabName } = useParams();
-  const { setLoading } = useLoading();
+//   const { id, tabName } = useParams();
+//   const { setLoading } = useLoading();
+const [ loading,setLoading ] = useState(false);
   const [item, setItem] = useState<Item | null>(null);
 
   const { showSnackbar } = useSnackbar();
@@ -122,14 +126,16 @@ export default function Page() {
   return (
     <>
       {/* Header Section */}
-      <div className="flex items-center gap-4 mb-6">
+      {/* <div className="flex items-center gap-4 mb-6 pt-5">
         <Link href={backBtnUrl}>
           <Icon icon="lucide:arrow-left" width={24} />
         </Link>
         <h1 className="text-xl font-semibold mb-1">{title}</h1>
-      </div>
+      </div> */}
 
       {/* Main Layout */}
+      {loading ? <div className="p-[10px] w-[350px]"><CustomTableSkelton /></div> :
+      <>
       <ContainerCard className="w-full flex flex-col sm:flex-row items-center justify-between gap-[10px] md:gap-0">
         <div className="flex flex-col sm:flex-row items-center gap-[20px]">
           <div className="w-[80px] h-[80px] flex justify-center items-center rounded-full bg-[#E9EAEB] overflow-hidden">
@@ -344,8 +350,13 @@ export default function Page() {
               data={[]}
             />
           )}
+            
+
         </div>
       </div>
+        </>
+}
     </>
   );
 }
+
