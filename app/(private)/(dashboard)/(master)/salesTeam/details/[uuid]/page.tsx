@@ -594,7 +594,7 @@ export default function Page() {
                   : "-"
               },
               { key: "Designation", value: salesman?.designation || "-" },
-              { key: "Contact No", value: salesman?.contact_no || "-" },
+              { key: "Contact No", value: salesman?.contact_no=='0' ? "-" :  salesman?.contact_no  || "-" },
               {
                 key: "Distributor",
                 value: <span className="hover:text-red-500 cursor-pointer">View Distributors</span>,
@@ -801,11 +801,11 @@ export default function Page() {
           <div className="flex flex-col h-full">
             <Table
               config={{
-                api: {
-                  // search: searchCustomerById,
-                  list: salesBySalesman,
-                  filterBy: filterBySalesmen
-                },
+                // api: {
+                //   // search: searchCustomerById,
+                //   list: salesBySalesman,
+                //   filterBy: filterBySalesmen
+                // },
                 header: {
                   searchBar: false,
                   filterByFields: [
@@ -831,6 +831,7 @@ export default function Page() {
              
                 pageSize: 50,
               }}
+              data={[]}
             />
           </div>
 
@@ -843,11 +844,11 @@ export default function Page() {
           <div className="flex flex-col h-full">
             <Table
               config={{
-                api: {
-                  // search: searchCustomerById,
-                  list: orderBySalesman,
-                  filterBy: filterBy
-                },
+                // api: {
+                //   // search: searchCustomerById,
+                //   list: orderBySalesman,
+                //   filterBy: filterBy
+                // },
                 header: {
                   searchBar: false,
                   filterByFields: [
@@ -873,6 +874,7 @@ export default function Page() {
                
                 pageSize: 50,
               }}
+              data={[]}
             />
           </div>
 

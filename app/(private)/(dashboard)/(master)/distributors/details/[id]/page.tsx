@@ -15,7 +15,7 @@ import Map from "@/app/components/map";
 import toInternationalNumber, { FormatNumberOptions } from "@/app/(private)/utils/formatNumber";
 import Table, { configType, listReturnType, searchReturnType, TableDataType } from "@/app/components/customTable";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
-import { formatDate } from "../../../salesTeam/details/[uuid]/page";
+import { formatWithPattern } from "@/app/utils/formatDate";
 interface Item {
     id: string;
     sap_id: string;
@@ -250,7 +250,7 @@ export default function ViewPage() {
             key: "invoice_date",
             label: "Invoice Date",
             isSortable: true,
-            render: (data: TableDataType) => data.invoice_date ? formatDate(data.invoice_date.toString() ):"-",
+            render: (data: TableDataType) => data.invoice_date?formatWithPattern(new Date(data.invoice_date),"DD MMM YYYY",'en-GB').toLowerCase() :"-" ,
             showByDefault: true,
         },
         {
@@ -1164,7 +1164,8 @@ export default function ViewPage() {
                                                     width={16}
                                                     className="text-[#EA0A2A]"
                                                 />
-                                                    <span>{item?.owner_number} <br />{item?.warehouse_manager_contact}</span></> : ""}
+                                                    <div>{item?.owner_number== '0' ? "": item?.owner_number }</div>
+                                                    <div>{item?.warehouse_manager_contact == '0' ? "": item?.warehouse_manager_contact}</div></> : ""}
                                             </div>
                                             <div className="flex items-center gap-[8px] text-[16px]">
                                                 {item?.owner_email ? <>

@@ -41,7 +41,7 @@ export const initialLinkData: SidebarDataType[] = [
             leadingIcon: "mdi:account-tie",
             iconColor: "text-green-500",
           },
-          ...(env.NODE_ENV === "development" ? [{
+          ...(process.env.NODE_ENV === "development" ? [{
             isActive: false,
             href: "/settings/permission",
             label: "Permissions",

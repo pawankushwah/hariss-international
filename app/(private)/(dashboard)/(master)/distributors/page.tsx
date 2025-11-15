@@ -123,6 +123,7 @@ const columns = [
     key: "status",
     label: "Status",
     showByDefault: true,
+    // isSortable: true,
     render: (row: WarehouseRow) => <StatusBtn isActive={String(row.status) > "0"} />,
   },
 ];
@@ -175,6 +176,10 @@ export default function Warehouse() {
   const [selectedRow, setSelectedRow] = useState<WarehouseRow | null>(null);
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
+  const [threeDotLoading, setThreeDotLoading] = useState({
+    csv: false,
+    xlsx: false,
+  });
   const fetchWarehouse = useCallback(
     async (
       page: number = 1,
@@ -236,6 +241,7 @@ export default function Warehouse() {
 
   const exportFile = async (format: string) => {
     try {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
       const response = await exportWarehouseData({ format });
       if (response && typeof response === 'object' && response.download_url) {
         await downloadFile(response.download_url);
@@ -243,8 +249,10 @@ export default function Warehouse() {
       } else {
         showSnackbar("Failed to get download URL", "error");
       }
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
     } catch (error) {
       showSnackbar("Failed to download Distributors data", "error");
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
     } finally {
     }
   };
@@ -306,17 +314,16 @@ export default function Warehouse() {
             header: {
               threeDot: [
                 {
-                  icon: "gala:file-document",
+                  icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
                   label: "Export CSV",
                   labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => exportFile("csv"),
+                  onClick: () => !threeDotLoading.csv && exportFile("csv"),
                 },
                 {
-                  icon: "gala:file-document",
+                  icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                   label: "Export Excel",
                   labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => exportFile("xlsx"),
-
+                  onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
                 },
                 {
                   icon: "lucide:radio",

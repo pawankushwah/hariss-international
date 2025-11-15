@@ -194,7 +194,7 @@ export default function AddEditWarehouse() {
                         warehouse_name: data?.warehouse_name || '',
                         owner_name: data?.owner_name || '',
                         company: String(data?.get_company?.id || ''),
-                        agreed_stock_capital: data?.agreed_stock_capital ? data.agreed_stock_capital : undefined,
+                        agreed_stock_capital: data?.agreed_stock_capital ? data.agreed_stock_capital : '',
                         tin_no: String(data?.tin_no || ''),
                         agent_customer: String(data?.get_company_customer?.id) || '',
                         warehouse_manager: data?.warehouse_manager || '',
