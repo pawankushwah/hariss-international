@@ -14,6 +14,7 @@ import { invoiceList, exportInvoice, invoiceStatusUpdate } from "@/app/services/
 import { downloadFile } from "@/app/services/allApi";
 import StatusBtn from "@/app/components/statusBtn2";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
+import { formatWithPattern } from "@/app/(private)/utils/date";
 
 
 
@@ -23,7 +24,10 @@ const columns = [
         key: "invoice_date",
         label: "Date",
         showByDefault: true,
-
+        render: (row: TableDataType) => {
+            if (!row.invoice_date) return "-";
+            return formatWithPattern(new Date(row.invoice_date), "DD MMM YYYY", "en-GB").toLowerCase() || "-";
+        }
     },
     {
         key: "invoice_time",
@@ -32,7 +36,7 @@ const columns = [
 
     },
     { key: "invoice_code", label: "Invoice Code", showByDefault: true },
-    { key: "order_code", label: "Order Code", showByDefault: true },
+    { key: "order_code", label: "Order Code"},
     {
         key: "customer_code", label: "Customer", showByDefault: true, render: (row: TableDataType) => {
             const code = row.customer_code || "";
