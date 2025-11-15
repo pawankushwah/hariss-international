@@ -61,7 +61,6 @@ export default function Route() {
         {
             key: "warehouse",
             label: "Warehouse",
-            width: 218,
             render: (data: TableDataType) =>
                 typeof data.warehouse === "object" && data.warehouse !== null
                     ? (data.warehouse as { code?: string }).code
@@ -89,7 +88,6 @@ export default function Route() {
         {
             key: "status",
             label: "Status",
-            isSortable: true,
             render: (row: TableDataType) => (
                 <StatusBtn
                     isActive={

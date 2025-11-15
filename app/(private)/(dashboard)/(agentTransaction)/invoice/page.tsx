@@ -13,6 +13,8 @@ import { useLoading } from "@/app/services/loadingContext";
 import { invoiceList, exportInvoice, invoiceStatusUpdate } from "@/app/services/agentTransaction";
 import { downloadFile } from "@/app/services/allApi";
 import StatusBtn from "@/app/components/statusBtn2";
+import toInternationalNumber, { FormatNumberOptions } from "@/app/(private)/utils/formatNumber";
+import { formatDate } from "@/app/(private)/utils/date";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
 
@@ -23,6 +25,7 @@ const columns = [
         key: "invoice_date",
         label: "Date",
         showByDefault: true,
+        render : (row: TableDataType) => formatDate(row.invoice_date) || "-",
 
     },
     {
@@ -35,34 +38,45 @@ const columns = [
     { key: "order_code", label: "Order Code", showByDefault: true },
     {
         key: "customer_code", label: "Customer", showByDefault: true, render: (row: TableDataType) => {
-            const code = row.customer_code || "";
-            const name = row.customer_name || "";
-            return `${code}${code && name ? " - " : ""}${name}`;
+            const code = row.customer_code || "-";
+            const name = row.customer_name || "-";
+            return `${code}${code && name ? " - " : "-"}${name}`;
         }
     },
     {
         key: "route_code", label: "Route", showByDefault: true, render: (row: TableDataType) => {
-            const code = row.route_code || "";
-            const name = row.route_name || "";
-            return `${code}${code && name ? " - " : ""}${name}`;
+            const code = row.route_code || "-";
+            const name = row.route_name || "-";
+            return `${code}${code && name ? " - " : "-"}${name}`;
         }
     },
     {
         key: "warehouse_code", label: "Warehouse", showByDefault: true,
         render: (row: TableDataType) => {
-            const code = row.warehouse_code || "";
-            const name = row.warehouse_name || "";
-            return `${code}${code && name ? " - " : ""}${name}`;
+            const code = row.warehouse_code || "-";
+            const name = row.warehouse_name || "-";
+            return `${code}${code && name ? " - " : "-"}${name}`;
         }
     },
     {
         key: "salesman_code", label: "Salesman", showByDefault: true, render: (row: TableDataType) => {
-            const code = row.salesman_code || "";
-            const name = row.salesman_name || "";
-            return `${code}${code && name ? " - " : ""}${name}`;
+            const code = row.salesman_code || "-";
+            const name = row.salesman_name || "-";
+            return `${code}${code && name ? " - " : "-"}${name}`;
         }
     },
-    { key: "total_amount", label: "Invoice Amount", showByDefault: true },
+    {
+        key: "total_amount",
+        label: "Invoice Amount",
+        showByDefault: true,
+        render: (row: TableDataType) => {
+            // row.total_amount may be string or number; toInternationalNumber handles both
+            return toInternationalNumber(row.total_amount, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            } as FormatNumberOptions);
+        },
+    },
     {
         key: "status",
         label: "Status",
@@ -82,6 +96,10 @@ export default function CustomerInvoicePage() {
     const { showSnackbar } = useSnackbar();
     const { setLoading } = useLoading();
     const router = useRouter();
+    const [threeDotLoading, setThreeDotLoading] = useState({
+        csv: false,
+        xlsx: false,
+    });
     const { warehouseOptions, salesmanOptions, routeOptions, agentCustomerOptions } = useAllDropdownListData();
 
     const [filters, setFilters] = useState({
@@ -95,8 +113,9 @@ export default function CustomerInvoicePage() {
 
     const exportFile = async (format: 'csv' | 'xlsx' = 'csv') => {
         try {
-            setLoading(true);
+            // setLoading(true);
             // Pass selected format to the export API
+            setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
             const response = await exportInvoice({ format });
             const url = response?.url || response?.data?.url;
             if (url) {
@@ -105,11 +124,13 @@ export default function CustomerInvoicePage() {
             } else {
                 showSnackbar("Failed to get download file", "error");
             }
+            setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
         } catch (error) {
             console.error("Export failed:", error);
             showSnackbar("Failed to download invoices", "error");
+            setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     };
 
@@ -268,17 +289,16 @@ export default function CustomerInvoicePage() {
                         title: "Customer Invoices",
                         threeDot: [
                             {
-                                icon: "gala:file-document",
+                                icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
                                 label: "Export CSV",
                                 labelTw: "text-[12px] hidden sm:block",
-                                onClick: () => exportFile('csv'),
+                                onClick: () => !threeDotLoading.csv && exportFile("csv"),
                             },
                             {
-                                icon: "gala:file-document",
+                                icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                                 label: "Export Excel",
                                 labelTw: "text-[12px] hidden sm:block",
-                                onClick: () => exportFile('xlsx'),
-
+                                onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
                             },
                             {
                                 icon: "lucide:radio",
