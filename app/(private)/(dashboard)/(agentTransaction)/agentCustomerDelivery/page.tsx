@@ -14,6 +14,7 @@ import { agentDeliveryExport, agentOrderExport, deliveryList } from "@/app/servi
 import StatusBtn from "@/app/components/statusBtn2";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import { downloadFile } from "@/app/services/allApi";
+import { formatWithPattern } from "@/app/(private)/utils/date";
 
 // const dropdownDataList = [
 //     // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
@@ -32,11 +33,7 @@ const columns = [
         render: (row: TableDataType) => {
             if (!row.delivery_date) return "-";
             const date = new Date(row.delivery_date as string);
-            return date.toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
+            return formatWithPattern(new Date(row.delivery_date), "DD MMM YYYY", "en-GB").toLowerCase() || "-";
         }
     },
     { key: "delivery_code", label: "Delivery Code", showByDefault: true },
@@ -252,12 +249,14 @@ export default function CustomerInvoicePage() {
                             {
                                 key: "start_date",
                                 label: "Start Date",
-                                type: "date"
+                                type: "date",
+                                applyWhen: (filters) => !!filters.start_date && !!filters.end_date
                             },
                             {
                                 key: "end_date",
                                 label: "End Date",
-                                type: "date"
+                                type: "date",
+                                applyWhen: (filters) => !!filters.start_date && !!filters.end_date
                             },
                             {
                                 key: "company_id",

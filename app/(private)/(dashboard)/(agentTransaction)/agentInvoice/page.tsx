@@ -16,6 +16,7 @@ import StatusBtn from "@/app/components/statusBtn2";
 import toInternationalNumber, { FormatNumberOptions } from "@/app/(private)/utils/formatNumber";
 import { formatDate } from "@/app/(private)/utils/date";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
+import { formatWithPattern } from "@/app/(private)/utils/date";
 
 
 
@@ -25,8 +26,10 @@ const columns = [
         key: "invoice_date",
         label: "Date",
         showByDefault: true,
-        render : (row: TableDataType) => formatDate(row.invoice_date) || "-",
-
+        render: (row: TableDataType) => {
+            if (!row.invoice_date) return "-";
+            return formatWithPattern(new Date(row.invoice_date), "DD MMM YYYY", "en-GB").toLowerCase() || "-";
+        }
     },
     {
         key: "invoice_time",
@@ -35,7 +38,7 @@ const columns = [
 
     },
     { key: "invoice_code", label: "Invoice Code", showByDefault: true },
-    { key: "order_code", label: "Order Code", showByDefault: true },
+    { key: "order_code", label: "Order Code" },
     {
         key: "customer_code", label: "Customer", showByDefault: true, render: (row: TableDataType) => {
             const code = row.customer_code || "-";
@@ -344,18 +347,18 @@ export default function CustomerInvoicePage() {
                         ],
                         columnFilter: true,
                         filterByFields: [
-                           {
-                                    key: "start_date",
-                                    label: "Start Date",
-                                    type: "date",
-                                    applyWhen: (filters) => !!filters.start_date && !!filters.end_date
-                                },
-                                {
-                                    key: "end_date",
-                                    label: "End Date",
-                                    type: "date",
-                                    applyWhen: (filters) => !!filters.start_date && !!filters.end_date
-                                },
+                            {
+                                key: "start_date",
+                                label: "Start Date",
+                                type: "date",
+                                applyWhen: (filters) => !!filters.start_date && !!filters.end_date
+                            },
+                            {
+                                key: "end_date",
+                                label: "End Date",
+                                type: "date",
+                                applyWhen: (filters) => !!filters.start_date && !!filters.end_date
+                            },
                             {
                                 key: "company_id",
                                 label: "Company",
@@ -404,7 +407,7 @@ export default function CustomerInvoicePage() {
                         actions: [
                             <SidebarBtn
                                 key={1}
-                                href="/invoice/add"
+                                href="/agentInvoice/add"
                                 isActive
                                 leadingIcon="mdi:plus"
                                 label="Add"
@@ -421,7 +424,7 @@ export default function CustomerInvoicePage() {
                             icon: "lucide:eye",
                             onClick: (row: TableDataType) =>
                                 router.push(
-                                    `/invoice/details/${row.uuid}`
+                                    `/agentInvoice/details/${row.uuid}`
                                 ),
                         },
                     ],

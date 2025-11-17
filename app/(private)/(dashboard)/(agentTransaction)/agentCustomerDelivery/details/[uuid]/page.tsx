@@ -22,6 +22,7 @@ interface DeliveryDetail {
   item?: {
     id: number;
     code: string;
+    erp_code?: string;
     name: string;
   };
   uom_name?: string;
@@ -95,7 +96,7 @@ interface TableRow {
 
 const columns = [
   { key: "id", label: "#", width: 60 },
-  { key: "itemName", label: "Product Name", render: (value: any) => <>{value.itemCode ? value.itemCode : ""} {value.itemCode && value.itemName ? " - " : ""} {value.itemName ? value.itemName : ""}</> },
+  { key: "itemName", label: "Product Name", render: (value: any) => <>{value.erp_code ? value.erp_code : ""} {value.erp_code && value.itemName ? " - " : ""} {value.itemName ? value.itemName : ""}</> },
   { key: "name", label: "UOM" },
   { key: "Quantity", label: "Quantity" },
   {
@@ -139,6 +140,7 @@ export default function OrderDetailPage() {
             const mappedData = data.details.map((detail: DeliveryDetail, index: number) => ({
               id: (index + 1).toString(),
               itemCode: detail.item?.code || "-",
+              erp_code: detail.item?.erp_code || "",
               itemName: detail.item?.name || "-",
               name: detail.uom_name || "-", // Fixed: use uom_name from API
               Quantity: detail.quantity?.toString() || "0",
@@ -209,7 +211,7 @@ export default function OrderDetailPage() {
   const exportFile = async () => {
     try {
       setLoadingState(true);
-      const response = await agentDeliveryExport({ uuid: uuid, format: "csv" });
+      const response = await agentDeliveryExport({ uuid: uuid, format: "pdf" });
       if (response && typeof response === 'object' && response.download_url) {
         await downloadFile(response.download_url);
         showSnackbar("File downloaded successfully ", "success");
@@ -233,7 +235,7 @@ export default function OrderDetailPage() {
           <Icon
             icon="lucide:arrow-left"
             width={24}
-            onClick={() => router.back()}
+            onClick={() => router.push("/agentCustomerDelivery")}
             className="cursor-pointer"
           />
           <h1 className="text-[20px] font-semibold text-[#181D27] flex items-center leading-[30px]">

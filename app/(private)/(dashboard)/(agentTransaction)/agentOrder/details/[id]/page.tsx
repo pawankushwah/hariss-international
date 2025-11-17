@@ -16,10 +16,11 @@ import toInternationalNumber from "@/app/(private)/utils/formatNumber";
 import PrintButton from "@/app/components/printButton";
 import { agentOrderExport } from "@/app/services/agentTransaction";
 import BorderIconButton from "@/app/components/borderIconButton";
+import { formatWithPattern } from "@/app/(private)/utils/date";
 
 const columns = [
   { key: "index", label: "#" },
-  { key: "item_name", label: "Item Name", render: (value: TableDataType) => <>{value.item_code ? `${value.item_code}` : ""} {value.item_code && value.item_name ? " - " : ""} {value.item_name ? value.item_name : ""}</> },
+  { key: "item_name", label: "Item Name", render: (value: TableDataType) => <>{value.erp_code ? `${value.erp_code}` : ""} {value.erp_code && value.item_name ? " - " : ""} {value.item_name ? value.item_name : ""}</> },
   { key: "uom_name", label: "UOM" },
   { key: "quantity", label: "Quantity" },
   { key: "item_price", label: "Price", render: (value: TableDataType) => <>{toInternationalNumber(value.item_price) || '0.00'}</> },
@@ -65,6 +66,7 @@ interface OrderData {
       item_id: number,
       item_code: string,
       item_name: string,
+      erp_code?: string,
       uom_id: number,
       uom_name: string,
       item_price: number,
@@ -138,7 +140,7 @@ export default function OrderDetailPage() {
   const exportFile = async () => {
     try {
       setLoadingState(true);
-      const response = await agentOrderExport({ uuid: UUID, format: "csv" });
+      const response = await agentOrderExport({ uuid: UUID, format: "pdf" });
       if (response && typeof response === 'object' && response.download_url) {
         await downloadFile(response.download_url);
         showSnackbar("File downloaded successfully ", "success");
@@ -162,14 +164,14 @@ export default function OrderDetailPage() {
           <Icon
             icon="lucide:arrow-left"
             width={24}
-            onClick={() => router.back()}
+            onClick={() => router.push("/agentOrder")}
             className="cursor-pointer"
           />
           <h1 className="text-[20px] font-semibold text-[#181D27] flex items-center leading-[30px]">
             Order #{data?.order_code || "-"}
           </h1>
-          <BorderIconButton disabled={!data?.previous_uuid} onClick={data?.previous_uuid ? () => router.push(`/agentOrder/details/${data.previous_uuid}`) : undefined} icon="lucide:chevron-left" label={"Prev"} labelTw="font-medium text-[12px]" className="!h-[30px] !gap-[3px] !px-[5px] !pr-[10px]" />
-          <BorderIconButton disabled={!data?.next_uuid} onClick={data?.next_uuid ? () => router.push(`/agentOrder/details/${data.next_uuid}`) : undefined} trailingIcon="lucide:chevron-right" label={"Next"} labelTw="font-medium text-[12px]" className="!h-[30px] !gap-[3px] !px-[5px] !pl-[10px]" />
+          <BorderIconButton disabled={!data?.previous_uuid} onClick={data?.previous_uuid ? () => router.push(`${PATH}${data.previous_uuid}`) : undefined} icon="lucide:chevron-left" label={"Prev"} labelTw="font-medium text-[12px]" className="!h-[30px] !gap-[3px] !px-[5px] !pr-[10px]" />
+          <BorderIconButton disabled={!data?.next_uuid} onClick={data?.next_uuid ? () => router.push(`${PATH}${data.next_uuid}`) : undefined} trailingIcon="lucide:chevron-right" label={"Next"} labelTw="font-medium text-[12px]" className="!h-[30px] !gap-[3px] !px-[5px] !pl-[10px]" />
         </div>
 
         {/* Action Buttons */}
@@ -250,10 +252,10 @@ export default function OrderDetailPage() {
             <div className="flex md:justify-end">
               <div className="text-primary-bold text-[14px] md:text-right">
                 {data?.created_at && <div>
-                  Order Date: <span className="font-bold">{data?.created_at.split("T")[0] || ""}</span>
+                  Order Date: <span className="font-bold">{formatWithPattern(new Date(data?.created_at), "DD MMM YYYY", "en-GB").toLowerCase() || ""}</span>
                 </div>}
                 {data?.delivery_date && <div className="mt-2">
-                  Delivery Date: <span className="font-bold">{data?.delivery_date || ""}</span>
+                  Delivery Date: <span className="font-bold">{formatWithPattern(new Date(data?.delivery_date), "DD MMM YYYY", "en-GB").toLowerCase() || ""}</span>
                 </div>}
                 {data?.order_source && <div className="mt-2">
                   Order Source: <span className="font-bold">{data?.order_source || "Online"}</span>

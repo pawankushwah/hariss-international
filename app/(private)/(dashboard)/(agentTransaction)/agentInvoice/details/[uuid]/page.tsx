@@ -89,6 +89,7 @@ interface InvoiceData {
 
 interface TableRow {
   item_code: string,
+  erp_code: string,
   item_name: string,
   uom_name: string,
   quantity: number,
@@ -102,8 +103,8 @@ interface TableRow {
 
 const columns = [
   { key: "id", label: "#", width: 60 },
-  { key: "itemCode", label: "Item Code" },
-  { key: "itemName", label: "Item Name", width: 250 },
+  // { key: "itemCode", label: "Item Code" },
+  { key: "itemName", label: "Item Name", render: (value: TableDataType) => <>{(value.erp_code ? value.erp_code : '') + (value.erp_code && value.itemName ? " - " : "") + (value.itemName ? value.itemName : "") || '-'}</> },
   { key: "UOM", label: "UOM" },
   { key: "Quantity", label: "Quantity" },
   { key: "Price", label: "Price", render: (value: TableDataType) => <>{toInternationalNumber(value.Price) || '0.00'}</> },
@@ -126,7 +127,7 @@ export default function OrderDetailPage() {
   const [loading, setLoadingState] = useState<boolean>(false);
   const uuid = params?.uuid as string;
   const CURRENCY = localStorage.getItem("country") || "";
-  const PATH = "/invoice/details/";
+  const PATH = "/agentInvoice/details/";
 
   useEffect(() => {
     if (uuid) {
@@ -143,6 +144,7 @@ export default function OrderDetailPage() {
             const mappedData = data.details.map((detail: TableRow, index: number) => ({
               id: String(index + 1),
               itemCode: String(detail.item_code ?? "-"),
+              erp_code: String(detail.erp_code ?? "-"),
               itemName: String(detail.item_name ?? "-"),
               UOM: String(detail.uom_name ?? detail.uom ?? "-"),
               Quantity: String(detail.quantity ?? 0),
@@ -169,7 +171,7 @@ export default function OrderDetailPage() {
   const exportFile = async () => {
       try {
         setLoadingState(true);
-        const response = await exportInvoiceDetails(invoiceId);
+        const response = await exportInvoiceWithDetails({ uuid: uuid, format: "pdf" });
         if (response && typeof response === 'object' && response.download_url) {
           await downloadFile(response.download_url);
           showSnackbar("File downloaded successfully ", "success");
@@ -202,7 +204,7 @@ export default function OrderDetailPage() {
           <Icon
             icon="lucide:arrow-left"
             width={24}
-            onClick={() => router.back()}
+            onClick={() => router.push("/agentInvoice")}
             className="cursor-pointer"
           />
           <h1 className="text-[20px] font-semibold text-[#181D27] flex items-center leading-[30px]">

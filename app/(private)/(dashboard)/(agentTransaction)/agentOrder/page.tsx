@@ -13,9 +13,10 @@ import { agentOrderExport, agentOrderList, changeStatusAgentOrder } from "@/app/
 import OrderStatus from "@/app/components/orderStatus";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import { downloadFile } from "@/app/services/allApi";
+import { formatWithPattern } from "@/app/utils/formatDate";
 
 const columns = [
-    { key: "created_at", label: "Order Date", showByDefault: true, render: (row: TableDataType) => <span className="font-bold cursor-pointer">{row.created_at.split("T")[0]}</span> },
+    { key: "created_at", label: "Order Date", showByDefault: true, render: (row: TableDataType) => <span className="font-bold cursor-pointer">{formatWithPattern(new Date(row.created_at), "DD MMM YYYY", "en-GB").toLowerCase()}</span> },
     { key: "order_code", label: "Order Number", showByDefault: true, render: (row: TableDataType) => <span className="font-bold cursor-pointer">{row.order_code}</span> },
     {
         key: "warehouse_name",
@@ -28,7 +29,7 @@ const columns = [
             return `${code}${code && name ? " - " : ""}${name}`;
         },
     },
-    
+
     {
         key: "customer_name",
         label: "Customer Name",
@@ -62,7 +63,7 @@ const columns = [
     },
     { key: "payment_method", label: "Payment Method", render: (row: TableDataType) => row.payment_method || "-" },
     { key: "order_source", label: "Order Source", render: (row: TableDataType) => row.order_source || "-" },
-    { key: "delivery_date", label: "Delivery Date", showByDefault: true, render: (row: TableDataType) => row.delivery_date || "-" },
+    { key: "delivery_date", label: "Delivery Date", showByDefault: true, render: (row: TableDataType) => formatWithPattern(new Date(row.delivery_date), "DD MMM YYYY", "en-GB").toLowerCase() || "-" },
     { key: "comment", label: "Comment", render: (row: TableDataType) => row.comment || "-" },
     {
         key: "status", label: "Status", showByDefault: true, render: (row: TableDataType) => (
@@ -127,9 +128,9 @@ export default function CustomerInvoicePage() {
                 const pagination = result.pagination?.pagination || result.pagination || {};
                 return {
                     data: result.data || [],
-                    total: pagination.totalPages || result.pagination?.totalPages || 0,
+                    total: pagination.totalPages || result.pagination?.totalPages || 1,
                     totalRecords: pagination.totalRecords || result.pagination?.totalRecords || 0,
-                    currentPage: pagination.current_page || result.pagination?.currentPage || 0,
+                    currentPage: pagination.page || result.pagination?.page || 1,
                     pageSize: pagination.limit || pageSize,
                 };
             }
@@ -188,12 +189,14 @@ export default function CustomerInvoicePage() {
                                 {
                                     key: "start_date",
                                     label: "Start Date",
-                                    type: "date"
+                                    type: "date",
+                                    applyWhen: (filters) => !!filters.start_date && !!filters.end_date
                                 },
                                 {
                                     key: "end_date",
                                     label: "End Date",
-                                    type: "date"
+                                    type: "date",
+                                    applyWhen: (filters) => !!filters.start_date && !!filters.end_date
                                 },
                                 {
                                     key: "company_id",
