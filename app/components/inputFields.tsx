@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 // import 'react-phone-input-2/lib/style.css';
 import DateRangePicker from "./DateRangePicker";
 import CustomCheckbox from './customCheckbox';
+import Radio from '@mui/material/Radio';
 
 export type Option = {
   value: string;
@@ -397,6 +398,7 @@ export default function InputFields({
               </label>
             ))}
           </div>
+          <Radio />
           {error && <span className="text-xs text-red-500 mt-1">{error}</span>}
         </div>);
 
