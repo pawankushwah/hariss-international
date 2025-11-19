@@ -320,7 +320,7 @@ export default function ProfilePage() {
               <ContainerCard>
               <div className="space-y-4">
                 {/* LANGUAGE */}
-                <div className="flex items-center p-4 bg-gray-50 rounded-xl shadow-sm">
+                <div className="flex items-center p-4 bg-gray-50 rounded-xl  boder-gray-300">
                   <Icon
                     icon="lucide:globe"
                     width={28}
@@ -338,7 +338,7 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center p-4 bg-gray-50 rounded-xl shadow-sm">
+                <div className="flex items-center p-4 bg-gray-50 rounded-xl boder-gray-300">
                   <Icon
                     icon="lucide:globe"
                     width={28}
@@ -356,7 +356,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* THEME */}
-                <div className="flex items-center p-4 bg-gray-50 rounded-xl shadow-sm">
+                <div className="flex items-center p-4 bg-gray-50 rounded-xl boder-gray-300">
                   <Icon
                     icon="lucide:globe"
                     width={28}
@@ -376,7 +376,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* PRIVACY SETTINGS */}
-                <div className="flex items-center p-4 bg-gray-50 rounded-xl  shadow-sm">
+                <div className="flex items-center p-4 bg-gray-50 rounded-xl  boder-gray-300">
                   <Icon
                     icon="lucide:globe"
                     width={28}
@@ -392,7 +392,7 @@ export default function ProfilePage() {
                     <Icon icon="lucide:chevron-right" />
                   </div>
                 </div>
-                <div className="flex items-center p-4 bg-gray-50 rounded-xl  shadow-sm">
+                <div className="flex items-center p-4 bg-gray-50 rounded-xl  boder-gray-300">
                   <Icon
                     icon="lucide:globe"
                     width={28}
@@ -411,7 +411,7 @@ export default function ProfilePage() {
 
                 {/* DOWNLOAD MANUAL */}
                 {/* flex justify-between items-center p-4 bg-gray-50 rounded-xl  shadow-sm */}
-                <div className="p-4 bg-gray-50 rounded-xl  space-y-3">
+                <div className="p-[16px] w-[810px] h-[420px] rounded-lg border border border-gray-200"> 
                   <h4 className="font-medium flex items-center gap-2">
                     <Icon icon="lucide:download" /> Download User Manual
                   </h4>
@@ -420,72 +420,116 @@ export default function ProfilePage() {
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 bg-white">
-                    <div className="p-4 border border-gray-300 rounded-xl flex flex-col gap-3 items-start">
-                      <Icon
+                    <div className="p-3 w-[248.67px] h-[154px] rounded-lg border `gap-5`  bf-#FFFFFF border-gray-200">
+                      <div className="w-full `gap-[10px]` ">
+                      <div className="w-[40px] h-[40px] p-[10px] rounded-lg border bg-[#FAFAFA] border-gray-200 flex items-center justify-center">
+                          <Icon
                         icon="lucide:file-text"
-                        width={24}
-                        className="text-gray-500"
+                        width={20}
                       />
+                      </div>
+
+                      <div className="mt-[10px] flex">
                       <p className="font-medium">Order Management</p>
-                      <button className="bg-white px-3 py-1 rounded-xl border border-gray-300">
+
+                      </div>
+                      </div>
+                      <button className="mt-[20px] bg-white px-3 py-1 rounded-xl border border-gray-300">
                         Download
                       </button>
                     </div>
-                    <div className="p-4 border border-gray-300 rounded-xl flex flex-col gap-3 items-start">
-                      <Icon
+                    <div className="p-3 w-[248.67px] h-[154px] rounded-lg border `gap-5`  bf-#FFFFFF border-gray-200">
+                      <div className="w-full `gap-[10px]` ">
+                      <div className="w-[40px] h-[40px] p-[10px] rounded-lg border bg-[#FAFAFA] border-gray-200 flex items-center justify-center">
+                          <Icon
                         icon="lucide:file-text"
-                        width={24}
-                        className="text-gray-500"
+                        width={20}
                       />
+                      </div>
+
+                      <div className="mt-[10px] flex">
                       <p className="font-medium">Order Management</p>
-                      <button className="bg-white px-3 py-1 rounded-xl border border-gray-300">
+
+                      </div>
+                      </div>
+                      <button className="mt-[20px] bg-white px-3 py-1 rounded-xl border border-gray-300">
                         Download
                       </button>
                     </div>
-                    <div className="p-4 border border-gray-300 rounded-xl flex flex-col gap-3 items-start">
-                      <Icon
+                    <div className="p-3 w-[248.67px] h-[154px] rounded-lg border `gap-5`  bf-#FFFFFF border-gray-200">
+                      <div className="w-full `gap-[10px]` ">
+                      <div className="w-[40px] h-[40px] p-[10px] rounded-lg border bg-[#FAFAFA] border-gray-200 flex items-center justify-center">
+                          <Icon
                         icon="lucide:file-text"
-                        width={24}
-                        className="text-gray-500"
+                        width={20}
                       />
+                      </div>
+
+                      <div className="mt-[10px] flex">
                       <p className="font-medium">Order Management</p>
-                      <button className="bg-white px-3 py-1 rounded-xl border border-gray-300">
+
+                      </div>
+                      </div>
+                      <button className="mt-[20px] bg-white px-3 py-1 rounded-xl border border-gray-300">
                         Download
                       </button>
                     </div>
-                    <div className="p-4 border border-gray-300 rounded-xl flex flex-col gap-3 items-start">
-                      <Icon
+                    <div className="p-3 w-[248.67px] h-[154px] rounded-lg border `gap-5`  bf-#FFFFFF border-gray-200">
+                      <div className="w-full `gap-[10px]` ">
+                      <div className="w-[40px] h-[40px] p-[10px] rounded-lg border bg-[#FAFAFA] border-gray-200 flex items-center justify-center">
+                          <Icon
                         icon="lucide:file-text"
-                        width={24}
-                        className="text-gray-500"
+                        width={20}
                       />
+                      </div>
+
+                      <div className="mt-[10px] flex">
                       <p className="font-medium">Order Management</p>
-                      <button className="bg-white px-3 py-1 rounded-xl border border-gray-300">
+
+                      </div>
+                      </div>
+                      <button className="mt-[20px] bg-white px-3 py-1 rounded-xl border border-gray-300">
                         Download
                       </button>
                     </div>
-                    <div className="p-4 border border-gray-300 rounded-xl flex flex-col gap-3 items-start">
-                      <Icon
+                    <div className="p-3 w-[248.67px] h-[154px] rounded-lg border `gap-5`  bf-#FFFFFF border-gray-200">
+                      <div className="w-full `gap-[10px]` ">
+                      <div className="w-[40px] h-[40px] p-[10px] rounded-lg border bg-[#FAFAFA] border-gray-200 flex items-center justify-center">
+                          <Icon
                         icon="lucide:file-text"
-                        width={24}
-                        className="text-gray-500"
+                        width={20}
                       />
+                      </div>
+
+                      <div className="mt-[10px] flex">
                       <p className="font-medium">Order Management</p>
-                      <button className="bg-white px-3 py-1 rounded-xl border border-gray-300">
+
+                      </div>
+                      </div>
+                      <button className="mt-[20px] bg-white px-3 py-1 rounded-xl border border-gray-300">
                         Download
                       </button>
                     </div>
-                    <div className="p-4 border border-gray-300 rounded-xl flex flex-col gap-3 items-start">
-                      <Icon
+                    <div className="p-3 w-[248.67px] h-[154px] rounded-lg border `gap-5`  bf-#FFFFFF border-gray-200">
+                      <div className="w-full `gap-[10px]` ">
+                      <div className="w-[40px] h-[40px] p-[10px] rounded-lg border bg-[#FAFAFA] border-gray-200 flex items-center justify-center">
+                          <Icon
                         icon="lucide:file-text"
-                        width={24}
-                        className="text-gray-500"
+                        width={20}
                       />
+                      </div>
+
+                      <div className="mt-[10px] flex">
                       <p className="font-medium">Order Management</p>
-                      <button className="bg-white px-3 py-1 rounded-xl border border-gray-300">
+
+                      </div>
+                      </div>
+                      <button className="mt-[20px] bg-white px-3 py-1 rounded-xl border border-gray-300">
                         Download
                       </button>
                     </div>
+                   
+                 
                   </div>
                 </div>
               </div>

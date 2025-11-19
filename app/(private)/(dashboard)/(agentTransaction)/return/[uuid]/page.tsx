@@ -86,7 +86,7 @@ export default function OrderAddEditPage() {
   const { setLoading } = useLoading();
   const router = useRouter();
   const params = useParams();
-
+ const CURRENCY = localStorage.getItem("country") || "";
   const uuid = params?.uuid as string | undefined;
   const isEditMode = uuid !== undefined && uuid !== "add";
   const [isSubmitting, setIsSubmitting] = useState(false);

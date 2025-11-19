@@ -543,7 +543,7 @@ export default function OrderAddEditPage() {
 
         <Formik<FormikValues>
           initialValues={form}
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit}          
           validationSchema={validationSchema}
           enableReinitialize={true}
         >
