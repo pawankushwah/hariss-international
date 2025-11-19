@@ -6,6 +6,8 @@ import InputFields from "@/app/components/inputFields";
 import StepperForm, { StepperStep, useStepperForm } from "@/app/components/stepperForm";
 import {
   agentCustomerList,
+  customerCategoryList,
+  customerSubCategoryList,
   getRoleById,
   getUserByUuid,
   itemCategoryList,
@@ -1105,7 +1107,7 @@ export default function UserAddEdit() {
                         }
                         setSkeleton((s) => ({ ...s, item: true }));
                         try {
-                          const items = await itemList({ item_category_id: vals.join(",") });
+                          const items = await itemList({ category_id: vals.join(",") });
                           const options = items.data.map((item: { id: string; erp_code: string; name: string }) => ({ value: String(item.id), label: (item.erp_code || "") + (item.erp_code && item.name ? " - " : "") + (item.name || "") })) ?? [];
                           setOptions((prev) => ({ ...prev, item: options, customerChannel: [], customerCategory: [], customerSubCategory: [], customer: [] }));
                         } catch (e: unknown) {
@@ -1177,7 +1179,7 @@ export default function UserAddEdit() {
                         }
                         setSkeleton((s) => ({ ...s, customerCategory: true }));
                         try {
-                          const customerCategories = await itemCategoryList({ channel_id: vals.join(",") });
+                          const customerCategories = await customerCategoryList({ channel_id: vals.join(",") });
                           const options = customerCategories.data.map((customerCategory: { id: string; category_code: string; category_name: string }) => ({ value: String(customerCategory.id), label: (customerCategory.category_code || "") + (customerCategory.category_code && customerCategory.category_name ? " - " : "") + (customerCategory.category_name || "") })) ?? [];
                           setOptions((prev) => ({ ...prev, customerCategory: options, customerSubCategory: [], customer: [] }));
                         } catch (e: unknown) {
@@ -1213,7 +1215,7 @@ export default function UserAddEdit() {
                         }
                         setSkeleton((s) => ({ ...s, customerSubCategory: true }));
                         try {
-                          const itemSubCategories = await itemSubCategoryList({ item_category_id: vals.join(",") });
+                          const itemSubCategories = await customerSubCategoryList({ customer_category_id: vals.join(",") });
                           const options = itemSubCategories.data.map((itemSubCategory: { id: string; sub_category_code: string; sub_category_name: string }) => ({ value: String(itemSubCategory.id), label: (itemSubCategory.sub_category_code || "") + (itemSubCategory.sub_category_code && itemSubCategory.sub_category_name ? " - " : "") + (itemSubCategory.sub_category_name || "") })) ?? [];
                           setOptions((prev) => ({ ...prev, customerSubCategory: options, customer: [] }));
                         } catch (e: unknown) {
