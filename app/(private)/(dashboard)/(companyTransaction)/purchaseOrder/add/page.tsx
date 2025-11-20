@@ -17,6 +17,7 @@ import * as Yup from "yup";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
 import toInternationalNumber from "@/app/(private)/utils/formatNumber";
+import getExcise, { Item } from "@/app/(private)/utils/excise";
 
 interface FormData {
   id: number,
@@ -282,10 +283,18 @@ export default function PurchaseOrderAddEditPage() {
         item.uom_id = selectedOrder?.item_uoms?.[0]?.id ? String(selectedOrder.item_uoms[0].id) : "";
         item.Price = selectedOrder?.item_uoms?.[0]?.price ? String(selectedOrder.item_uoms[0].price) : "";
         item.Quantity = "1";
-        // persist a readable label
+        const initialExc = getExcise({
+          item: selectedOrder,
+          uom: Number(item.uom_id) || 0,
+          quantity: Number(item.Quantity) || 1,
+          itemPrice: Number(item.Price) || null,
+          orderType: 0,
+        });
+        const initialExcStr = (Math.round(initialExc * 100) / 100).toFixed(2);
+        item.Excise = initialExcStr;
+        console.log("Excise calculated:", item.Excise);
         const computedLabel = selectedOrder ? `${selectedOrder.item_code ?? selectedOrder.erp_code ?? ''}${selectedOrder.item_code || selectedOrder.erp_code ? ' - ' : ''}${selectedOrder.name ?? ''}` : "";
         item.item_label = computedLabel;
-        // ensure the selected item is available in itemsOptions
         if (item.item_label) {
           setItemsOptions((prev: { label: string; value: string }[] = []) => {
             if (prev.some(o => o.value === item.item_id)) return prev;
@@ -300,7 +309,31 @@ export default function PurchaseOrderAddEditPage() {
     const vat = total - total / 1.18;
     const preVat = total - vat;
     const net = total - vat;
-    // const excise = 0;
+    // compute excise: prefer the full item object from `orderData` (it contains category info)
+    const selectedOrder = orderData.find((od) => String(od.id) === String(item.item_id));
+    const exciseNumeric = getExcise({
+      item: selectedOrder
+        ? // normalize shape so `getExcise` can read `item_category` as a number
+          ({
+            ...selectedOrder,
+            item_category: (selectedOrder as any).item_category?.id ?? (selectedOrder as any).category_id ?? (selectedOrder as any).category?.id ?? (selectedOrder as any).category ?? (selectedOrder as any).category_code ?? 0,
+          } as any)
+        : {
+            id: Number(item.item_id) || 0,
+            agent_excise: 0,
+            direct_sell_excise: 0,
+            base_uom_price: Number(item.Price) || 0,
+            item_category: 0,
+          },
+      uom: Number(item.uom_id) || 0,
+      quantity: Number(item.Quantity) || 1,
+      itemPrice: Number(item.Price) || null,
+      orderType: 0,
+    });
+    const excise = (Math.round(exciseNumeric * 100) / 100).toFixed(2);
+    // keep both `Excise` (existing row shape) and `excise` (table render key) in sync
+    item.Excise = excise;
+    console.log(item.Excise, (selectedOrder as any).item_category?.id );
     // const discount = 0;
     // const gross = total;
 
@@ -379,7 +412,7 @@ export default function PurchaseOrderAddEditPage() {
     (sum, item) => sum + Number(item.Discount || 0),
     0
   );
-  const finalTotal = grossTotal + totalVat;
+  const finalTotal = netAmount + totalVat;
 
   const generatePayload = (values?: FormikValues) => {
     return {
@@ -804,9 +837,9 @@ export default function PurchaseOrderAddEditPage() {
                           return <span>{price}</span>;
                         }
                       },
-                      // { key: "excise", label: "Excise", render: (row) => <span>{toInternationalNumber(row.Excise) || "0.00"}</span> },
+                      { key: "excise", label: "Excise", render: (row) => <>{toInternationalNumber(row.excise) || "0.00"}</>},
                       // { key: "discount", label: "Discount", render: (row) => <span>{toInternationalNumber(row.Discount) || "0.00"}</span> },
-                      { key: "preVat", label: "Pre VAT", render: (row) => <span>{toInternationalNumber(row.preVat) || "0.00"}</span> },
+                      // { key: "preVat", label: "Pre VAT", render: (row) => <span>{toInternationalNumber(row.preVat) || "0.00"}</span> },
                       { key: "Net", label: "Net", render: (row) => <span>{toInternationalNumber(row.Net) || "0.00"}</span> },
                       { key: "Vat", label: "VAT", render: (row) => <span>{toInternationalNumber(row.Vat) || "0.00"}</span> },
                       // { key: "gross", label: "Gross", render: (row) => <span>{toInternationalNumber(row.gross) || "0.00"}</span> },

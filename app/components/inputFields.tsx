@@ -695,7 +695,7 @@ export default function InputFields({
                     return (
                       <input
                         type="text"
-                        placeholder={!value ? `Search ${label}` : undefined}
+                        placeholder={placeholder ? placeholder : `Search ${label}`}
                         value={displayValue}
                         autoComplete='off'
                         onChange={e => {

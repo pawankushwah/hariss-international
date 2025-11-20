@@ -427,6 +427,30 @@ export const initialLinkData: SidebarDataType[] = [
           },
         ]
       },
+      {
+        isActive: false,
+        href: "#",
+        label: "Claim Management",
+        leadingIcon: "streamline-ultimate:accounting-bill-stack-1",
+        iconColor: "text-green-500",
+        trailingIcon: "mdi-light:chevron-right",
+        children: [
+          {
+            isActive: false,
+            href: "/compiledClaims",
+            label: "Compiled Claims",
+            leadingIcon: "carbon:delivery-parcel",
+            iconColor: "text-cyan-500"
+          },
+          {
+            isActive: false,
+            href: "/petitClaims",
+            label: "Petit Claims",
+            leadingIcon: "carbon:delivery-parcel",
+            iconColor: "text-cyan-500"
+          },
+        ]
+      },
     ],
   },
 ];
