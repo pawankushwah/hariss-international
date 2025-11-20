@@ -398,6 +398,7 @@ export default function InputFields({
               aria-labelledby="demo-radio-buttons-group-label"
               defaultValue="female"
               name="radio-buttons-group"
+              value={value}
             >
               {options && options.map((opt, idx) => (
                 <FormControlLabel
