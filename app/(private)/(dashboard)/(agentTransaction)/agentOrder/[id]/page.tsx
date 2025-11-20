@@ -616,7 +616,7 @@ export default function OrderAddEditPage() {
                       className="w-full"
                     />
                   </div>
-                  <div>
+                  {/* <div>
                     <InputFields
                       required
                       label="Delivery Date"
@@ -624,6 +624,20 @@ export default function OrderAddEditPage() {
                       name="delivery_date"
                       value={values.delivery_date}
                       min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                      onChange={handleChange}
+                    />
+                  </div> */}
+                  <div>
+                    <InputFields
+                      required
+                      label="Delivery Date"
+                      type="date"
+                      name="delivery_date"
+                      value={
+                        values.delivery_date ||
+                        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+                      }
+                      min={new Date().toISOString().slice(0, 10)} // today
                       onChange={handleChange}
                     />
                   </div>

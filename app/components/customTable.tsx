@@ -99,7 +99,7 @@ export type configType = {
     pageSize?: number;
     pageSizeOptions?: number[]; // yet to implement
     rowSelection?: boolean;
-    dragableColumn?: boolean; // yet to implement
+    dragableColumn?: boolean;
     columns: {
         key: string;
         label: string | React.ReactNode;

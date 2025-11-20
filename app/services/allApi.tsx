@@ -2003,6 +2003,19 @@ export const editAgentCustomer = async (uuid: string, payload: object) => {
   }
 };
 
+export const approvalAdd = async (payload: object) => {
+  try {
+    const res = await API.post(
+      `/api/master/approval/workflow/save`,
+      payload
+    );
+
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 export const deleteAgentCustomer = async (uuid: string) => {
   try {
     const res = await API.delete(`/api/master/agent_customers/${uuid}`);

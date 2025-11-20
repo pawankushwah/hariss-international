@@ -13,6 +13,7 @@ import {
   agentOrderExport,
   agentOrderList,
   changeStatusAgentOrder,
+  // agentOrderExport 
 } from "@/app/services/agentTransaction";
 import OrderStatus from "@/app/components/orderStatus";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
@@ -231,6 +232,25 @@ export default function CustomerInvoicePage() {
     }
   };
 
+  const downloadPdf = async (uuid: string) => {
+    try {
+      setLoading(true);
+      const response = await agentOrderExport({ uuid: uuid, format: "pdf" });
+      if (response && typeof response === 'object' && response.download_url) {
+        await downloadFile(response.download_url);
+        showSnackbar("File downloaded successfully ", "success");
+      } else {
+        showSnackbar("Failed to get download URL", "error");
+      }
+    } catch (error) {
+      showSnackbar("Failed to download file", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
   useEffect(() => {
     setRefreshKey((k) => k + 1);
   }, [
@@ -365,6 +385,10 @@ export default function CustomerInvoicePage() {
                 icon: "lucide:eye",
                 onClick: (row: TableDataType) =>
                   router.push(`/agentOrder/details/${row.uuid}`),
+              },
+              {
+                icon: "lucide:download",
+                onClick: (row: TableDataType) => downloadPdf(row.uuid),
               },
             ],
             pageSize: 10,
