@@ -543,7 +543,7 @@ export default function OrderAddEditPage() {
 
         <Formik<FormikValues>
           initialValues={form}
-          onSubmit={handleSubmit}          
+          onSubmit={handleSubmit}
           validationSchema={validationSchema}
           enableReinitialize={true}
         >
@@ -615,7 +615,7 @@ export default function OrderAddEditPage() {
                       className="w-full"
                     />
                   </div>
-                  <div>
+                  {/* <div>
                     <InputFields
                       required
                       label="Delivery Date"
@@ -623,6 +623,20 @@ export default function OrderAddEditPage() {
                       name="delivery_date"
                       value={values.delivery_date}
                       min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+                      onChange={handleChange}
+                    />
+                  </div> */}
+                  <div>
+                    <InputFields
+                      required
+                      label="Delivery Date"
+                      type="date"
+                      name="delivery_date"
+                      value={
+                        values.delivery_date ||
+                        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+                      }
+                      min={new Date().toISOString().slice(0, 10)} // today
                       onChange={handleChange}
                     />
                   </div>
@@ -848,7 +862,7 @@ export default function OrderAddEditPage() {
                   >
                     Cancel
                   </button>
-                  <SidebarBtn type="submit" isActive={true} label={isSubmitting ? "Creating Order..." : "Create Order"} disabled={isSubmitting || !values.warehouse || !values.customer || !itemData || !itemData.length } onClick={() => submitForm()} />
+                  <SidebarBtn type="submit" isActive={true} label={isSubmitting ? "Creating Order..." : "Create Order"} disabled={isSubmitting || !values.warehouse || !values.customer || !itemData || !itemData.length} onClick={() => submitForm()} />
                 </div>
               </>
             );
