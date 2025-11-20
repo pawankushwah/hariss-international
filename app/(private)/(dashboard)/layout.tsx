@@ -85,7 +85,6 @@ export default function DashboardLayout({
     );
 }
 // Permission filtering lives in the PermissionContext now. Layout consumes that context via usePermissionManager.
-console.log("dfsdfsdfsdf");
 function LayoutSelector({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
