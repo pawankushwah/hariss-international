@@ -686,8 +686,8 @@ export default function OrderAddEditPage() {
             </span> */}
           </div>
           <div className="flex flex-col">
-            <span className="text-[42px] uppercase text-[#A4A7AE] mb-[10px]">
-              Distributor's Return
+            <span className="flex justify-end text-[42px] uppercase text-[#A4A7AE] mb-[10px]">
+              Return
             </span>
             <span className="text-primary text-[14px] tracking-[10px]">
               #{code}
@@ -703,7 +703,7 @@ export default function OrderAddEditPage() {
             required
             name="customer_type"
             value={form.customer_type}
-            options={[{ label: "Agent Customer", value: "0" }, { label: "Company Customer", value: "1" }]}
+            options={[{ label: "Field Customer", value: "0" }, { label: "Key Customer", value: "1" }]}
             onChange={handleChange}
             error={errors.customer_type}
           />

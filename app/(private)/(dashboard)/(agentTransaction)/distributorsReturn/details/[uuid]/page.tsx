@@ -256,7 +256,7 @@ export default function OrderDetailPage() {
             {/* From (Seller) */}
             <div>
               <div className="flex flex-col space-y-[12px] text-primary-bold text-[14px] border-b md:border-b-0 pb-4 md:pb-0">
-                    <span>From (Seller)</span>
+                    <span>Seller</span>
                     <div className="flex flex-col space-y-[10px]">
                       {(deliveryData?.warehouse_code || deliveryData?.warehouse_name) ? (
                         <span className="font-semibold">
@@ -272,7 +272,7 @@ export default function OrderDetailPage() {
             {/* To (Customer) */}
             <div>
               <div className="flex flex-col space-y-[12px] text-primary-bold text-[14px]">
-                <span>To (Customer)</span>
+                <span>Buyer</span>
                 <div className="flex flex-col space-y-[10px]">
                   {(deliveryData?.customer_code || deliveryData?.customer_name) && (
                     <span className="font-semibold">
