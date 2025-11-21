@@ -56,15 +56,15 @@ type NewFlow = {
 
 function convertWorkflow(oldData: any) {
 
- let useIds: any = []
-            let roleIds: any = []
+
     return {
         approvalName: oldData.name,
         description: oldData.description,
         status: oldData.is_active ? "1" : "0",
         steps: oldData.steps.map((step: any) => {
            
-
+           const useIds: any = []
+ const roleIds: any = []
 
             step.approvers
                 .filter((a: any) => {
@@ -93,9 +93,9 @@ function convertWorkflow(oldData: any) {
                 approvalMessage: step.message,
                 notificationMessage: step.notification,
                 targetType: step.approvers.filter((a: any) => a.type === "USER").length > 0 ? "1" : "2",
-                selectedCustomer: useIds,
+                selectedCustomer: step.approvers.filter((a: any) => a.type === "USER")?useIds:[],
                 
-                selectedRole: roleIds
+                selectedRole: step.approvers.filter((a: any) => a.type !== "USER")?roleIds:[]
             }
         })
 
@@ -244,8 +244,8 @@ export default function AddApprovalFlow() {
     //   };
 
     useEffect(() => {
-        let store: any = localStorage.getItem("selectedFlow")
-        let flow: any = convertWorkflow(JSON.parse(store))
+        const store: any = localStorage.getItem("selectedFlow")
+        const flow: any = convertWorkflow(JSON.parse(store))
         console.log(flow)
        
         setForm(flow)
