@@ -5,7 +5,7 @@ import ContainerCard from "@/app/components/containerCard";
 import Table, { configType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import Logo from "@/app/components/logo";
-import { salesmanLoadByUuid } from "@/app/services/agentTransaction";
+import { salesmanLoadByUuid, exportSalesmanLoadDownload } from "@/app/services/agentTransaction";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { Icon } from "@iconify-icon/react";
@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState, RefObject, useRef } from "react";
 import PrintButton from "@/app/components/printButton";
+import { downloadFile } from "@/app/services/allApi";
 
 interface CustomerItem {
   id: number;
@@ -49,6 +50,7 @@ export default function ViewPage() {
   const [customer, setCustomer] = useState<CustomerItem | null>(null);
   const { showSnackbar } = useSnackbar();
   const { setLoading } = useLoading();
+  const [loading, setLoadingState] = useState<boolean>(false);
 
   const title = `Load ${customer?.osa_code || "-"}`;
 
@@ -119,7 +121,7 @@ export default function ViewPage() {
               <Logo type="full" />
               <div className="text-right">
                 <h2 className="text-4xl font-bold text-gray-400 uppercase mb-2">
-                  Load
+                  SalesTeam Load
                 </h2>
                 <p className="text-primary text-sm tracking-[5px]">
                   {customer?.osa_code || "-"}
@@ -175,21 +177,26 @@ export default function ViewPage() {
                 <Table data={tableData} config={{ columns }} />
               </div>
             </div>
+              {/* ---------- Right Side (Table) ---------- */}
+              <div className="lg:col-span-2 w-full">
+                <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                  Load Items
+                </h3>
+                <Table data={tableData} config={{ columns }} />
+              </div>
+            </div>
 
-          </div>
-
-          {/* ---------- Footer Buttons ---------- */}
-          <div className="flex flex-wrap justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
-            {/* <SidebarBtn
-              leadingIcon="lucide:download"
-              leadingIconSize={20}
-              label="Download"
-              onClick={async () => {}}
-            /> */}
-            <PrintButton targetRef={targetRef as unknown as RefObject<HTMLElement>} />
-
-          </div>
-        </ContainerCard>
+        {/* ---------- Footer Buttons ---------- */}
+        {/* <div className="flex flex-wrap justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
+          <SidebarBtn
+            leadingIcon="lucide:download"
+            leadingIconSize={20}
+            label="Download"
+            onClick={handleDownload}
+          />*/}
+          
+          <PrintButton targetRef={targetRef as unknown as RefObject<HTMLElement>} />
+      </ContainerCard>
       </div>
     </>
   );
