@@ -199,7 +199,7 @@ export default function OrderDetailPage() {
 
   // Always show these fields (not conditionally hidden)
   const keyValueData = [
-    { key: "Gross Total", value: `${CURRENCY} ${toInternationalNumber(grossTotal)}` },
+    { key: "Net Total", value: `${CURRENCY} ${toInternationalNumber(netTotal)}` },
     { key: "VAT", value: `${CURRENCY} ${toInternationalNumber(vatTotal)}` },
     // { key: "Pre VAT", value: `${CURRENCY} ${toInternationalNumber(computedPreVat)}` },
     // (deliveryData?.delivery_charges) && {
@@ -378,12 +378,12 @@ export default function OrderDetailPage() {
             <div className="flex justify-between flex-wrap w-full">
               {/* Notes Section */}
               <div className="hidden flex-col justify-end gap-[20px] w-full lg:flex lg:w-[400px]">
-                {/* <div className="flex flex-col space-y-[10px]">
+                {deliveryData?.comment && <div className="flex flex-col space-y-[10px]">
                   <div className="font-semibold text-[#181D27]">Customer Note</div>
                   <div>
-                    Please deliver between 10 AM to 1 PM. Contact before delivery.
+                    {deliveryData?.comment || ""}
                   </div>
-                </div> */}
+                </div>}
                 <div className="flex flex-col space-y-[10px]">
                   <div className="font-semibold text-[#181D27]">
                     Payment Method
@@ -411,12 +411,12 @@ export default function OrderDetailPage() {
 
               {/* Notes (Mobile) */}
               <div className="flex flex-col justify-end gap-[20px] w-full lg:hidden lg:w-[400px]">
-                {/* {deliveryData?.comment && <div className="flex flex-col space-y-[10px]">
+                {deliveryData?.comment && <div className="flex flex-col space-y-[10px]">
                   <div className="font-semibold text-[#181D27]">Customer Note</div>
                   <div>
                     {deliveryData?.comment || ""}
                   </div>
-                </div>} */}
+                </div>}
                 <div className="flex flex-col space-y-[10px]">
                   <div className="font-semibold text-[#181D27]">
                     Payment Method

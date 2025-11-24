@@ -589,9 +589,8 @@ export default function OrderAddEditPage() {
   const handleCustomerSearch = async (searchText: string) => {
     if (!form.route) return [];
     try {
-      let response;
-     
-        response = await agentCustomerList({ route_id: form.route, search: searchText });
+      
+        const response = await agentCustomerList({ route_id: form.route, search: searchText });
       
       const data = Array.isArray(response?.data) ? response.data : [];
       
@@ -932,7 +931,7 @@ export default function OrderAddEditPage() {
 
               {
                 key: "return_type",
-                label: "Return Type",
+                label: "Reason Type",
                 width: 100,
                 render: (row) => (
                   <div style={{ minWidth: '100px', maxWidth: '100px' }}>
@@ -972,7 +971,7 @@ export default function OrderAddEditPage() {
               },
               {
                 key: "return_reason",
-                label: "Return Reason",
+                label: "Reason Reason",
                 width: 200,
                 render: (row) => {
                   // Prefer fetched reason options for the specific row, fall back to static lists

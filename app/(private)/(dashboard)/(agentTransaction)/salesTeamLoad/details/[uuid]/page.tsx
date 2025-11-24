@@ -54,43 +54,6 @@ export default function ViewPage() {
 
   const title = `Load ${customer?.osa_code || "-"}`;
 
-  // ✅ PDF Download
-  const handleDownload = async () => {
-    try {
-      const element = document.getElementById("print-area");
-      if (!element) return;
-
-      const canvas = await html2canvas(element, { scale: 2 });
-      const imgData = canvas.toDataURL("image/png");
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(`${customer?.osa_code || "Salesman_Load"}.pdf`);
-    } catch (err) {
-      console.error("Error generating PDF:", err);
-    }
-  };
-
-  // ✅ Print Function
-  const handlePrint = () => window.print();
-
-  // ✅ Fetch data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -133,24 +96,6 @@ export default function ViewPage() {
     })) || [];
 
   const targetRef = useRef<HTMLDivElement | null>(null);
-
-  const downloadPdf = async (uuid: string) => {
-    try {
-      setLoading(true);
-      const response = await exportSalesmanLoadDownload({ uuid: uuid, format: "excel" });
-      if (response && typeof response === 'object' && response.download_url) {
-        await downloadFile(response.download_url);
-        showSnackbar("File downloaded successfully ", "success");
-      } else {
-        showSnackbar("Failed to get download URL", "error");
-      }
-    } catch (error) {
-      showSnackbar("Failed to download file", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   return (
     <>
@@ -232,27 +177,26 @@ export default function ViewPage() {
                 <Table data={tableData} config={{ columns }} />
               </div>
             </div>
+              {/* ---------- Right Side (Table) ---------- */}
+              <div className="lg:col-span-2 w-full">
+                <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                  Load Items
+                </h3>
+                <Table data={tableData} config={{ columns }} />
+              </div>
+            </div>
 
-          </div>
-
-          {/* ---------- Footer Buttons ---------- */}
-          <div className="flex flex-wrap justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
-            {/* <SidebarBtn
-              leadingIcon="lucide:download"
-              leadingIconSize={20}
-              label="Download"
-              onClick={handleDownload}
-            /> */}
-            <SidebarBtn
-              leadingIcon={loading ? "eos-icons:three-dots-loading" : "lucide:download"}
-              leadingIconSize={20}
-              label="Download"
-              onClick={() => downloadPdf(uuid)}
-            />
-            <PrintButton targetRef={targetRef as unknown as RefObject<HTMLElement>} />
-
-          </div>
-        </ContainerCard>
+        {/* ---------- Footer Buttons ---------- */}
+        {/* <div className="flex flex-wrap justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
+          <SidebarBtn
+            leadingIcon="lucide:download"
+            leadingIconSize={20}
+            label="Download"
+            onClick={handleDownload}
+          />*/}
+          
+          <PrintButton targetRef={targetRef as unknown as RefObject<HTMLElement>} />
+      </ContainerCard>
       </div>
     </>
   );
