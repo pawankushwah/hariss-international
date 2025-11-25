@@ -510,7 +510,6 @@ export default function DeliveryAddEditPage() {
       warehouse_id: Number(values?.warehouse) || null,
       customer_id: Number(values?.customer_id) || null,
       delivery_date: values?.delivery_date || form.delivery_date,
-      order_code: values?.order_code || "",
       // gross_total: Number(grossTotal.toFixed(2)),
       vat: Number(totalVat.toFixed(2)),
       net_amount: Number(netAmount.toFixed(2)),
