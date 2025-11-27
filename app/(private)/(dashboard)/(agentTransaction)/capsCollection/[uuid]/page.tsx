@@ -310,7 +310,7 @@ const handleItemSearch = useCallback(async (searchText: string) => {
 
   // 🧾 Validation
   const validationSchema = yup.object().shape({
-    warehouse: yup.string().required("Warehouse is required"),
+    warehouse: yup.string().required("Distributor is required"),
     customer: yup.string().required("Customer is required"),
   });
 
@@ -481,9 +481,9 @@ const handleItemSearch = useCallback(async (searchText: string) => {
           <div>
             <AutoSuggestion
               required
-              label="Warehouse"
+              label="Distributor"
               name="warehouse"
-              placeholder="Search warehouse..."
+              placeholder="Search Distributor"
               initialValue={warehouseOptions.find(o => o.value === String(form.warehouse))?.label || ""}
               onSearch={handleWarehouseSearch}
               onSelect={(option: { value: string }) => {
@@ -637,6 +637,7 @@ const handleItemSearch = useCallback(async (searchText: string) => {
                     <InputFields
                       options={opts}
                       value={row.uom}
+                      placeholder="select UOM"
                       disabled={opts.length === 0}
                       onChange={(e) => {
                         const val = e.target.value;

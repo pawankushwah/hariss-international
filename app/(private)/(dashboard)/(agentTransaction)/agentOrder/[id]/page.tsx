@@ -10,13 +10,14 @@ import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import KeyValueData from "@/app/components/keyValueData";
 import InputFields from "@/app/components/inputFields";
 import AutoSuggestion from "@/app/components/autoSuggestion";
-import { agentCustomerGlobalSearch, agentCustomerList, genearateCode, getAllActiveWarehouse, itemGlobalSearch, itemList, pricingHeaderGetItemPrice, saveFinalCode, warehouseList, warehouseListGlobalSearch } from "@/app/services/allApi";
+import { agentCustomerGlobalSearch, agentCustomerList, genearateCode, getAllActiveWarehouse, itemGlobalSearch, itemList, itemWarehouseStock, pricingHeaderGetItemPrice, saveFinalCode, warehouseList, warehouseListGlobalSearch } from "@/app/services/allApi";
 import { addAgentOrder } from "@/app/services/agentTransaction";
 import { Formik, FormikHelpers, FormikProps, FormikValues } from "formik";
 import * as Yup from "yup";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
 import toInternationalNumber from "@/app/(private)/utils/formatNumber";
+import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
 interface FormData {
   id: number,
@@ -102,6 +103,7 @@ export default function OrderAddEditPage() {
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
   const { setLoading } = useLoading();
+  const { warehouseAllOptions } = useAllDropdownListData();
   const [skeleton, setSkeleton] = useState({
     route: false,
     customer: false,
@@ -199,7 +201,8 @@ export default function OrderAddEditPage() {
 
   // Function for fetching Item
   const fetchItem = async (searchTerm: string, values?: FormikValues) => {
-    const res = await itemGlobalSearch({ per_page: "10", query: searchTerm, warehouse: values?.warehouse || "" });
+    // const res = await itemWarehouseStock(values?.warehouse, { per_page: "10", query: searchTerm, warehouse_id: values?.warehouse || "" });
+    const res = await itemList({ dropdown: "true", query: searchTerm, warehouse_id: values?.warehouse || "" });
     if (res.error) {
       // showSnackbar(res.data?.message || "Failed to fetch items", "error");
       setSkeleton({ ...skeleton, item: false });
@@ -563,33 +566,24 @@ export default function OrderAddEditPage() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 mb-10">
                   <div>
-                    <AutoSuggestion
+                    <InputFields
                       required
                       label="Distributor"
                       name="warehouse"
                       placeholder="Search Distributor"
-                      onSearch={(q) => fetchWarehouse(q)}
-                      initialValue={filteredWarehouseOptions.find(o => o.value === String(values?.warehouse))?.label || ""}
-                      onSelect={(opt) => {
-                        if (values.warehouse !== opt.value) {
-                          setFieldValue("warehouse", opt.value);
+                      value={values.warehouse}
+                      options={warehouseAllOptions}
+                      searchable={true}
+                      onChange={(e) => {
+                        if (values.warehouse !== e.target.value) {
+                          setFieldValue("warehouse", e.target.value);
                           setSkeleton((prev) => ({ ...prev, customer: true }));
                           setFieldValue("customer", "");
                         } else {
-                          setFieldValue("warehouse", opt.value);
+                          setFieldValue("warehouse", e.target.value);
                         }
                       }}
-                      onClear={() => {
-                        setFieldValue("warehouse", "");
-                        setFieldValue("customer", "");
-                        setFilteredCustomerOptions([]);
-                        setItemData([{ item_id: "", item_name: "", item_label: "", UOM: [], Quantity: "1", Price: "", Excise: "", Discount: "", Net: "", Vat: "", Total: "" }]);
-                        setSkeleton((prev) => ({ ...prev, customer: false }));
-                      }}
-                      error={
-                        touched.warehouse &&
-                        (errors.warehouse as string)
-                      }
+                      error={touched.warehouse && (errors.warehouse as string)}
                     />
                   </div>
                   <div>

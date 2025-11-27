@@ -361,7 +361,7 @@ export default function OrderAddEditPage(){
   };
 
   const validationSchema = yup.object().shape({
-    warehouse: yup.string().required("Warehouse is required"),
+    warehouse: yup.string().required("Distributor is required"),
     customer: yup.string().required("Customer is required"),
     route: yup.string().required("Route is required"),
   });
@@ -593,9 +593,9 @@ export default function OrderAddEditPage(){
         <div className="flex flex-col sm:flex-row gap-4 mt-10 mb-10 flex-wrap">
           <AutoSuggestion
             required
-            label="Warehouse"
+            label="Distributor"
             name="warehouse"
-            placeholder="Search warehouse..."
+            placeholder="Search Distributor..."
             initialValue={form.warehouse_name}
             onSearch={handleWarehouseSearch}
             onSelect={(option: any) => {

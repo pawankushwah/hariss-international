@@ -367,7 +367,7 @@ export default function AutoSuggestion({
 
       {multiple ? (
         <div
-          className={`box-border border h-[44px] w-full rounded-md shadow-[0px_1px_2px_0px_#0A0D120D] px-3 mt-0 text-gray-900 placeholder-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100 flex items-center gap-2 min-w-0 ${error ? "border-red-500" : "border-gray-300"}`}
+          className={`box-border border h-[44px] w-full rounded-md shadow-[0px_1px_2px_0px_#0A0D120D] px-3 mt-0 text-gray-900 placeholder-gray-400 disabled:cursor-not-allowed disabled:bg-gray-200 flex items-center gap-2 min-w-0 ${error ? "border-red-500" : "border-gray-300"}`}
           onClick={() => { if (!disabled) inputRef.current?.focus(); }}
         >
           <div className="flex items-center gap-2 flex-1 flex-nowrap overflow-hidden min-w-0">
@@ -437,7 +437,7 @@ export default function AutoSuggestion({
           autoComplete="off"
           disabled={disabled}
           ref={inputRef}
-          className={`box-border border h-[44px] w-full rounded-md shadow-[0px_1px_2px_0px_#0A0D120D] px-3 mt-0 text-gray-900 placeholder-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100 ${error ? "border-red-500" : "border-gray-300"} ${!label ? "mt-[6px]" : ""}`}
+          className={`box-border border h-[44px] w-full rounded-md shadow-[0px_1px_2px_0px_#0A0D120D] px-3 mt-0 text-gray-900 placeholder-gray-400 disabled:cursor-not-allowed disabled:bg-gray-200 ${error ? "border-red-500" : "border-gray-300"} ${!label ? "mt-[6px]" : ""}`}
           placeholder={placeholder}
           value={query}
           onChange={e => {

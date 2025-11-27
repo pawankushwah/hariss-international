@@ -154,7 +154,7 @@ export default function SalesmanUnloadPage() {
     { key: "laod_date", label: "Load Date" },
     {
       key: "salesman",
-      label: "Salesman",
+      label: "Sales Team",
       render: (row: TableDataType) => {
         const obj =
           typeof row.salesman === "string"
@@ -165,7 +165,7 @@ export default function SalesmanUnloadPage() {
     },
     {
       key: "warehouse",
-      label: "Warehouse",
+      label: "Distributor",
       render: (row: TableDataType) => {
         const obj =
           typeof row.warehouse === "string"
@@ -183,7 +183,7 @@ export default function SalesmanUnloadPage() {
         return obj ? `${obj.code} - ${obj.name}` : "-";
       },
     },
-    { key: "Salesman_type", label: "Salesman Role" },
+    { key: "Salesman_type", label: "Sales Team Role" },
     { key: "unload_no", label: "Unload No." },
     { key: "unload_from", label: "Unload By" },
     {
@@ -220,7 +220,7 @@ export default function SalesmanUnloadPage() {
               },
               {
                 key: "warehouse",
-                label: "Warehouse",
+                label: "Distributor",
                 isSingle: false,
                 multiSelectChips: true,
                 options: Array.isArray(warehouseOptions)

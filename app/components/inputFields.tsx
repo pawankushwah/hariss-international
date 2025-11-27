@@ -496,7 +496,7 @@ export default function InputFields({
                           {selected.length > 2 && <span className="text-sm text-gray-700 ml-1">+{selected.length - 2}</span>}
                           <input
                             type="text"
-                            placeholder={selected.length === 0 ? `Search ${label}` : undefined}
+                            placeholder={placeholder || `Search ${label}`}
                             value={displayValue}
                             onChange={e => {
                               const v = (e.target as HTMLInputElement).value;
@@ -528,7 +528,7 @@ export default function InputFields({
                       return (
                         <input
                           type="text"
-                          placeholder={selected.length === 0 ? `Search ${label}` : undefined}
+                          placeholder={placeholder || `Search ${label}`}
                           value={displayValue}
                           onChange={e => {
                             const v = (e.target as HTMLInputElement).value;
@@ -601,7 +601,7 @@ export default function InputFields({
                   </div>
                 )}
               </div>
-              {dropdownOpen && !loading && dropdownProperties.width !== "0" && (
+              {dropdownOpen && !loading && dropdownProperties.width !== "0" && !disabled && (
                 <>
                   <div style={{ left: dropdownProperties.left, top: dropdownProperties.top, width: dropdownProperties.width, maxHeight: dropdownProperties.maxHeight }} className="inputfields-dropdown-content fixed z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg overflow-auto" >
                     {!isSearchable && filteredOptions.length > 0 && (
@@ -686,7 +686,7 @@ export default function InputFields({
                 onMouseDown={() => { pointerDownRef.current = true; }}
                 onMouseUp={() => { pointerDownRef.current = false; }}
                 onFocus={() => { if (!pointerDownRef.current && !disabled) { computeDropdownProps(); setDropdownOpen(true); } }}
-                className={`${showBorder === true && "border"} h-[44px] w-full rounded-md shadow-[0px_1px_2px_0px_#0A0D120D] mt-0 flex items-center cursor-pointer min-w-0 ${error ? "border-red-500" : "border-gray-300"} ${disabled ? "bg-gray-200" : "bg-white"}`}
+                className={`${showBorder === true && "border"} h-[44px] w-full rounded-md shadow-[0px_1px_2px_0px_#0A0D120D] mt-0 flex items-center cursor-pointer min-w-0 ${error ? "border-red-500" : "border-gray-300"} ${disabled ? "bg-gray-200 cursor-not-allowed" : "bg-white"}`}
                 onClick={() => { if (!loading && !isSearchable && !disabled) { computeDropdownProps(); setDropdownOpen(v => !v); } }}
               >
                 {isSearchable ? (
@@ -697,7 +697,7 @@ export default function InputFields({
                     return (
                       <input
                         type="text"
-                        placeholder={placeholder ? placeholder : `Search ${label}`}
+                        placeholder={placeholder || `Search ${label}`}
                         value={displayValue}
                         autoComplete='off'
                         onChange={e => {
@@ -712,6 +712,7 @@ export default function InputFields({
                             safeOnChange(createSingleSelectEvent(''));
                           }
                         }}
+                        disabled={disabled}
                         onFocus={() => setDropdownOpen(true)}
                         className={`w-full truncate outline-none border-none px-3 h-full placeholder:text-gray-400 ${hasSelection ? 'text-gray-900' : 'text-gray-400'}`}
                         style={hasSelection ? { color: '#111827' } : undefined}
@@ -731,7 +732,7 @@ export default function InputFields({
                   })()
                 ) : (
                   <span className={`truncate flex-1 px-3 ${!value ? "text-gray-400" : "text-gray-900"}`}>
-                    {(!value ? `Select ${label}` : options?.find(opt => opt.value === value)?.label)
+                    {(!value ? placeholder || `Select ${label}` : options?.find(opt => opt.value === value)?.label)
                     }
                   </span>
                 )}
@@ -741,7 +742,7 @@ export default function InputFields({
                 </div>
                 )}
               </div>
-              {dropdownOpen && !loading && dropdownProperties.width !== "0" && (
+              {dropdownOpen && !loading && dropdownProperties.width !== "0" && !disabled && (
                 <div style={{ left: dropdownProperties.left, top: dropdownProperties.top, width: dropdownProperties.width, maxHeight: dropdownProperties.maxHeight }} className="inputfields-dropdown-content transition-all ease-in-out fixed z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl overflow-auto">
                   {showSearchInDropdown && (
                     <div className="px-3 py-2 border-b flex items-center" style={{ borderBottomColor: '#9ca3af' }}>
@@ -905,7 +906,7 @@ export default function InputFields({
             step={integerOnly ? 1 : step ? step : undefined}
             disabled={disabled}
             onBlur={onBlur}
-            className={`border h-[44px] w-full rounded-md shadow-[0px_1px_2px_0px_#0A0D120D] px-3 mt-0 text-gray-900 placeholder-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100 ${error ? "border-red-500" : "border-gray-300"}`}
+            className={`border h-[44px] w-full rounded-md shadow-[0px_1px_2px_0px_#0A0D120D] px-3 mt-0 text-gray-900 placeholder-gray-400 disabled:cursor-not-allowed disabled:bg-gray-200 ${error ? "border-red-500" : "border-gray-300"}`}
             placeholder={`Enter ${label}`}
             maxLength={maxLength}
             min={min}

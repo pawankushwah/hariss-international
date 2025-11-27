@@ -2153,6 +2153,15 @@ export const itemExport = async (params?: Params) => {
   }
 };
 
+export const itemWarehouseStock = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/settings/warehouse-stocks/${uuid}/stock-details`, { params: params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 export const updateItemStatus = async (body: object) => {
   try {
     const res = await API.post(`api/master/items/update-status`, body);

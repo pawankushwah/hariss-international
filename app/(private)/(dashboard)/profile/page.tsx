@@ -149,7 +149,7 @@ export default function ProfilePage() {
                 <>
                   <span className="text-gray-600">Email</span>
                   <span className="text-gray-600">:</span>
-                  <span className="font-medium">{profile.email}</span>
+                  <span className="font-medium lowercase">{profile.email}</span>
                 </>
               ) : null}
 
