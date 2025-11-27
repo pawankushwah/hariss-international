@@ -524,7 +524,7 @@ export default function OrderAddEditPage() {
             onClick={() => router.back()}
           />
           <h1 className="text-[20px] font-semibold text-[#181D27] flex items-center leading-[30px]">
-            Add Order
+            Add Distributor&apos;s Orders
           </h1>
         </div>
       </div>
@@ -565,9 +565,9 @@ export default function OrderAddEditPage() {
                   <div>
                     <AutoSuggestion
                       required
-                      label="Warehouse"
+                      label="  Distributor"
                       name="warehouse"
-                      placeholder="Search warehouse"
+                      placeholder="Search   Distributor"
                       onSearch={(q) => fetchWarehouse(q)}
                       initialValue={filteredWarehouseOptions.find(o => o.value === String(values?.warehouse))?.label || ""}
                       onSelect={(opt) => {

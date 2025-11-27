@@ -326,8 +326,8 @@ export const initialLinkData: SidebarDataType[] = [
           },
           {
             isActive: false,
-            href: "/return",
-            label: "Return",
+            href: "/distributorsReturn",
+            label: "Distributor's Return",
             leadingIcon: "mdi:truck-remove-outline",
             iconColor: "text-cyan-500"
           },
@@ -427,6 +427,13 @@ export const initialLinkData: SidebarDataType[] = [
             leadingIcon: "hugeicons:invoice",
             iconColor: "text-cyan-500"
           },
+          {
+            isActive: false,
+            href: "/compensationReport",
+            label: "Compensation Report",
+            leadingIcon: "hugeicons:invoice",
+            iconColor: "text-cyan-500"
+          },
         ]
       },
       {
@@ -440,7 +447,7 @@ export const initialLinkData: SidebarDataType[] = [
           {
             isActive: false,
             href: "/compiledClaims",
-            label: "compiled Claims",
+            label: "Compiled Claims",
             leadingIcon: "carbon:delivery-parcel",
             iconColor: "text-cyan-500"
           },
@@ -448,7 +455,7 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/petitClaim",
             label: "Petit Claim",
-            leadingIcon: "carbon:delivery-parcel",
+            leadingIcon: "mdi:file-document-outline",
             iconColor: "text-cyan-500"
           },
           

@@ -136,6 +136,16 @@ export default function TopBar({
                                     <CustomDropdown
                                         data={[
                                             {
+                                                icon: "mdi:account-multiple",
+                                                label: "Profile",
+                                                onClick: () => {
+                                                    setIsOpenDropdown(false);
+                                                    router.push(
+                                                        "/profile"
+                                                    );
+                                                },
+                                            },
+                                            {
                                                 icon: "mynaui:lock",
                                                 label: "Change Password",
                                                 onClick: () => {

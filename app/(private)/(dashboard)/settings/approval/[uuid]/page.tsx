@@ -89,6 +89,7 @@ function convertWorkflow(oldData: any) {
 
             return {
                 ...step,
+                id:step.step_order,
                 step_order: step.step_order,
                 title: step.title,
                 condition: step.approval_type,
@@ -107,13 +108,14 @@ function convertWorkflow(oldData: any) {
 }
 
 
-export function convertToNewFlow(old: OldFlow): any {
+export function convertToNewFlow(old: any): any {
     return {
+        workflow_id:old.workflow_id,
         name: old.approvalName,
         description: old.description,
         is_active: old.status === "1",
 
-        steps: old.steps.map((step, index) => {
+        steps: old.steps.map((step:any, index:any) => {
             // convert permissions
             const permissions: string[] = step.formType
             // approval type
@@ -123,7 +125,10 @@ export function convertToNewFlow(old: OldFlow): any {
             const title = `Step ${index + 1}`;
 
             return {
+                ...step,
+
                 step_order: index + 1,
+                id:index + 1,
                 title: title,
                 approval_type: approvalType,
                 message: step.approvalMessage || null,
@@ -245,8 +250,8 @@ export default function AddApprovalFlow() {
     //   };
     async function apiCall()
     {
-         let data = await singleWorkFlowList(uuid)
-         let store = data.data
+         const data = await singleWorkFlowList(uuid)
+         const store = data.data
          console.log(store,"hii252")
   const flow: any = convertWorkflow(store)
         console.log(flow,"25")
@@ -355,15 +360,19 @@ export default function AddApprovalFlow() {
             setLoading(true);
             const resultData = await approvalWorkfolowUpdate(result)
 
-            console.log("Submitting Data:", newFormData);
+            console.log("Submitting Data:", resultData);
             // setLoading(false)
-            if(resultData)
+            if(resultData.success)
             {
-            showSnackbar("Approval Flow Created Successfully ✅", "success");
+            showSnackbar("Approval Flow Updated Successfully ✅", "success");
             setLoading(false);
+            router.push("/settings/approval");
 
             }
-            // router.push("/approval");
+            else{
+            showSnackbar("Something went wrong.", "error");
+
+            }
         }
         catch (err) {
             console.log(err)
@@ -504,10 +513,10 @@ export default function AddApprovalFlow() {
     return (
         <>
             <div className="flex items-center gap-2 mb-4">
-                <Link href="/approval">
+                <Link href="/settings/approval">
                     <Icon icon="lucide:arrow-left" width={24} />
                 </Link>
-                <h1 className="text-xl font-semibold text-gray-900">Create Approval Flow</h1>
+                <h1 className="text-xl font-semibold text-gray-900">Update Approval Flow</h1>
             </div>
             <StepperForm
                 steps={steps.map((s) => ({ ...s, isCompleted: isStepCompleted(s.id) }))}

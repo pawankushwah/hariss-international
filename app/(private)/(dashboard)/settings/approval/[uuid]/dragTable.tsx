@@ -16,6 +16,7 @@ import Toggle from "@/app/components/toggle";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import { authUserList } from "@/app/services/allApi";
 import { customer } from "@/app/(private)/data/customerDetails";
+import Skeleton from "@mui/material/Skeleton";
 
 type OptionType = { value: string; label: string };
 
@@ -50,11 +51,7 @@ const targetTypeOptions: OptionType[] = [
     { value: "2", label: "User" },
 ];
 
-const roleOptions: OptionType[] = [
-    { value: "r1", label: "Admin" },
-    { value: "r2", label: "Manager" },
-    { value: "r3", label: "Employee" },
-];
+
 
 const customerOptions: OptionType[] = [
     { value: "c1", label: "Customer A" },
@@ -76,13 +73,13 @@ const formTypeOptions: OptionType[] =[
 
 export default function ApprovalFlowTable({ roleListData, usersData, steps, setSteps }: { roleListData: OptionType[], usersData: OptionType[], steps: ApprovalStep[], setSteps: React.Dispatch<React.SetStateAction<ApprovalStep[]>> }) {
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [editingIndex, setEditingIndex] = useState<string | null>(null);
+    const [editingIndex, setEditingIndex] = useState<number | any>(null);
 
     const [userOptions, setUserOptions] = useState<OptionType[]>([]);
 
     type FormState = {
         formType: string[];
-        
+
         condition: string;
         targetType: string;
         role_id?: string;
@@ -124,7 +121,8 @@ export default function ApprovalFlowTable({ roleListData, usersData, steps, setS
         if (editingId) {
             
             console.log(editingId,"editi")
-            steps.filter
+             steps[editingIndex] = {...form}
+             setSteps([...steps])
             
             setEditingId(null);
         } else {
@@ -169,11 +167,13 @@ export default function ApprovalFlowTable({ roleListData, usersData, steps, setS
                 customer_id: step?.selectedCustomer ?? [],
                 selectedCustomer: step?.selectedCustomer ?? [],
             } as any);
-            setEditingId(id,index);
+            setEditingId(id);
+            setEditingIndex(index)
         }
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
+        console.log("hii")
         const { active, over } = event;
         if (active.id !== over?.id) {
             setSteps((items) => {
@@ -458,7 +458,10 @@ export default function ApprovalFlowTable({ roleListData, usersData, steps, setS
                                 </tr>
                             </thead>
                             <tbody>
-                                {steps.map((step, idx) => (
+                                {steps.map((step, idx) => {
+                                    console.log(step,"546hii")
+                                    
+                                    return(
                                     <SortableRow
                                         key={step.id}
                                         step={step}
@@ -470,7 +473,7 @@ export default function ApprovalFlowTable({ roleListData, usersData, steps, setS
                                         roleOptions={roleListData}
                                         userOptions={userOptions}
                                     />
-                                ))}
+                                )})}
                             </tbody>
                         </table>
                     </SortableContext>
@@ -504,18 +507,10 @@ function SortableRow({
 
     const style = { transform: CSS.Transform.toString(transform), transition };
 
-    const relatedOptions = allSteps
-        .filter((s) => s.id !== step.id)
-        .map((s, i) => ({
-            value: s.id,
-            label: `Step ${i + 1} - ${s.roleOrCustomer}`,
-        }));
-
-    console.log(step, "step")
 
     return (
-        <tr className="text-[14px] bg-white text-[#535862]">
-            <td ref={setNodeRef} style={style} {...attributes} {...listeners} className="p-2 text-center font-semibold">{index + 1}</td>
+        roleOptions?<tr className="text-[14px] bg-white text-[#535862]">
+            <td draggable={true} ref={setNodeRef} style={style} {...attributes} {...listeners} className="p-2 text-center font-semibold">{index + 1}</td>
             {/* <td className="px-[24px] py-[12px] bg-white   ">{Array.isArray(step.formType) ? step.formType.join(", ") : step.formType}</td> */}
             <td className="px-[24px] py-[12px] bg-white   ">{step.targetType === "1" ? "Role" : "User"}</td>
             <td className="px-[24px] py-[12px] bg-white   ">{step.targetType === "1" ? <InputFields
@@ -553,5 +548,5 @@ function SortableRow({
                 </SidebarBtn>
             </td>
         </tr>
-    );
+    :<><Skeleton/></>)
 }

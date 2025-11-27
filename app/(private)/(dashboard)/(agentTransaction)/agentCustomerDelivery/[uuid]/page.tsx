@@ -139,9 +139,9 @@ interface ItemData {
   Vat: string;
   Total: string;
   [key: string]:
-    | string
-    | { label: string; value: string; price?: string }[]
-    | undefined;
+  | string
+  | { label: string; value: string; price?: string }[]
+  | undefined;
 }
 
 export default function DeliveryAddEditPage() {
@@ -292,12 +292,12 @@ export default function DeliveryAddEditPage() {
     const updatedData = data.map((item: any) => {
       const item_uoms = item?.item_uoms
         ? item?.item_uoms?.map((uom: any) => {
-            if (uom?.uom_type === "primary") {
-              return { ...uom, price: item.pricing?.auom_pc_price };
-            } else if (uom?.uom_type === "secondary") {
-              return { ...uom, price: item.pricing?.buom_ctn_price };
-            }
-          })
+          if (uom?.uom_type === "primary") {
+            return { ...uom, price: item.pricing?.auom_pc_price };
+          } else if (uom?.uom_type === "secondary") {
+            return { ...uom, price: item.pricing?.buom_ctn_price };
+          }
+        })
         : item?.item_uoms;
       return { ...item, item_uoms };
     });
@@ -500,7 +500,7 @@ export default function DeliveryAddEditPage() {
 
   const generatePayload = (values?: FormikValues) => {
     return {
-      order_code: code,
+      delivery_code: code,
       warehouse_id: Number(values?.warehouse) || null,
       customer_id: Number(values?.customer_id) || null,
       delivery_date: values?.delivery_date || form.delivery_date,
@@ -551,6 +551,7 @@ export default function DeliveryAddEditPage() {
 
       formikHelpers.setSubmitting(true);
       const payload = generatePayload(values);
+      // console.log(payload)
       // console.log("Submitting payload:", payload);
       const res = await createDelivery(payload);
       if (res.error) {
@@ -596,6 +597,7 @@ export default function DeliveryAddEditPage() {
       warehouse_id: values.warehouse,
       delivery_date: values.delivery_date,
       query: search || "",
+      order_flag: "1",
       per_page: "10",
     });
     if (res.error) {
@@ -793,9 +795,9 @@ export default function DeliveryAddEditPage() {
                   <div>
                     <AutoSuggestion
                       required
-                      label="Warehouse"
+                      label="  Distributor"
                       name="warehouse"
-                      placeholder="Search warehouse"
+                      placeholder="Search   Distributor"
                       onSearch={(q) => fetchWarehouse(q)}
                       initialValue={
                         filteredWarehouseOptions.find(
@@ -856,7 +858,16 @@ export default function DeliveryAddEditPage() {
                           .slice(0, 10)
                       }
                       min={new Date().toISOString().slice(0, 10)} // today
-                      onChange={handleChange}
+                      onChange={(e) => {
+                        handleChange(e);
+                        (async () => {
+                          setFieldValue("delivery", "");
+                          await fetchAgentDeliveries(
+                            { ...values, delivery_date: e.target.value },
+                            "",
+                          );
+                        })();
+                      }}
                     />
                   </div>
 
@@ -895,10 +906,10 @@ export default function DeliveryAddEditPage() {
                               item_label: `${d.item_code ?? ""}${d.item_code ? " - " : ""}${d.item_name ?? ""}`,
                               UOM: d.item_uoms
                                 ? d.item_uoms.map((uom: any) => ({
-                                    label: uom.name ?? "",
-                                    value: String(uom.id),
-                                    price: String(uom.price ?? ""),
-                                  }))
+                                  label: uom.name ?? "",
+                                  value: String(uom.id),
+                                  price: String(uom.price ?? ""),
+                                }))
                                 : [],
                               uom_id: d.uom_id ? String(d.uom_id) : "",
                               Quantity: String(d.quantity ?? "1"),
@@ -910,8 +921,8 @@ export default function DeliveryAddEditPage() {
                               Discount: String(d.discount ?? "0.00"),
                               Net: String(
                                 d.net_total ??
-                                  d.net_total ??
-                                  computedTotal - computedVat,
+                                d.net_total ??
+                                computedTotal - computedVat,
                               ),
                               Vat: String(
                                 computedVat.toFixed
@@ -934,20 +945,20 @@ export default function DeliveryAddEditPage() {
                             mapped.length
                               ? mapped
                               : [
-                                  {
-                                    item_id: "",
-                                    item_name: "",
-                                    item_label: "",
-                                    UOM: [],
-                                    Quantity: "1",
-                                    Price: "",
-                                    Excise: "",
-                                    Discount: "",
-                                    Net: "",
-                                    Vat: "",
-                                    Total: "",
-                                  },
-                                ],
+                                {
+                                  item_id: "",
+                                  item_name: "",
+                                  item_label: "",
+                                  UOM: [],
+                                  Quantity: "1",
+                                  Price: "",
+                                  Excise: "",
+                                  Discount: "",
+                                  Net: "",
+                                  Vat: "",
+                                  Total: "",
+                                },
+                              ],
                           );
                         }
                       }}
@@ -1104,11 +1115,11 @@ export default function DeliveryAddEditPage() {
                                     intPart === ""
                                       ? ""
                                       : String(
-                                          Math.max(
-                                            0,
-                                            parseInt(intPart, 10) || 0,
-                                          ),
-                                        );
+                                        Math.max(
+                                          0,
+                                          parseInt(intPart, 10) || 0,
+                                        ),
+                                      );
                                   recalculateItem(
                                     Number(row.idx),
                                     "Quantity",
@@ -1206,10 +1217,9 @@ export default function DeliveryAddEditPage() {
                               flex
                               text-red-500
                               items-center
-                              ${
-                                itemData.length <= 1
-                                  ? "opacity-50 cursor-not-allowed"
-                                  : ""
+                              ${itemData.length <= 1
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
                               }
                             `}
                           >
@@ -1239,8 +1249,19 @@ export default function DeliveryAddEditPage() {
                       justify-between
                     "
                   >
-                    <div className="flex flex-col w-full justify-start gap-[20px] lg:w-auto">
-                      <div className="mt-4">
+                    <div
+                      className="
+                        flex flex-col
+                        w-full
+                        justify-start gap-[20px]
+                        lg:w-auto
+                      "
+                    >
+                      <div
+                        className="
+                          mt-4
+                        "
+                      >
                         {(() => {
                           // disable add when there's already an empty/new item row
                           const hasEmptyRow = itemData.some(

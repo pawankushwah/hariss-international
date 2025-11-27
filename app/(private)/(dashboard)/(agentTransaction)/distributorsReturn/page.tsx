@@ -37,28 +37,28 @@ const columns = [
         key: "warehouse_code", label: "Warehouse", showByDefault: true, render: (row: TableDataType) => {
             const code = row.warehouse_code || "";
             const name = row.warehouse_name || "";
-            return `${code}${code && name ? " - " : ""}${name}`;
+            return `${code}${code && name ? " - " : "-"}${name}`;
         }
     },
     {
         key: "route_code", label: "Route", showByDefault: true, render: (row: TableDataType) => {
             const code = row.route_code || "";
             const name = row.route_name || "";
-            return `${code}${code && name ? " - " : ""}${name}`;
+            return `${code}${code && name ? " - " : "-"}${name}`;
         }
     },
     {
         key: "customer_code", label: "Customer", showByDefault: true, render: (row: TableDataType) => {
             const code = row.customer_code || "";
             const name = row.customer_name || "";
-            return `${code}${code && name ? " - " : ""}${name}`;
+            return `${code}${code && name ? " - " : "-"}${name}`;
         }
     },
     {
         key: "salesman_code", label: "Salesman", showByDefault: true, render: (row: TableDataType) => {
             const code = row.salesman_code || "";
             const name = row.salesman_name || "";
-            return `${code}${code && name ? " - " : ""}${name}`;
+            return `${code}${code && name ? " - " : "-"}${name}`;
         }
     },
     {
@@ -70,20 +70,20 @@ const columns = [
             } as FormatNumberOptions);
         },
     },
-    {
-        key: "status",
-        label: "Status",
-        isSortable: true,
-        render: (row: TableDataType) => {
-            // Treat status 1 or 'active' (case-insensitive) as active
-            const isActive =
-                String(row.status) === "1" ||
-                (typeof row.status === "string" &&
-                    row.status.toLowerCase() === "active");
-            return <StatusBtn isActive={isActive} />;
-        },
-        showByDefault: true,
-    },
+    // {
+    //     key: "status",
+    //     label: "Status",
+    //     isSortable: true,
+    //     render: (row: TableDataType) => {
+    //         // Treat status 1 or 'active' (case-insensitive) as active
+    //         const isActive =
+    //             String(row.status) === "1" ||
+    //             (typeof row.status === "string" &&
+    //                 row.status.toLowerCase() === "active");
+    //         return <StatusBtn isActive={isActive} />;
+    //     },
+    //     showByDefault: true,
+    // },
 ];
 
 export default function CustomerInvoicePage() {
@@ -232,7 +232,7 @@ export default function CustomerInvoicePage() {
                 config={{
                     api: { list: fetchInvoices, search: searchInvoices, filterBy: filterBy, },
                     header: {
-                        title: "Return",
+                        title: "Distributor's Return",
                         columnFilter: true,
                         threeDot: [
                             {
@@ -264,7 +264,6 @@ export default function CustomerInvoicePage() {
                                 label: "Date Range",
                                 type: "dateChange"
                             },
-
                             {
                                 key: "warehouse",
                                 label: "Warehouse",
@@ -286,8 +285,6 @@ export default function CustomerInvoicePage() {
                                 multiSelectChips: true,
                                 options: Array.isArray(routeOptions) ? routeOptions : [],
                             },
-
-
                             {
                                 key: "customer",
                                 label: "Customer",
@@ -341,7 +338,7 @@ export default function CustomerInvoicePage() {
                         actions: [
                             <SidebarBtn
                                 key={1}
-                                href="/return/add"
+                                href="/distributorsReturn/add"
                                 isActive
                                 leadingIcon="mdi:plus"
                                 label="Add"
@@ -357,7 +354,7 @@ export default function CustomerInvoicePage() {
                             icon: "lucide:eye",
                             onClick: (row: TableDataType) =>
                                 router.push(
-                                    `/return/details/${row.uuid}`
+                                    `/distributorsReturn/details/${row.uuid}`
                                 ),
                         },
                         {

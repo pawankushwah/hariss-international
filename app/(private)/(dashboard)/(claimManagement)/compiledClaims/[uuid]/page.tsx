@@ -48,6 +48,7 @@ export default function AddEditRoute() {
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<CompiledClaimRow[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
   const [creatingMap, setCreatingMap] = useState<Record<string, boolean>>({});
   
   const [form, setForm] = useState({
@@ -149,7 +150,8 @@ export default function AddEditRoute() {
       return;
     }
 
-    setSearchLoading(true);
+  setSearchLoading(true);
+  setHasSearched(true);
     try {
       const params = {
         from_date: form.fromDate,
@@ -242,11 +244,11 @@ export default function AddEditRoute() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <Link href="/compailedClaim">
+          <Link href="/compiledClaims">
             <Icon icon="lucide:arrow-left" width={24} />
           </Link>
           <h1 className="text-xl font-semibold text-gray-900">
-            {isEditMode ? "Update Compailed Claim" : "Add Compailed Claim"}
+            {isEditMode ? "Update Compiled Claims" : "Add Compiled Claims"}
           </h1>
         </div>
       </div>
@@ -255,7 +257,7 @@ export default function AddEditRoute() {
       <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
         <div className="p-6">
           <h2 className="text-lg font-medium text-gray-800 mb-4">
-            Compailed Claim Details
+            Compiled Claims Details
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Route Code */}
@@ -343,8 +345,14 @@ export default function AddEditRoute() {
         
       </div>
 
-          {/* Search results table */}
-          {searchResults && searchResults.length > 0 && (
+          {/* Search results table, loading, or no data message */}
+          {searchLoading ? (
+            <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
+              <div className="p-6 flex items-center justify-center min-h-[60px]">
+                <Loading />
+              </div>
+            </div>
+          ) : searchResults && searchResults.length > 0 ? (
             <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
               <div className="p-6">
                 <h2 className="text-lg font-medium text-gray-800 mb-4">Search Results</h2>
@@ -413,6 +421,14 @@ export default function AddEditRoute() {
                 />
               </div>
             </div>
+          ) : (
+            hasSearched && (
+              <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
+                <div className="p-6 flex items-center justify-center min-h-[120px]">
+                  <span className="text-gray-500 text-lg">No data found</span>
+                </div>
+              </div>
+            )
           )}
 
     

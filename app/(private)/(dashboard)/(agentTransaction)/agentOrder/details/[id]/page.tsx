@@ -48,7 +48,7 @@ interface OrderData {
   customer_email: string,
   customer_contact: string,
   customer_street: string,
-  customer_city: string,
+  customer_town: string,
   delivery_date: string,
   comment: string,
   created_at: string,
@@ -125,7 +125,7 @@ export default function OrderDetailPage() {
     (sum, item) => sum + Number(item.discount || 0),
     0
   ) ?? 0;
-  const finalTotal = grossTotal + totalVat;
+  const finalTotal = netAmount + totalVat;
 
   const keyValueData = [
     { key: "Net Total", value: CURRENCY + " " + toInternationalNumber(netAmount ?? 0) },
@@ -168,7 +168,7 @@ export default function OrderDetailPage() {
             className="cursor-pointer"
           />
           <h1 className="text-[20px] font-semibold text-[#181D27] flex items-center leading-[30px]">
-            Order #{data?.order_code || "-"}
+            Distributor&apos;s Orders Details #{data?.order_code || "-"}
           </h1>
           <BorderIconButton disabled={!data?.previous_uuid} onClick={data?.previous_uuid ? () => router.push(`${PATH}${data.previous_uuid}`) : undefined} icon="lucide:chevron-left" label={"Prev"} labelTw="font-medium text-[12px]" className="!h-[30px] !gap-[3px] !px-[5px] !pr-[10px]" />
           <BorderIconButton disabled={!data?.next_uuid} onClick={data?.next_uuid ? () => router.push(`${PATH}${data.next_uuid}`) : undefined} trailingIcon="lucide:chevron-right" label={"Next"} labelTw="font-medium text-[12px]" className="!h-[30px] !gap-[3px] !px-[5px] !pl-[10px]" />
@@ -237,10 +237,10 @@ export default function OrderDetailPage() {
             {/* To (Customer) */}
             <div>
               <div className="flex flex-col space-y-[12px] text-primary-bold text-[14px]">
-                <span>Customer</span>
+                <span>Buyer</span>
                 <div className="flex flex-col space-y-[10px]">
                   <span className="font-semibold">{data?.customer_code && data?.customer_name ? `${data?.customer_code} - ${data?.customer_name}` : "-"}</span>
-                  <span>{data?.customer_street && ` ${data?.customer_street}`}</span>
+                  <span>{data?.customer_street && ` ${data?.customer_street}`}{data?.customer_town && ` ${data?.customer_town}`}</span>
                   <span>
                     {data?.customer_contact && `Phone: ${data?.customer_contact}`} <br /> {data?.customer_email && `Email: ${data?.customer_email}`}
                   </span>

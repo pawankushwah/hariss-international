@@ -2041,6 +2041,19 @@ export const workFlowList = async () => {
   }
 };
 
+export const workFlowAssignList = async () => {
+  try {
+    
+    const res = await API.get(
+      `/api/master/approval/workflow/assigned-list
+`);
+
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 export const singleWorkFlowList = async (uuid:string) => {
   try {
     const res = await API.get(
@@ -2820,6 +2833,15 @@ export const addMenu = async (payload: menuType) => {
 export const updateMenu = async (uuid: string, payload: menuType) => {
   try {
     const res = await API.put(`/api/settings/menus/update/${uuid}`, payload);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const assignWorkFlowsToSubmenu= async (payload: any) => {
+  try {
+    const res = await API.post(`/api/master/approval/workflow/start`, payload);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

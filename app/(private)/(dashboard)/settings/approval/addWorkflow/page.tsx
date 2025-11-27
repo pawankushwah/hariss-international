@@ -289,11 +289,16 @@ export default function AddApprovalFlow() {
             const resultData = await approvalAdd(result)
 
             console.log("Submitting Data:", newFormData);
-            setLoading(false)
-            if(resultData)
+             if(resultData.success)
             {
             showSnackbar("Approval Flow Created Successfully ✅", "success");
             setLoading(false);
+            
+            router.push("/settings/approval");
+
+            }
+            else{
+            showSnackbar("Something went wrong.", "error");
 
             }
             // router.push("/approval");
@@ -438,7 +443,7 @@ fetchUsersList();
     return (
         <>
             <div className="flex items-center gap-2 mb-4">
-                <Link href="/approval">
+                <Link href="/settings/approval">
                     <Icon icon="lucide:arrow-left" width={24} />
                 </Link>
                 <h1 className="text-xl font-semibold text-gray-900">Create Approval Flow</h1>
