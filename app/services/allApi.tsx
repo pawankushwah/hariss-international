@@ -3368,9 +3368,13 @@ export const registerAuthUser = async (body: object) => {
   }
 };
 
-export const updateAuthUser = async (uuid: string, body: object) => {
+export const updateAuthUser = async (uuid: string, body: object, type: "json" | "form-data" = "json") => {
   try {
-    const res = await API.put(`/api/master/auth/updateUser/${uuid}`, body);
+    if (type === "json") {
+      const res = await API.post(`/api/master/auth/updateUser/${uuid}`, body);
+      return res.data;
+    }
+    const res = await APIFormData.post(`/api/master/auth/updateUser/${uuid}`, body);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
