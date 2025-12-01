@@ -29,14 +29,7 @@ export type FilterField = {
     placeholder?: string;
     isSingle?: boolean;
     multiSelectChips?: boolean;
-    // optional predicate to determine whether this filter should be applied.
-    // Receives the full `filters` object and should return `true` when the
-    // filter should be applied (included in payload / client-side filter).
-    // Example for a date-range start field:
-    // applyWhen: (filters) => Boolean(filters.startDate && filters.endDate)
     applyWhen?: (filters: Record<string, any>) => boolean;
-    // arbitrary props to forward directly to the `InputFields` component
-    // useful for passing attributes like `inputProps`, `disabled`, `max`, etc.
     inputProps?: Record<string, any>;
 };
 
@@ -106,13 +99,18 @@ export type configType = {
     pageSizeOptions?: number[]; // yet to implement
     rowSelection?: boolean;
     dragableColumn?: boolean;
+    floatingInfoBar?: {
+        showByDefault?: boolean;
+        showSelectedRow?: boolean;
+        buttons?: (tableData: TableDataType[], selectedRows: number[], selectedColumns: number[]) => React.ReactNode[];
+    };
     columns: {
         key: string;
         label: string | React.ReactNode;
         width?: number;
         render?: (row: TableDataType) => React.ReactNode;
-        align?: "left" | "center" | "right"; // yet to implement
-        sticky?: string; // yet to implement
+        align?: "left" | "center" | "right";
+        sticky?: string;
         isSortable?: boolean;
         showByDefault?: boolean;
         filter?: {
@@ -245,8 +243,9 @@ function ContextProvider({ children }: { children: React.ReactNode }) {
 function TableContainer({ refreshKey, data, config }: TableProps) {
     const { setSelectedColumns } = useContext(ColumnFilterConfig);
     const { setConfig } = useContext(Config);
-    const { setTableDetails, setNestedLoading, setInitialTableData } = useContext(TableDetails);
+    const { tableDetails, setTableDetails, setNestedLoading, setInitialTableData } = useContext(TableDetails);
     const { selectedRow, setSelectedRow } = useContext(SelectedRow);
+    const { selectedColumns } = useContext<columnFilterConfigType>(ColumnFilterConfig);
     const [showDropdown, setShowDropdown] = useState(false);
     const [displayedData, setDisplayedData] = useState<TableDataType[]>([]);
     // ordering of columns (array of original column indices). initialized from config.columns
@@ -353,7 +352,120 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
         setSelectedRow([]);
     }, [data, refreshKey]);
 
+
     const orderedColumns = (columnOrder || []).map((i) => config.columns[i]).filter(Boolean);
+
+    // Floating Info Bar State
+    const [showFloatingBar, setShowFloatingBar] = useState(
+        !!config.floatingInfoBar?.showByDefault
+    );
+    const floatingBarRef = useRef<HTMLDivElement>(null);
+    const [dragging, setDragging] = useState(false);
+    const [barPosition, setBarPosition] = useState({ x: 100, y: 100 });
+    const dragOffset = useRef({ x: 0, y: 0 });
+
+    // Show bar if showSelectedRow and rows are selected
+    useEffect(() => {
+        if (config.floatingInfoBar?.showSelectedRow && selectedRow.length > 0) {
+            setShowFloatingBar(true);
+        } else if (!config.floatingInfoBar?.showByDefault) {
+            setShowFloatingBar(false);
+        }
+    }, [selectedRow, config.floatingInfoBar]);
+
+    // Drag handlers
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        setDragging(true);
+        const rect = floatingBarRef.current?.getBoundingClientRect();
+        if (rect) {
+            dragOffset.current = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+            };
+        }
+    };
+    const handleMouseMove = (e: MouseEvent) => {
+        if (dragging) {
+            setBarPosition({
+                x: e.clientX - dragOffset.current.x,
+                y: e.clientY - dragOffset.current.y,
+            });
+        }
+    };
+    const handleMouseUp = () => setDragging(false);
+    useEffect(() => {
+        if (dragging) {
+            window.addEventListener("mousemove", handleMouseMove);
+            window.addEventListener("mouseup", handleMouseUp);
+        } else {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [dragging]);
+
+    // Floating Info Bar Component
+    const FloatingInfoBar = () => {
+        if (!showFloatingBar || !config.floatingInfoBar) return null;
+        const selectedCount = selectedRow.length;
+        return (
+            <div
+                ref={floatingBarRef}
+                style={{
+                    position: "fixed",
+                    left: barPosition.x,
+                    top: barPosition.y,
+                    zIndex: 9999,
+                    minWidth: 320,
+                    background: "#6B6B6BEE",
+                    borderRadius: 24,
+                    boxShadow: "0 2px 12px #0002",
+                    padding: "8px 24px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
+                    cursor: dragging ? "grabbing" : "default",
+                }}
+            >
+                <div
+                    style={{
+                        fontWeight: 600,
+                        color: "#fff",
+                        fontSize: 18,
+                        marginRight: 16,
+                        userSelect: "none",
+                        cursor: "grab",
+                    }}
+                    onMouseDown={handleMouseDown}
+                >
+                    {selectedCount} Selected
+                </div>
+                {config.floatingInfoBar.buttons &&
+                    config.floatingInfoBar.buttons(
+                        tableDetails.data || [],
+                        selectedRow,
+                        selectedColumns
+                    ).map((btn, idx) => (
+                        <span key={idx}>{btn}</span>
+                    ))}
+                <span
+                    style={{
+                        marginLeft: 16,
+                        cursor: "pointer",
+                        color: "#fff",
+                        fontSize: 20,
+                        fontWeight: 700,
+                    }}
+                    onClick={() => setShowFloatingBar(false)}
+                >
+                    ×
+                </span>
+            </div>
+        );
+    };
 
     return (
         <>
@@ -483,36 +595,6 @@ function TableHeader() {
                             {/* show results summary for global search (from context) */}
                             {searchState && searchState.applied && (
                                 <div className="ml-3 flex items-center gap-2 text-sm text-gray-600">
-                                    {/* <span className="font-medium">
-                                        {(tableDetails?.totalRecords ?? tableDetails?.data?.length ?? 0)} Results Found
-                                    </span> */}
-                                    {/* <button
-                                        type="button"
-                                        onClick={async () => {
-                                            try {
-                                                setNestedLoading(true);
-                                                setSearchState({ applied: false, term: "" });
-                                                if (config.api?.list) {
-                                                    const res = await config.api.list(1, config.pageSize || defaultPageSize);
-                                                    const resolved = res instanceof Promise ? await res : res;
-                                                    const { data, total, currentPage, pageSize } = resolved as any;
-                                                    setTableDetails({
-                                                        data: data || [],
-                                                        total: total || 1,
-                                                        currentPage: currentPage - 1 || 0,
-                                                        pageSize: pageSize || config.pageSize || defaultPageSize,
-                                                    });
-                                                } else if (initialTableData) {
-                                                    setTableDetails(initialTableData);
-                                                }
-                                            } finally {
-                                                setNestedLoading(false);
-                                            }
-                                        }}
-                                        className="ml-2 underline text-gray-600"
-                                    >
-                                        Clear Search
-                                    </button> */}
                                 </div>
                             )}
 
