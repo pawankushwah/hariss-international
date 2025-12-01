@@ -253,20 +253,20 @@ export default function CompanyCustomers() {
                 />,
               ],
             },
-            floatingInfoBar: {
-              showByDefault: true,
-              showSelectedRow: true,
-              buttons: (tableData: TableDataType[], selectedRows: number[], selectedColumns: number[]) => [
-                <SidebarBtn
-                  key="add-company-customer"
-                  href="/keyCustomer/add"
-                  leadingIcon="lucide:plus"
-                  label="Add"
-                  labelTw="hidden sm:block"
-                  isActive
-                />
-              ],
-            },
+            // floatingInfoBar: {
+            //   showByDefault: true,
+            //   showSelectedRow: true,
+            //   buttons: (tableData: TableDataType[], selectedRows: number[], selectedColumns: number[]) => [
+            //     <SidebarBtn
+            //       key="add-company-customer"
+            //       href="/keyCustomer/add"
+            //       leadingIcon="lucide:plus"
+            //       label="Add"
+            //       labelTw="hidden sm:block"
+            //       isActive
+            //     />
+            //   ],
+            // },
             localStorageKey: "company-customers-table",
             footer: { nextPrevBtn: true, pagination: true },
             columns,
