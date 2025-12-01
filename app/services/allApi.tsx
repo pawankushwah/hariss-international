@@ -1803,6 +1803,29 @@ export const addAssetsType = async (body: object) => {
   }
 };
 
+export const brandingList = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/settings/assets-branding/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const addBranding = async (body: object) => {
+  try {
+    const res = await API.post(
+      `/api/settings/assets-branding/add`,
+      body
+    );
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 export const manufacturerList = async (params?: Params) => {
   try {
     const res = await API.get(`/api/settings/asset-manufacturer/list`, {
