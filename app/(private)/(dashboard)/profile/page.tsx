@@ -107,7 +107,7 @@ export default function ProfilePage() {
           type: profileImage.type
         });
         console.log("📤 FormData fields:");
-        for (let pair of formData.entries()) {
+        for (const pair of formData.entries()) {
           console.log(pair[0] + ':', pair[1]);
         }
 
@@ -369,12 +369,12 @@ export default function ProfilePage() {
                 </>
               ) : null}
 
-              {profile?.country_id ? (
+              {profile?.country_id && profile.country_id?.name ? (
                 <>
                   <span className="text-gray-600">Country</span>
                   <span className="text-gray-600">:</span>
                   <span className="font-medium">
-                    {profile.country_id?.name ?? profile.country_id}
+                    {profile.country_id.name}
                   </span>
                 </>
               ) : null}
