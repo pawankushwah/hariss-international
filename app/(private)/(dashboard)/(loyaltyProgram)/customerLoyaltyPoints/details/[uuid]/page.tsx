@@ -51,7 +51,7 @@ const backBtnUrl = "/customerLoyaltyPoints";
 
 export default function ViewPage() {
     const pointsColumns = [
-        { key: "osa_code", label: "Code", render: (row: TableDataType) => (<span className="font-semibold text-[#181D27] text-[14px]">{(row as any).osa_code || "-"}</span>) },
+        { key: "osa_code", label: "Code", render: (row: TableDataType) => <span className="font-semibold text-[#181D27] text-[14px]">{(row as any).osa_code || "-"}</span> },
         { key: "activity_date", label: "Date", render: (row: TableDataType) => formatWithPattern(new Date((row as any).activity_date), "DD MMM YYYY", "en-GB") },
         { key: "activity_type", label: "Activity Type", render: (row: TableDataType) => ((row as any).activity_type || "-") },
         { key: "incooming_point", label: "Incoming Point", render: (row: TableDataType) => toInternationalNumber((row as any).incooming_point ?? "-") },
