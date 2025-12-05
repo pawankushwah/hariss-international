@@ -519,7 +519,7 @@ export const initialLinkData: SidebarDataType[] = [
             leadingIcon: "si:pull-request-duotone",
             iconColor: "text-cyan-500",
           },
-         
+
         ],
       },
     ],
