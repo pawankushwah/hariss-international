@@ -273,21 +273,21 @@ export const initialLinkData: SidebarDataType[] = [
         children: [
           {
             isActive: false,
-            href: "/agentOrder",
+            href: "/distributorsOrder",
             label: "Distributor's Order",
             leadingIcon: "carbon:delivery-parcel",
             iconColor: "text-cyan-500"
           },
           {
             isActive: false,
-            href: "/agentCustomerDelivery",
+            href: "/distributorsDelivery",
             label: "Distributor's Delivery",
             leadingIcon: "hugeicons:invoice",
             iconColor: "text-cyan-500"
           },
           {
             isActive: false,
-            href: "/agentInvoice",
+            href: "/distributorsInvoice",
             label: "Distributor's Invoice",
             leadingIcon: "hugeicons:invoice",
             iconColor: "text-cyan-500"
@@ -302,12 +302,10 @@ export const initialLinkData: SidebarDataType[] = [
           {
             isActive: false,
             href: "/distributorsExchange",
-            label: "Distributor Exchange",
+            label: "Distributor's Exchange",
             leadingIcon: "mdi:truck-remove-outline",
             iconColor: "text-cyan-500"
           },
-
-
           {
             isActive: false,
             href: "/salesTeamLoad",
