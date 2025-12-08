@@ -1,4 +1,4 @@
-import { Params } from "next/dist/server/request/params";
+﻿import { Params } from "next/dist/server/request/params";
 import { API, handleError } from "./allApi";
 
 export const exportServiceTypes = async (params?: Params) => {
@@ -415,7 +415,7 @@ export const addAcf = async (body: object) => {
 };
 
 
-export const iroList = async ( params: Params) => {
+export const iroList = async (params: Params) => {
   try {
     const res = await API.get(`/api/assets/iro/count`, {
       params: params,
@@ -437,7 +437,7 @@ export const iroViewList = async (id: string) => {
 };
 
 
-export const bulkTransferList = async ( params: Params) => {
+export const bulkTransferList = async (params: Params) => {
   try {
     const res = await API.get(`/api/assets/bulk-transfer/list`, {
       params: params,
@@ -467,7 +467,7 @@ export const addAllocate = async (body: object) => {
   }
 };
 
-export const irList = async ( params: Params) => {
+export const irList = async (params: Params) => {
   try {
     const res = await API.get(`/api/assets/ir/list`, {
       params: params,
@@ -478,7 +478,7 @@ export const irList = async ( params: Params) => {
   }
 };
 
-export const callRegisterList = async ( params: Params) => {
+export const callRegisterList = async (params: Params) => {
   try {
     const res = await API.get(`/api/assets/call-register/list`, {
       params: params,
@@ -488,3 +488,24 @@ export const callRegisterList = async ( params: Params) => {
     return handleError(error);
   }
 };
+export const getBtrByRegion = async (region_id: string,) => {
+  try {
+    const res = await API.get(`/api/assets/bulk-transfer/get-BTR/${region_id}`,
+
+    );
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+
+// export const getStockOfWarehouse = async (id?: string, params?: Params) => {
+//   try {
+//     const res = await API.get(`/api/settings/warehouse-stocks/warehouseStockInfo/${id}`, { params });
+//     return res.data;
+//   } catch (error: unknown) {
+//     return handleError(error);
+//   }
+// };

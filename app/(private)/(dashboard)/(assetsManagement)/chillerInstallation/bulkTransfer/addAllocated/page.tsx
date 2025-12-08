@@ -1,32 +1,30 @@
-"use client";
+﻿"use client";
+
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import IconButton from "@/app/components/iconButton";
 import InputFields from "@/app/components/inputFields";
 import Loading from "@/app/components/Loading";
-import SettingPopUp from "@/app/components/settingPopUp";
-import { genearateCode, saveFinalCode } from "@/app/services/allApi";
-import { addAllocate } from "@/app/services/assetsApi";
+import { addAllocate, getBtrByRegion } from "@/app/services/assetsApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import * as yup from "yup";
 
 export default function AddRoute() {
-  const { regionOptions, warehouseAllOptions, areaOptions, assetsModelOptions } = useAllDropdownListData();
+  const { regionOptions, warehouseAllOptions } = useAllDropdownListData();
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [codeMode, setCodeMode] = useState<"auto" | "manual">("auto");
-  const [prefix, setPrefix] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [filteredOptions, setFilteredRouteOptions] = useState<
+  const [loadingBtr, setLoadingBtr] = useState(false);
+
+  const [btrOptions, setBtrOptions] = useState<
     { value: string; label: string }[]
   >([]);
+
   const [form, setForm] = useState({
     region_id: "",
     btr: "",
@@ -37,40 +35,83 @@ export default function AddRoute() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [skeleton, setSkeleton] = useState(false);
-  const codeGeneratedRef = useRef(false);
 
-  // Auto generate code
-//   useEffect(() => {
-//     if (!codeGeneratedRef.current) {
-//       codeGeneratedRef.current = true;
-//       (async () => {
-//         try {
-//           const res = await genearateCode({ model_name: "bulk_tran" });
-//           if (res?.code) setForm((prev) => ({ ...prev, osa_code: res.code }));
-//           if (res?.prefix) setPrefix(res.prefix);
-//         } catch (e) {
-//           console.error("Code generation failed", e);
-//         }
-//       })();
-//     }
-//   }, []);
-
-  // Validation schema
+  // ✅ VALIDATION SCHEMA
   const validationSchema = yup.object().shape({
     region_id: yup.string().required("Region is required"),
     btr: yup.string().required("BTR is required"),
     warehouse_id: yup.string().required("Warehouse is required"),
     truck_no: yup.string().required("Truck Number is required"),
     turnmen_name: yup.string().required("Turnmen Name is required"),
-    contact: yup.string().required("Contact is required"),
+    contact: yup
+      .string()
+      .required("Contact is required")
+      .matches(/^[0-9]{10}$/, "Contact must be 10 digits"),
   });
 
+  // ✅ HANDLE FORM FIELD CHANGES
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+
+    // Clear field error when user types
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+
+    // Reset BTR when region changes
+    if (field === "region_id" && value !== form.region_id) {
+      setForm((prev) => ({ ...prev, btr: "" }));
+      setBtrOptions([]);
+    }
   };
 
+  // ✅ FETCH BTR OPTIONS BASED ON SELECTED REGION
+  const fetchBtrData = async (value: string) => {
+    console.log("Fetching BTR data for region:", form.region_id);
+    if (!form.region_id) {
+      setBtrOptions([]);
+      return;
+    }
+
+    try {
+      setLoadingBtr(true);
+      const response = await getBtrByRegion(value);
+
+      // Handle different response structures
+      const btrData = response?.data?.data || response?.data || response || [];
+
+      if (!Array.isArray(btrData)) {
+        throw new Error("Invalid response format");
+      }
+
+      if (btrData.length === 0) {
+        setBtrOptions([]);
+        showSnackbar("No BTR found for this region", "info");
+        return;
+      }
+
+      // Map API response to dropdown options
+      const options = btrData.map((item: any) => ({
+        value: item.osa_code || item.id?.toString() || "",
+        label: item.osa_code || item.btr_name || item.name || "Unknown BTR",
+      }));
+
+      setBtrOptions(options);
+      // showSnackbar(Found ${options.length} BTR(s) for selected region, "success");
+    } catch (error: any) {
+      console.error("Error fetching BTR:", error);
+      setBtrOptions([]);
+      showSnackbar(
+        error?.message || "Failed to fetch BTR data",
+        "error"
+      );
+    } finally {
+      setLoadingBtr(false);
+    }
+  };
+
+
+  // ✅ SUBMIT HANDLER
   const handleSubmit = async () => {
     try {
       await validationSchema.validate(form, { abortEarly: false });
@@ -89,20 +130,22 @@ export default function AddRoute() {
       const res = await addAllocate(payload);
 
       if (res?.error) {
-        showSnackbar(res.data?.message || "Failed to submit form", "error");
+        showSnackbar(res.error || "Failed to submit form", "error");
+        return;
       }
 
-        showSnackbar("Bulk Transfer added successfully", "success");
-        router.push("/chillerInstallation/bulkTransfer");
-      }
-     catch (err) {
+      showSnackbar("Bulk Transfer added successfully", "success");
+      router.push("/chillerInstallation/bulkTransfer");
+    } catch (err) {
       if (err instanceof yup.ValidationError) {
         const formErrors: Record<string, string> = {};
         err.inner.forEach((e) => {
           if (e.path) formErrors[e.path] = e.message;
         });
         setErrors(formErrors);
+        showSnackbar("Please fix the form errors", "warning");
       } else {
+        console.error("Submit error:", err);
         showSnackbar("Failed to add bulk transfer", "error");
       }
     } finally {
@@ -120,55 +163,70 @@ export default function AddRoute() {
 
   return (
     <>
-      {/* Header */}
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <Link href="/chillerInstallation/bulkTransfer">
             <Icon icon="lucide:arrow-left" width={24} />
           </Link>
-          <h1 className="text-xl font-semibold text-gray-900">Add Bulk Transfer</h1>
+          <h1 className="text-xl font-semibold text-gray-900">
+            Add Bulk Transfer
+          </h1>
         </div>
       </div>
 
-      {/* Content */}
+      {/* FORM */}
       <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
         <div className="p-6">
-          <h2 className="text-lg font-medium text-gray-800 mb-4">Bulk Transfer Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Route Name */}
-            <div className="flex flex-col">
+            {/* REGION DROPDOWN */}
+            <div>
               <InputFields
                 required
                 label="Region"
                 value={form.region_id}
                 options={regionOptions}
-                onChange={(e) => handleChange("region_id", e.target.value)}
+                onChange={(e) => {
+                  handleChange("region_id", e.target.value)
+                  // console.log(e.target.value)
+                  fetchBtrData(e.target.value)
+                }}
               />
               {errors.region_id && (
                 <p className="text-red-500 text-sm mt-1">{errors.region_id}</p>
               )}
             </div>
 
-            {/* Route Type */}
-            <div className="flex flex-col">
+            {/* BTR DROPDOWN (Region-Dependent) */}
+            <div>
               <InputFields
                 required
                 label="BTR"
                 value={form.btr}
+                options={btrOptions}
                 onChange={(e) => handleChange("btr", e.target.value)}
-                options={areaOptions}
+                disabled={!form.region_id || loadingBtr}
+                placeholder={
+                  loadingBtr
+                    ? "Loading BTR..."
+                    : !form.region_id
+                      ? "Select region first"
+                      : "Select BTR"
+                }
               />
               {errors.btr && (
                 <p className="text-red-500 text-sm mt-1">{errors.btr}</p>
               )}
+              {loadingBtr && (
+                <p className="text-blue-500 text-xs mt-1">Loading BTR options...</p>
+              )}
             </div>
 
-            {/* Warehouse */}
-            <div className="flex flex-col">
+            {/* WAREHOUSE DROPDOWN */}
+            <div>
               <InputFields
                 required
                 label="Distributor"
-                searchable
                 value={form.warehouse_id}
                 options={warehouseAllOptions}
                 onChange={(e) => handleChange("warehouse_id", e.target.value)}
@@ -178,8 +236,8 @@ export default function AddRoute() {
               )}
             </div>
 
-            {/* Truck Number */}
-            <div className="flex flex-col">
+            {/* TRUCK NUMBER */}
+            <div>
               <InputFields
                 required
                 label="Truck Number"
@@ -191,8 +249,8 @@ export default function AddRoute() {
               )}
             </div>
 
-            {/* Turnmen Name */}
-            <div className="flex flex-col">
+            {/* TURNMEN NAME */}
+            <div>
               <InputFields
                 required
                 label="Turnmen Name"
@@ -204,13 +262,14 @@ export default function AddRoute() {
               )}
             </div>
 
-            {/* Contact */}
+            {/* CONTACT */}
             <div>
-                <InputFields
+              <InputFields
                 required
                 label="Contact"
                 value={form.contact}
                 onChange={(e) => handleChange("contact", e.target.value)}
+                placeholder="10 digit number"
               />
               {errors.contact && (
                 <p className="text-red-500 text-sm mt-1">{errors.contact}</p>
@@ -220,17 +279,10 @@ export default function AddRoute() {
         </div>
       </div>
 
-      
-
-      {/* Buttons */}
-      <div className="flex justify-end gap-4 mt-6 pr-0">
+      {/* ACTION BUTTONS */}
+      <div className="flex justify-end gap-4 mt-6">
         <button
-          type="button"
-          className={`px-6 py-2 rounded-lg border text-gray-700 hover:bg-gray-100 ${
-            submitting
-              ? "bg-gray-100 border-gray-200 cursor-not-allowed text-gray-400"
-              : "border-gray-300"
-          }`}
+          className="px-6 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
           onClick={() => router.push("/chillerInstallation/bulkTransfer")}
           disabled={submitting}
         >
@@ -240,7 +292,6 @@ export default function AddRoute() {
         <SidebarBtn
           label={submitting ? "Submitting..." : "Submit"}
           isActive={!submitting}
-          leadingIcon="mdi:check"
           onClick={handleSubmit}
           disabled={submitting}
         />
