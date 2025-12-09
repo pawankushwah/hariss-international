@@ -12,7 +12,7 @@ import { Icon } from "@iconify-icon/react";
 import Loading from "@/app/components/Loading";
 // import ApprovalFlowTable from "./dragTable";
 import ApprovalFlowTable from "./dragTable";
-import { submenuList, roleList, userList, approvalAdd, singleWorkFlowList, approvalWorkfolowUpdate, authUserList } from "@/app/services/allApi";
+import { submenuList, roleList, singleWorkFlowList, approvalWorkfolowUpdate, authUserList } from "@/app/services/allApi";
 // import {VerticalArrow} from "./proccessFlow";
 
 type OldStep = {
@@ -103,14 +103,9 @@ export function convertToNewFlow(old: any): any {
         is_active: old.status === "1",
 
         steps: old.steps.map((step: any, index: any) => {
-            // convert permissions
             const permissions: string[] = step.formType;
-            // approval type
             const approvalType = step.condition || "OR";
-            // title logic
             const title = step.title || `Step ${index + 1}`;
-
-            // Build the step object
             const stepData: any = {
                 step_order: index + 1,
                 title: title,
@@ -122,7 +117,6 @@ export function convertToNewFlow(old: any): any {
                 role_ids: (step.selectedRole ?? step.role_id ?? []).map(Number)
             };
 
-            // Only include step_id if it exists (for existing steps being updated)
             if (step.step_id) {
                 stepData.step_id = step.step_id;
             }
@@ -167,7 +161,7 @@ const ApprovalSchema = Yup.object().shape({
     approvalName: Yup.string().required("Approval name is required"),
     description: Yup.string().required("Description is required"),
     // modules: Yup.string().required(),
-    formType: Yup.string().required("Form type is required"),
+    formType: Yup.string().required("Permission is required"),
     role: Yup.string().required("Role is required"),
     status: Yup.string().required("Role is required"),
     users: Yup.array().min(1, "Select at least one user").required(),
@@ -197,7 +191,7 @@ export default function AddApprovalFlow() {
     }
     const [stepsProccess, setStepsProcess] = useState<ApprovalStep[]>([]);
     const params = useParams();
-  const uuid = params?.uuid as string;
+    const uuid = params?.uuid as string;
 
     const [modulesList, setModulesList] = useState<{ value: string; label: string }[]>([]);
     const [roleListData, setRoleListData] = useState<{ value: string; label: string }[]>([]);
@@ -239,23 +233,23 @@ export default function AddApprovalFlow() {
     //       return { ...prev, modules };
     //     });
     //   };
-    async function apiCall()
-    {
-         const data = await singleWorkFlowList(uuid)
-         const store = data.data
-         console.log(store,"hii252")
-  const flow: any = convertWorkflow(store)
-        console.log(flow,"25")
+    async function apiCall() {
+        setLoading(true)
+        const data = await singleWorkFlowList(uuid)
+        const store = data.data
+        console.log(store, "hii252")
+        const flow: any = convertWorkflow(store)
+        console.log(flow, "25")
         setForm(flow)
         console.log(flow.steps, "flow.steps")
         setStepsProcess(flow.steps)
+        setLoading(false)
     }
 
     useEffect(() => {
         const store: any = localStorage.getItem("selectedFlow")
-        if(uuid)
-        {
-      apiCall()
+        if (uuid) {
+            apiCall()
         }
 
     }, [])
@@ -352,15 +346,14 @@ export default function AddApprovalFlow() {
 
             console.log("Submitting Data:", resultData);
             // setLoading(false)
-            if(resultData.success)
-            {
-            showSnackbar("Approval Flow Updated Successfully ✅", "success");
-            setLoading(false);
-            router.push("/settings/approval");
+            if (resultData.success) {
+                showSnackbar("Approval Flow Updated Successfully ✅", "success");
+                setLoading(false);
+                router.push("/settings/approval");
 
             }
-            else{
-            showSnackbar("Something went wrong.", "error");
+            else {
+                showSnackbar("Something went wrong.", "error");
 
             }
         }
