@@ -310,7 +310,6 @@ export default function CustomerInvoicePage() {
                   onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
                 },
               ],
-              // Use custom filter renderer instead of filterByFields
               filterRenderer: FilterComponent,
               actions: [
                 <SidebarBtn
