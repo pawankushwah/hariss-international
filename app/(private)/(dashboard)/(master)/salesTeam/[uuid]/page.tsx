@@ -204,10 +204,17 @@ export default function AddEditSalesman() {
 
   const fetchRoutes = async (value: string | string[]) => {
     const warehouseId = Array.isArray(value) ? value[0] : value;
+
+    // 🛑 STOP if no warehouse selected
+    if (!warehouseId) {
+      setFilteredRouteOptions([]);  // or keep it empty
+      return;
+    }
+
     const filteredOptions = await routeList({
-      // dropdown:"true",
       warehouse_id: warehouseId,
     });
+
     if (filteredOptions.error) {
       showSnackbar(
         filteredOptions.data?.message || "Failed to fetch routes",
@@ -215,15 +222,17 @@ export default function AddEditSalesman() {
       );
       return;
     }
+
     const options = filteredOptions?.data || [];
 
-    const newroutesOptions: { value: string, label: string }[] = []
-    options.map((route: { id: number; route_name: string }) => {
-      newroutesOptions.push({ value: route.id.toString(), label: route.route_name })
+    const newroutesOptions = options.map((route: { id: number; route_name: string }) => ({
+      value: route.id.toString(),
+      label: route.route_name,
+    }));
 
-    })
     setFilteredRouteOptions(newroutesOptions);
   };
+
 
   // ✅ Fetch data
   useEffect(() => {
@@ -464,7 +473,15 @@ export default function AddEditSalesman() {
                     ...salesmanTypeOptions.map((o: any) => ({ ...o, value: String(o.value) })),
                     ...(extraTypeOption && !salesmanTypeOptions.find((o: any) => String(o.value) === extraTypeOption.value) ? [extraTypeOption] : [])
                   ]}
-                  onChange={(e) => setFieldValue("type", e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFieldValue("type", value);
+
+                    // Reset fields when type changes
+                    setFieldValue("sub_type", "");
+                    setFieldValue("is_take", "");
+                  }}
+
                   error={touched.type && errors.type}
                 />
               </div>
@@ -475,8 +492,16 @@ export default function AddEditSalesman() {
                   <InputFields
                     label="Project List"
                     value={values.sub_type}
-                    options={projectOptions.map((o: any) => ({ ...o, value: String(o.value) }))}
-                    onChange={(e) => setFieldValue("sub_type", e.target.value)}
+                    options={projectOptions}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFieldValue("sub_type", value);
+
+                      if (value !== "1") {
+                        setFieldValue("is_take", "");
+                      }
+                    }}
+
                     error={touched.sub_type && errors.sub_type}
                   />
                 </div>
@@ -599,7 +624,8 @@ export default function AddEditSalesman() {
                   value={values.route_id?.toString() ?? ""}
                   onChange={(e) => setFieldValue("route_id", e.target.value)}
                   options={filteredRouteOptions}
-                  disabled={!!values.sub_type}
+                  disabled={!!values.sub_type || !values.warehouse_id}
+                  showSkeleton={loading}
                   error={touched.route_id && errors.route_id}
                 />
               </div> : ""}
