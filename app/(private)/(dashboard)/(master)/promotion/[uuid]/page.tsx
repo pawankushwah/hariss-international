@@ -94,8 +94,8 @@ function SelectKeyCombinationInline({ keyCombo, setKeyCombo }: { keyCombo: KeyCo
         if (i !== index) return group; // If not the current group, return as is
 
         // Determine if this group should be single-select
-        // All groups (Location, Customer, Item) are now single-select as per request
-        const isSingleSelectGroup = true;
+        // Location and Customer are single-select, Item is multi-select
+        const isSingleSelectGroup = (group.type === "Location" || group.type === "Customer");
 
         if (isSingleSelectGroup) {
           // Single-select logic: Toggle the clicked option, deselect others
@@ -112,7 +112,7 @@ function SelectKeyCombinationInline({ keyCombo, setKeyCombo }: { keyCombo: KeyCo
             }),
           };
         } else {
-          // Multi-select logic (original behavior for Customer)
+          // Multi-select logic (for Item group)
           return {
             ...group,
             options: group.options.map((opt, j) =>
@@ -260,12 +260,6 @@ export default function AddPricing() {
         }
       }
 
-      // if (keyCombo.Item) {
-      //   if (!keyValue[keyCombo.Item] || keyValue[keyCombo.Item].length === 0) {
-      //     allValid = false;
-      //   }
-      // }
-
       if (keyCombo.Customer) {
         if (!keyValue[keyCombo.Customer] || keyValue[keyCombo.Customer].length === 0) {
           allValid = false;
@@ -274,6 +268,18 @@ export default function AddPricing() {
       return allValid;
     }
     if (step === 3) {
+      if (keyCombo.Item === "Item Category") {
+        if (!keyValue["Item Category"] || keyValue["Item Category"].length === 0) {
+          return false;
+        }
+        if (!keyValue["Item"] || keyValue["Item"].length === 0) {
+          return false;
+        }
+      } else if (keyCombo.Item === "Item") {
+        if (!keyValue["Item"] || keyValue["Item"].length === 0) {
+          return false;
+        }
+      }
       return promotion.itemName && promotion.startDate && promotion.endDate;
     }
     return true;
@@ -434,15 +440,14 @@ export default function AddPricing() {
     try {
       // Pre-submit: ensure Item Category and Item key-values are present
       const missingErrors: Record<string, string> = {};
-      if (!keyValue["Item Category"] || keyValue["Item Category"].length === 0) {
-        missingErrors["Item Category"] = "Item Category is required";
-      }
-      if (!keyValue["Item"] || keyValue["Item"].length === 0) {
-        missingErrors["Item"] = "Item is required";
+      if (keyCombo.Item) {
+        if (!keyValue[keyCombo.Item] || keyValue[keyCombo.Item].length === 0) {
+          missingErrors[keyCombo.Item] = `${keyCombo.Item} is required`;
+        }
       }
       if (Object.keys(missingErrors).length > 0) {
         setErrors(missingErrors);
-        showSnackbar("Please fill Item Category and Item before submitting", "error");
+        showSnackbar(`Please fill ${Object.keys(missingErrors).join(", ")} before submitting`, "error");
         return;
       }
 
@@ -660,14 +665,14 @@ export default function AddPricing() {
     }
   }, [keyValue["Customer Category"], fetchCompanyCustomersOptions]);
 
-  // When Item Category selection changes, fetch items for the first selected category.
+  // When Item Category selection changes, fetch items for the selected categories.
   useEffect(() => {
     const itemCategories = keyValue["Item Category"];
     if (Array.isArray(itemCategories) && itemCategories.length > 0) {
       try {
-        fetchItemOptions(itemCategories[0]);
+        fetchItemOptions(itemCategories);
       } catch (err) {
-        console.error("Failed to fetch item options for category", itemCategories[0], err);
+        console.error("Failed to fetch item options for category", itemCategories, err);
       }
     }
   }, [keyValue["Item Category"], fetchItemOptions]);
@@ -970,31 +975,6 @@ export default function AddPricing() {
                   </div>
                 )}
                 <div className="mb-6">
-                  <div className="flex-1">
-                    <ContainerCard className="bg-[#fff] border border-[#E5E7EB] rounded-xl p-6">
-                      <div className="font-semibold text-lg mb-4">Item</div>
-                      {keyCombo.Item && (
-                        <div className="mb-4">
-                          <div className="mb-2 text-base font-medium">
-                            {keyCombo.Item}
-                            <span className="text-red-500 ml-1">*</span>
-                          </div>
-                          <InputFields
-                            label=""
-                            type="select"
-                            isSingle={true}
-                            options={itemDropdownMap[keyCombo.Item] ? [{ label: `Select ${keyCombo.Item}`, value: "" }, ...itemDropdownMap[keyCombo.Item]] : [{ label: `Select ${keyCombo.Item}`, value: "" }]}
-                            value={keyValue[keyCombo.Item]?.[0] || ""}
-                            onChange={e => {
-                              const val = e.target.value;
-                              setKeyValue(s => ({ ...s, [keyCombo.Item]: val ? [val] : [] }));
-                            }}
-                            width="w-full"
-                          />
-                        </div>
-                      )}
-                    </ContainerCard>
-                  </div>
                   {/* <div className="mb-4">
                     <label className="block mb-1 font-medium">Select Item</label>
                     <InputFields
@@ -1358,7 +1338,89 @@ export default function AddPricing() {
               </div>
             </div>
             <div className="mt-8">
-              <div className="font-semibold text-lg mb-4">Promotional Order Item</div>
+              <ContainerCard className="bg-[#fff] border border-[#E5E7EB] rounded-xl p-6 mb-8">
+                <div className="font-semibold text-lg mb-4">Item Selection</div>
+                {keyCombo.Item === "Item Category" && (
+                  <>
+                    <div className="mb-4">
+                      <div className="mb-2 text-base font-medium">
+                        Item Category
+                        <span className="text-red-500 ml-1">*</span>
+                      </div>
+                      <InputFields
+                        label=""
+                        type="select"
+                        isSingle={false}
+                        options={itemDropdownMap["Item Category"] ? [{ label: `Select Item Category`, value: "" }, ...itemDropdownMap["Item Category"]] : [{ label: `Select Item Category`, value: "" }]}
+                        value={keyValue["Item Category"] || []}
+                        onChange={e => {
+                          const val = e.target.value;
+                          let selectedValues: string[];
+                          if (Array.isArray(val)) {
+                            selectedValues = val;
+                          } else {
+                            selectedValues = val ? [String(val)] : [];
+                          }
+                          setKeyValue(s => ({ ...s, "Item Category": selectedValues.filter(v => v !== "") }));
+                          fetchItemOptions(selectedValues);
+                        }}
+                        width="w-full"
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <div className="mb-2 text-base font-medium">
+                        Item
+                        <span className="text-red-500 ml-1">*</span>
+                      </div>
+                      <InputFields
+                        label=""
+                        type="select"
+                        isSingle={false}
+                        options={itemDropdownMap["Item"] ? [{ label: `Select Item`, value: "" }, ...itemDropdownMap["Item"]] : [{ label: `Select Item`, value: "" }]}
+                        value={keyValue["Item"] || []}
+                        onChange={e => {
+                          const val = e.target.value;
+                          let selectedValues: string[];
+                          if (Array.isArray(val)) {
+                            selectedValues = val;
+                          } else {
+                            selectedValues = val ? [String(val)] : [];
+                          }
+                          setKeyValue(s => ({ ...s, "Item": selectedValues.filter(v => v !== "") }));
+                        }}
+                        width="w-full"
+                      />
+                    </div>
+                  </>
+                )}
+                {keyCombo.Item === "Item" && (
+                  <div className="mb-4">
+                    <div className="mb-2 text-base font-medium">
+                      Item
+                      <span className="text-red-500 ml-1">*</span>
+                    </div>
+                    <InputFields
+                      label=""
+                      type="select"
+                      isSingle={false}
+                      options={itemDropdownMap["Item"] ? [{ label: `Select Item`, value: "" }, ...itemDropdownMap["Item"]] : [{ label: `Select Item`, value: "" }]}
+                      value={keyValue["Item"] || []}
+                      onChange={e => {
+                        const val = e.target.value;
+                        let selectedValues: string[];
+                        if (Array.isArray(val)) {
+                          selectedValues = val;
+                        } else {
+                          selectedValues = val ? [String(val)] : [];
+                        }
+                        setKeyValue(s => ({ ...s, "Item": selectedValues.filter(v => v !== "") }));
+                      }}
+                      width="w-full"
+                    />
+                  </div>
+                )}
+              </ContainerCard>
+
               {renderOrderTables()}
               <div className="font-semibold text-lg mb-4">Promotional Offer Items</div>
               <div className="mb-6">
