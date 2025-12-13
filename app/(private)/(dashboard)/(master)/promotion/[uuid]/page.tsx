@@ -400,23 +400,21 @@ export default function AddPricing() {
           itemData = itemOptions.find(opt => String(opt.value) === String(itemId));
         }
 
-        let itemCode = itemId;
+        // Find price for the globally selected UOM
+        let price = 0;
         if (itemData) {
-          if (itemData.code) itemCode = itemData.code;
-          else if (itemData.itemCode) itemCode = itemData.itemCode;
-          else if (itemData.label) {
-            const labelParts = String(itemData.label).split(" - ");
-            itemCode = labelParts.length > 1 ? labelParts[0] : String(itemData.label);
+          const uomList = (itemData.uomSummary || itemData.uom) as Uom[];
+          if (Array.isArray(uomList)) {
+            const uomInfo = uomList.find(u => String(u.name ?? u.uom ?? "") === selectedUom);
+            if (uomInfo && uomInfo.price !== undefined) {
+              price = Number(uomInfo.price);
+            }
           }
         }
 
-        const orderItem = orderTables.flat().find(
-          (oi: OrderItemType) => String(oi.itemCode) === String(itemCode)
-        );
-
         return {
           item_id: String(itemId),
-          price: orderItem ? Number(orderItem.price) || 0 : 0,
+          price: price,
         };
       }),
 
@@ -425,7 +423,7 @@ export default function AddPricing() {
         lower_qty: Number(detail.quantity || detail.lower_qty) || 0,
         upper_qty: Number(detail.toQuantity || detail.upper_qty) || 0,
         free_qty: Number(detail.free_qty || detail.toQuantity) || 0,
-        uom: detail.uom || "CTN",
+        uom: selectedUom || "CTN", // Use globally selected UOM
         promotion_group_name: detail.promotionGroupName || "",
       })),
 
@@ -453,7 +451,8 @@ export default function AddPricing() {
 
       // ✅ Validate payload-level required pieces (items)
       await pricingValidationSchema.validate(payload, { abortEarly: false });
-
+      console.log(payload, payload)
+      return
       setLoading(true);
       const res = await addPromotionHeader(payload);
 
@@ -521,6 +520,8 @@ export default function AddPricing() {
     projectList: "",
   });
 
+  const [selectedUom, setSelectedUom] = useState("");
+
   type OrderItemType = {
     promotionGroupName: string;
     itemName: string;
@@ -585,6 +586,28 @@ export default function AddPricing() {
           });
 
           setSelectedItemDetails(enriched);
+
+          // Sync orderTables with the first selected item to ensure consistency
+          if (enriched.length > 0) {
+            const primaryItem = enriched[0];
+            const name = String(primaryItem.name || primaryItem.itemName || primaryItem.label || "");
+            const code = String(primaryItem.code || primaryItem.itemCode || "");
+
+            // Get primary UOM
+            const uomList = (primaryItem.uomSummary || primaryItem.uom) as Uom[];
+            let uomName = "";
+            if (Array.isArray(uomList) && uomList.length > 0) {
+              const primary = uomList.find(u => String(u.uom_type || '').toLowerCase() === 'primary') || uomList[0];
+              uomName = String(primary?.name ?? primary?.uom ?? '');
+            }
+            setSelectedUom(uomName);
+
+            setOrderTables(tables => tables.map(arr => arr.map(row => ({
+              ...row,
+              itemName: name,
+              itemCode: code
+            }))));
+          }
         })
         .catch(err => {
           console.error("Failed to fetch item details", err);
@@ -965,6 +988,11 @@ export default function AddPricing() {
             const currentItemCode = orderItems[0]?.itemCode || "";
             const totalPages = Math.ceil(itemsData.length / pageSize);
             const paginatedData = itemsData.slice((page - 1) * pageSize, page * pageSize);
+
+            const firstItemId = keyValue["Item"]?.[0] || "";
+            const uomOptions = getUomOptionsForRow({ itemCode: firstItemId });
+            const currentUom = orderItems[0]?.uom || "";
+
             return (
               <React.Fragment key={tableIdx}>
                 {tableIdx > 0 && (
@@ -975,19 +1003,6 @@ export default function AddPricing() {
                   </div>
                 )}
                 <div className="mb-6">
-                  {/* <div className="mb-4">
-                    <label className="block mb-1 font-medium">Select Item</label>
-                    <InputFields
-                      label=""
-                      type="select"
-                      isSingle={true}
-                      placeholder="Select Item"
-                      options={[{ label: `Select Item`, value: "" }, ...selectedItemOptions]}
-                      value={currentItemCode}
-                      onChange={e => selectItemForOrderTable(tableIdx, e.target.value)}
-                      width="w-full"
-                    />
-                  </div> */}
                   <Table
                     data={paginatedData}
                     config={{
@@ -1022,31 +1037,6 @@ export default function AddPricing() {
                               width="w-full"
                             />
                           ),
-                        },
-                        {
-                          key: "uom",
-                          label: "UOM",
-                          width: 150,
-                          render: (row) => {
-                            const uomOptions = getUomOptionsForRow(row);
-                            return (
-                              <InputFields
-                                label=""
-                                type="select"
-                                isSingle={true}
-                                placeholder="Select UOM"
-                                options={[{ label: `Select UOM`, value: "" }, ...uomOptions.map((o: any) => ({ label: o.label, value: o.value }))]}
-                                value={String((row as Record<string, unknown>)['uom'] ?? "")}
-                                onChange={e => {
-                                  const val = e.target.value;
-                                  updateOrderItem(tableIdx, String((row as Record<string, unknown>)['idx']), "uom", val);
-                                  const found = uomOptions.find((u: any) => String(u.value) === String(val));
-                                  if (found) updateOrderItem(tableIdx, String((row as Record<string, unknown>)['idx']), "price", String(found.price ?? ""));
-                                }}
-                                width="w-full"
-                              />
-                            );
-                          }
                         },
                         {
                           key: "free_qty",
@@ -1228,7 +1218,8 @@ export default function AddPricing() {
 
         return (
           <ContainerCard className="bg-[#fff] p-6 rounded-xl border border-[#E5E7EB]">
-            <h2 className="text-xl font-semibold mb-6">Promotion</h2>
+
+
             <div className="grid grid-cols-3 gap-6 mb-6">
               <div>
                 <label className="block mb-1 font-medium">Name<span className="text-red-500 ml-1">*</span></label>
@@ -1339,35 +1330,64 @@ export default function AddPricing() {
             </div>
             <div className="mt-8">
               <ContainerCard className="bg-[#fff] border border-[#E5E7EB] rounded-xl p-6 mb-8">
-                <div className="font-semibold text-lg mb-4">Item Selection</div>
-                {keyCombo.Item === "Item Category" && (
-                  <>
-                    <div className="mb-4">
-                      <div className="mb-2 text-base font-medium">
-                        Item Category
-                        <span className="text-red-500 ml-1">*</span>
+                <div className="font-semibold text-lg mb-4">Promotional Order Item</div>
+
+                <div className="grid grid-cols-3 gap-6 mb-5">
+                  {keyCombo.Item === "Item Category" && (
+                    <>
+                      <div>
+                        <div className="mb-2 text-base font-medium">
+                          Item Category
+                          <span className="text-red-500 ml-1">*</span>
+                        </div>
+                        <InputFields
+                          label=""
+                          type="select"
+                          isSingle={false}
+                          options={itemDropdownMap["Item Category"] ? [{ label: `Select Item Category`, value: "" }, ...itemDropdownMap["Item Category"]] : [{ label: `Select Item Category`, value: "" }]}
+                          value={keyValue["Item Category"] || []}
+                          onChange={e => {
+                            const val = e.target.value;
+                            let selectedValues: string[];
+                            if (Array.isArray(val)) {
+                              selectedValues = val;
+                            } else {
+                              selectedValues = val ? [String(val)] : [];
+                            }
+                            setKeyValue(s => ({ ...s, "Item Category": selectedValues.filter(v => v !== "") }));
+                            fetchItemOptions(selectedValues);
+                          }}
+                          width="w-full"
+                        />
                       </div>
-                      <InputFields
-                        label=""
-                        type="select"
-                        isSingle={false}
-                        options={itemDropdownMap["Item Category"] ? [{ label: `Select Item Category`, value: "" }, ...itemDropdownMap["Item Category"]] : [{ label: `Select Item Category`, value: "" }]}
-                        value={keyValue["Item Category"] || []}
-                        onChange={e => {
-                          const val = e.target.value;
-                          let selectedValues: string[];
-                          if (Array.isArray(val)) {
-                            selectedValues = val;
-                          } else {
-                            selectedValues = val ? [String(val)] : [];
-                          }
-                          setKeyValue(s => ({ ...s, "Item Category": selectedValues.filter(v => v !== "") }));
-                          fetchItemOptions(selectedValues);
-                        }}
-                        width="w-full"
-                      />
-                    </div>
-                    <div className="mb-4">
+                      <div>
+                        <div className="mb-2 text-base font-medium">
+                          Item
+                          <span className="text-red-500 ml-1">*</span>
+                        </div>
+                        <InputFields
+                          label=""
+                          type="select"
+                          isSingle={false}
+                          options={itemDropdownMap["Item"] ? [{ label: `Select Item`, value: "" }, ...itemDropdownMap["Item"]] : [{ label: `Select Item`, value: "" }]}
+                          value={keyValue["Item"] || []}
+                          onChange={e => {
+                            const val = e.target.value;
+                            let selectedValues: string[];
+                            if (Array.isArray(val)) {
+                              selectedValues = val;
+                            } else {
+                              selectedValues = val ? [String(val)] : [];
+                            }
+                            setKeyValue(s => ({ ...s, "Item": selectedValues.filter(v => v !== "") }));
+                          }}
+                          width="w-full"
+                        />
+                      </div>
+                    </>
+                  )}
+                  {keyCombo.Item === "Item" && (
+                    <div>
                       <div className="mb-2 text-base font-medium">
                         Item
                         <span className="text-red-500 ml-1">*</span>
@@ -1391,161 +1411,152 @@ export default function AddPricing() {
                         width="w-full"
                       />
                     </div>
-                  </>
-                )}
-                {keyCombo.Item === "Item" && (
-                  <div className="mb-4">
+                  )}
+
+                  <div>
                     <div className="mb-2 text-base font-medium">
-                      Item
+                      UOM
                       <span className="text-red-500 ml-1">*</span>
                     </div>
                     <InputFields
                       label=""
                       type="select"
-                      isSingle={false}
-                      options={itemDropdownMap["Item"] ? [{ label: `Select Item`, value: "" }, ...itemDropdownMap["Item"]] : [{ label: `Select Item`, value: "" }]}
-                      value={keyValue["Item"] || []}
+                      isSingle={true}
+                      placeholder="Select UOM"
+                      options={[{ label: `Select UOM`, value: "" }, ...getUomOptionsForRow({ itemCode: keyValue["Item"]?.[0] }).map((o: any) => ({ label: o.label, value: o.value }))]}
+                      value={selectedUom}
                       onChange={e => {
                         const val = e.target.value;
-                        let selectedValues: string[];
-                        if (Array.isArray(val)) {
-                          selectedValues = val;
-                        } else {
-                          selectedValues = val ? [String(val)] : [];
-                        }
-                        setKeyValue(s => ({ ...s, "Item": selectedValues.filter(v => v !== "") }));
+                        setSelectedUom(val);
                       }}
                       width="w-full"
                     />
                   </div>
-                )}
+                </div>
+                {renderOrderTables()}
+
               </ContainerCard>
 
-              {renderOrderTables()}
               <div className="font-semibold text-lg mb-4">Promotional Offer Items</div>
-              <div className="mb-6">
-                {/* Multi-table logic for offerItems, similar to orderTables */}
-                {(() => {
-                  // Always treat as array of tables (nested array)
-                  let offerTables: OfferItemType[][] = [];
-                  if (Array.isArray(offerItems) && offerItems.length > 0 && Array.isArray((offerItems as unknown[])[0])) {
-                    offerTables = offerItems as unknown as OfferItemType[][];
-                  } else {
-                    // Fallback if somehow flat
-                    offerTables = [(offerItems as unknown as OfferItemType[])];
+              {(() => {
+                // Always treat as array of tables (nested array)
+                let offerTables: OfferItemType[][] = [];
+                if (Array.isArray(offerItems) && offerItems.length > 0 && Array.isArray((offerItems as unknown[])[0])) {
+                  offerTables = offerItems as unknown as OfferItemType[][];
+                } else {
+                  // Fallback if somehow flat
+                  offerTables = [(offerItems as unknown as OfferItemType[])];
+                }
+
+                // Helper to update offerItems by tableIdx and rowIdx
+                function updateOfferItemTable(tableIdx: number, rowIdx: string, key: string, value: string) {
+                  setOfferItems((prev: OfferItemType[][] | any) => {
+                    const tables = (Array.isArray(prev) && prev.length > 0 && Array.isArray(prev[0])) ? prev as OfferItemType[][] : [prev as unknown as OfferItemType[]];
+
+                    return tables.map((arr: OfferItemType[], idx: number) =>
+                      idx === tableIdx
+                        ? arr.map((oi, i) => (String(i) === String(rowIdx) ? { ...oi, [key]: value } : oi))
+                        : arr
+                    );
+                  });
+                }
+
+
+
+                return offerTables.map((offerArr, tableIdx) => {
+                  let offerItemsData = offerArr.map((offerItem: OfferItemType, idx: number) => ({ ...offerItem, idx: String(idx) }));
+                  if (offerItemsData.length === 0) {
+                    offerItemsData = [{
+                      promotionGroupName: "",
+                      itemName: "",
+                      itemCode: "",
+                      uom: "BAG",
+                      toQuantity: "",
+                      is_discount: "0",
+                      idx: "0",
+                    }];
                   }
+                  const totalPages = Math.ceil(offerItemsData.length / pageSize);
+                  const paginatedData = offerItemsData.slice((page - 1) * pageSize, page * pageSize);
+                  return (
+                    <React.Fragment key={tableIdx}>
+                      {tableIdx > 0 && (
+                        <div className="flex items-center my-4">
+                          <div className="flex-1 h-px bg-gray-300" />
+                          <span className="mx-4 font-bold text-gray-500">OR</span>
+                          <div className="flex-1 h-px bg-gray-300" />
+                        </div>
+                      )}
+                      <div className="mb-6">
+                        <Table
 
-                  // Helper to update offerItems by tableIdx and rowIdx
-                  function updateOfferItemTable(tableIdx: number, rowIdx: string, key: string, value: string) {
-                    setOfferItems((prev: OfferItemType[][] | any) => {
-                      const tables = (Array.isArray(prev) && prev.length > 0 && Array.isArray(prev[0])) ? prev as OfferItemType[][] : [prev as unknown as OfferItemType[]];
-
-                      return tables.map((arr: OfferItemType[], idx: number) =>
-                        idx === tableIdx
-                          ? arr.map((oi, i) => (String(i) === String(rowIdx) ? { ...oi, [key]: value } : oi))
-                          : arr
-                      );
-                    });
-                  }
-
-
-
-                  return offerTables.map((offerArr, tableIdx) => {
-                    let offerItemsData = offerArr.map((offerItem: OfferItemType, idx: number) => ({ ...offerItem, idx: String(idx) }));
-                    if (offerItemsData.length === 0) {
-                      offerItemsData = [{
-                        promotionGroupName: "",
-                        itemName: "",
-                        itemCode: "",
-                        uom: "BAG",
-                        toQuantity: "",
-                        is_discount: "0",
-                        idx: "0",
-                      }];
-                    }
-                    const totalPages = Math.ceil(offerItemsData.length / pageSize);
-                    const paginatedData = offerItemsData.slice((page - 1) * pageSize, page * pageSize);
-                    return (
-                      <React.Fragment key={tableIdx}>
-                        {tableIdx > 0 && (
-                          <div className="flex items-center my-4">
-                            <div className="flex-1 h-px bg-gray-300" />
-                            <span className="mx-4 font-bold text-gray-500">OR</span>
-                            <div className="flex-1 h-px bg-gray-300" />
-                          </div>
-                        )}
-                        <div className="mb-6">
-                          <Table
-
-                            data={paginatedData}
-                            config={{
-                              showNestedLoading: false,
-                              columns: [
-                                {
-                                  key: "selectedItem",
-                                  label: "Item",
-                                  width: 300,
-                                  render: (row: any) => (
+                          data={paginatedData}
+                          config={{
+                            showNestedLoading: false,
+                            columns: [
+                              {
+                                key: "selectedItem",
+                                label: "Item",
+                                width: 300,
+                                render: (row: any) => (
+                                  <InputFields
+                                    label=""
+                                    type="select"
+                                    isSingle={true}
+                                    placeholder="Select Item"
+                                    options={[{ label: `Select Item`, value: "" }, ...selectedItemOptions]}
+                                    value={String((row as Record<string, unknown>)['itemCode'] ?? "")}
+                                    onChange={e => selectItemForOffer(tableIdx, row.idx, e.target.value)}
+                                    width="w-full"
+                                  />
+                                ),
+                              },
+                              {
+                                key: "itemName",
+                                label: "Item Name",
+                                width: 300,
+                                render: (row) => (
+                                  <InputFields
+                                    label=""
+                                    type="text"
+                                    placeholder="Item Name"
+                                    value={String((row as Record<string, unknown>)['itemName'] ?? "")}
+                                    onChange={e => updateOfferItemTable(tableIdx, row.idx, "itemName", e.target.value)}
+                                    width="w-full"
+                                  />
+                                ),
+                              },
+                              {
+                                key: "uom",
+                                label: "UOM",
+                                width: 150,
+                                render: (row) => {
+                                  const uomOptions = getUomOptionsForRow(row);
+                                  return (
                                     <InputFields
                                       label=""
                                       type="select"
                                       isSingle={true}
-                                      placeholder="Select Item"
-                                      options={[{ label: `Select Item`, value: "" }, ...selectedItemOptions]}
-                                      value={String((row as Record<string, unknown>)['itemCode'] ?? "")}
-                                      onChange={e => selectItemForOffer(tableIdx, row.idx, e.target.value)}
+                                      placeholder="Select UOM"
+                                      options={[{ label: `Select UOM`, value: "" }, ...uomOptions.map((o: any) => ({ label: o.label, value: o.value }))]}
+                                      value={String((row as Record<string, unknown>)['uom'] ?? "")}
+                                      onChange={e => updateOfferItemTable(tableIdx, row.idx, "uom", e.target.value)}
                                       width="w-full"
                                     />
-                                  ),
-                                },
-                                {
-                                  key: "itemName",
-                                  label: "Item Name",
-                                  width: 300,
-                                  render: (row) => (
-                                    <InputFields
-                                      label=""
-                                      type="text"
-                                      placeholder="Item Name"
-                                      value={String((row as Record<string, unknown>)['itemName'] ?? "")}
-                                      onChange={e => updateOfferItemTable(tableIdx, row.idx, "itemName", e.target.value)}
-                                      width="w-full"
-                                    />
-                                  ),
-                                },
-                                {
-                                  key: "uom",
-                                  label: "UOM",
-                                  width: 150,
-                                  render: (row) => {
-                                    const uomOptions = getUomOptionsForRow(row);
-                                    return (
-                                      <InputFields
-                                        label=""
-                                        type="select"
-                                        isSingle={true}
-                                        placeholder="Select UOM"
-                                        options={[{ label: `Select UOM`, value: "" }, ...uomOptions.map((o: any) => ({ label: o.label, value: o.value }))]}
-                                        value={String((row as Record<string, unknown>)['uom'] ?? "")}
-                                        onChange={e => updateOfferItemTable(tableIdx, row.idx, "uom", e.target.value)}
-                                        width="w-full"
-                                      />
-                                    );
-                                  }
-                                },
-                              ],
-                              pageSize,
-                            }}
-                          />
-                          {offerItemsData.length > pageSize && renderPaginationBar(totalPages)}
-                        </div>
-                      </React.Fragment>
-                    );
-                  });
-                })()}
-              </div>
+                                  );
+                                }
+                              },
+                            ],
+                            pageSize,
+                          }}
+                        />
+                        {offerItemsData.length > pageSize && renderPaginationBar(totalPages)}
+                      </div>
+                    </React.Fragment>
+                  );
+                });
+              })()}
             </div>
-
           </ContainerCard>
         );
       default:
