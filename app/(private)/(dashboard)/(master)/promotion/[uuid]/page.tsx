@@ -571,7 +571,6 @@ export default function AddPricing() {
   const [offerItems, setOfferItems] = useState<OfferItemType[][]>([
     [{ promotionGroupName: "", itemName: "", itemCode: "", uom: "BAG", toQuantity: "", is_discount: "0" }],
   ]);
-  console.log(offerItems, "offerItems")
 
   type ItemDetail = {
     code?: string;
@@ -582,61 +581,60 @@ export default function AddPricing() {
     [key: string]: unknown;
   };
   type Uom = { name?: string; uom?: string; uom_type?: string; price?: number | string;[k: string]: unknown };
-  const [selectedItemDetails, setSelectedItemDetails] = useState<ItemDetail[]>([]);
   const [page, setPage] = useState(1);
   const pageSize = 5;
-  useEffect(() => {
-    if (keyValue["Item"] && keyValue["Item"].length > 0) {
-      itemList({ ids: keyValue["Item"] })
-        .then(data => {
-          let items: ItemDetail[] = [];
-          if (Array.isArray(data)) {
-            items = data as ItemDetail[];
-          } else if (data && typeof data === "object" && Array.isArray(data.data)) {
-            items = data.data as ItemDetail[];
-          }
+  // useEffect(() => {
+  //   if (keyValue["Item"] && keyValue["Item"].length > 0) {
+  //     itemList({ ids: keyValue["Item"] })
+  //       .then(data => {
+  //         let items: ItemDetail[] = [];
+  //         if (Array.isArray(data)) {
+  //           items = data as ItemDetail[];
+  //         } else if (data && typeof data === "object" && Array.isArray(data.data)) {
+  //           items = data.data as ItemDetail[];
+  //         }
 
-          // Enrich each returned item with uomSummary from provider `item` state when available
-          const ctxItems: ItemDetail[] = Array.isArray(item) ? (item as ItemDetail[]) : [];
-          const enriched = items.map((it: ItemDetail) => {
-            // match by id or code
-            const match = ctxItems.find(ci => String((ci as Record<string, unknown>)['id'] ?? (ci as Record<string, unknown>)['code'] ?? (ci as Record<string, unknown>)['itemCode'] ?? '') === String(it.id ?? it.code ?? it.itemCode ?? ''));
-            const maybeUomSummary = match ? ((match as Record<string, unknown>)['uomSummary'] ?? (match as Record<string, unknown>)['uom']) : undefined;
-            const uomSummary = Array.isArray(maybeUomSummary) ? (maybeUomSummary as unknown[]) : (Array.isArray((it as Record<string, unknown>)['uom']) ? (it as Record<string, unknown>)['uom'] as unknown[] : []);
-            return { ...it, uomSummary };
-          });
+  //         // Enrich each returned item with uomSummary from provider `item` state when available
+  //         const ctxItems: ItemDetail[] = Array.isArray(item) ? (item as ItemDetail[]) : [];
+  //         const enriched = items.map((it: ItemDetail) => {
+  //           // match by id or code
+  //           const match = ctxItems.find(ci => String((ci as Record<string, unknown>)['id'] ?? (ci as Record<string, unknown>)['code'] ?? (ci as Record<string, unknown>)['itemCode'] ?? '') === String(it.id ?? it.code ?? it.itemCode ?? ''));
+  //           const maybeUomSummary = match ? ((match as Record<string, unknown>)['uomSummary'] ?? (match as Record<string, unknown>)['uom']) : undefined;
+  //           const uomSummary = Array.isArray(maybeUomSummary) ? (maybeUomSummary as unknown[]) : (Array.isArray((it as Record<string, unknown>)['uom']) ? (it as Record<string, unknown>)['uom'] as unknown[] : []);
+  //           return { ...it, uomSummary };
+  //         });
 
-          setSelectedItemDetails(enriched);
+  //         setSelectedItemDetails(enriched);
 
-          // Sync orderTables with the first selected item to ensure consistency
-          if (enriched.length > 0) {
-            const primaryItem = enriched[0];
-            const name = String(primaryItem.name || primaryItem.itemName || primaryItem.label || "");
-            const code = String(primaryItem.code || primaryItem.itemCode || "");
+  //         // Sync orderTables with the first selected item to ensure consistency
+  //         if (enriched.length > 0) {
+  //           const primaryItem = enriched[0];
+  //           const name = String(primaryItem.name || primaryItem.itemName || primaryItem.label || "");
+  //           const code = String(primaryItem.code || primaryItem.itemCode || "");
 
-            // Get primary UOM
-            const uomList = (primaryItem.uomSummary || primaryItem.uom) as Uom[];
-            let uomName = "";
-            if (Array.isArray(uomList) && uomList.length > 0) {
-              const primary = uomList.find(u => String(u.uom_type || '').toLowerCase() === 'primary') || uomList[0];
-              uomName = String(primary?.name ?? primary?.uom ?? '');
-            }
-            setSelectedUom(uomName);
+  //           // Get primary UOM
+  //           const uomList = (primaryItem.uomSummary || primaryItem.uom) as Uom[];
+  //           let uomName = "";
+  //           if (Array.isArray(uomList) && uomList.length > 0) {
+  //             const primary = uomList.find(u => String(u.uom_type || '').toLowerCase() === 'primary') || uomList[0];
+  //             uomName = String(primary?.name ?? primary?.uom ?? '');
+  //           }
+  //           setSelectedUom(uomName);
 
-            setOrderTables(tables => tables.map(arr => arr.map(row => ({
-              ...row,
-              itemName: name,
-              itemCode: code
-            }))));
-          }
-        })
-        .catch(err => {
-          console.error("Failed to fetch item details", err);
-        });
-    } else {
-      setSelectedItemDetails([]);
-    }
-  }, [keyValue["Item"], item]);
+  //           setOrderTables(tables => tables.map(arr => arr.map(row => ({
+  //             ...row,
+  //             itemName: name,
+  //             itemCode: code
+  //           }))));
+  //         }
+  //       })
+  //       .catch(err => {
+  //         console.error("Failed to fetch item details", err);
+  //       });
+  //   } else {
+  //     setSelectedItemDetails([]);
+  //   }
+  // }, [keyValue["Item"], item]);
 
   useEffect(() => {
     const companies = keyValue["Company"];
@@ -898,20 +896,14 @@ export default function AddPricing() {
 
 
         // Options built from items selected in Step 2
-        const selectedItemOptions = selectedItemDetails.map(d => {
-          const name = String(d.name || d.itemName || d.itemName || d.label || "").trim();
-          const code = String(d.code || d.itemCode || "").trim();
-          const label = code ? `${name} - ${code}` : name;
-          const value = code || name || "";
-          return { label, value };
-        });
+        const selectedItemOptions = itemOptions;
 
 
 
         // Helper to set both itemCode and itemName for an offer row/table
         function selectItemForOffer(tableIdx: number, rowIdx: string, value: string) {
           const providerItems: ItemDetail[] = Array.isArray(item) ? (item as ItemDetail[]) : [];
-          const foundItem = selectedItemDetails.find(it => String(it.code || it.itemCode || it.label) === String(value) || String(it.name || it.itemName || it.label) === String(value)) || providerItems.find((ci) => String((ci as Record<string, unknown>)['id'] ?? '') === String(value));
+          const foundItem = providerItems.find((ci) => String((ci as Record<string, unknown>)['id'] ?? '') === String(value));
           const name = foundItem ? String(foundItem.name || foundItem.itemName || foundItem.label || "") : "";
           // choose primary UOM when available, otherwise first UOM
           const uomListOffer = foundItem ? ((foundItem as Record<string, unknown>)['uomSummary'] ?? (foundItem as Record<string, unknown>)['uom']) : undefined;
@@ -1053,6 +1045,7 @@ export default function AddPricing() {
                               value={String((row as Record<string, unknown>)['quantity'] ?? "")}
                               onChange={e => updateOrderItem(tableIdx, String((row as Record<string, unknown>)['idx']), "quantity", clampPercentInput(e.target.value))}
                               width="w-full"
+                              trailingElement={promotion.promotionType === "percentage" ? <span className="text-gray-500 font-semibold">%</span> : null}
                             />
                           ),
                         },
@@ -1068,6 +1061,7 @@ export default function AddPricing() {
                               value={String((row as Record<string, unknown>)['toQuantity'] ?? "")}
                               onChange={e => updateOrderItem(tableIdx, String((row as Record<string, unknown>)['idx']), "toQuantity", clampPercentInput(e.target.value))}
                               width="w-full"
+                              trailingElement={promotion.promotionType === "percentage" ? <span className="text-gray-500 font-semibold">%</span> : null}
                             />
                           ),
                         },
@@ -1594,11 +1588,67 @@ export default function AddPricing() {
                                   );
                                 }
                               },
+                              {
+                                key: "action",
+                                label: "Action",
+                                width: 50,
+                                render: (row) => (
+                                  <button
+                                    type="button"
+                                    disabled={String((row as Record<string, unknown>)['idx']) === "0"}
+                                    className={`flex items-center justify-center w-full h-full ${String((row as Record<string, unknown>)['idx']) === "0" ? "text-gray-300 cursor-not-allowed" : "text-red-500"}`}
+                                    onClick={() => {
+                                      if (String((row as Record<string, unknown>)['idx']) === "0") return;
+                                      setOfferItems((prev: OfferItemType[][] | any) => {
+                                        const tables = (Array.isArray(prev) && prev.length > 0 && Array.isArray(prev[0])) ? prev as OfferItemType[][] : [prev as unknown as OfferItemType[]];
+                                        return tables.flatMap((arr, idx) => {
+                                          if (idx !== tableIdx) return [arr];
+                                          const newArr = arr.filter((oi, i) => String(i) !== String((row as Record<string, unknown>)['idx']));
+                                          if (newArr.length === 0 && tables.length > 1) {
+                                             return [];
+                                          }
+                                          return [newArr];
+                                        });
+                                      });
+                                    }}
+                                  >
+                                    <Icon icon="lucide:trash-2" width={20} />
+                                  </button>
+                                ),
+                              },
                             ],
                             pageSize,
                           }}
                         />
                         {offerItemsData.length > pageSize && renderPaginationBar(totalPages)}
+                        <div className="mt-4">
+                          <button
+                            type="button"
+                            className="text-[#E53935] font-medium text-[16px] flex items-center gap-2"
+                            onClick={() => {
+                              setOfferItems((prev: OfferItemType[][] | any) => {
+                                const tables = (Array.isArray(prev) && prev.length > 0 && Array.isArray(prev[0])) ? prev as OfferItemType[][] : [prev as unknown as OfferItemType[]];
+                                return tables.map((arr, idx) => {
+                                  if (idx !== tableIdx) return arr;
+                                  return [
+                                    ...arr,
+                                    {
+                                      promotionGroupName: arr[0]?.promotionGroupName || "",
+                                      itemName: "",
+                                      itemCode: "",
+                                      uom: "BAG",
+                                      toQuantity: "",
+                                      is_discount: "0"
+                                    }
+                                  ];
+                                });
+                              });
+                            }}
+                          >
+                            <Icon icon="material-symbols:add-circle-outline" width={20} />
+                            Add New Item
+                          </button>
+                        </div>
                       </div>
                     </React.Fragment>
                   );
