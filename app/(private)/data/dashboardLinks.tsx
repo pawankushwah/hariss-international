@@ -258,6 +258,13 @@ export const initialLinkData: SidebarDataType[] = [
             leadingIcon: "mdi:package-variant",
             iconColor: "text-cyan-500"
           },
+          {
+            isActive: false,
+            href: "/stocktransfer",
+            label: "Stock Transfer",
+            leadingIcon: "mdi:package-variant",
+            iconColor: "text-cyan-500"
+          },
         ]
       },
       {

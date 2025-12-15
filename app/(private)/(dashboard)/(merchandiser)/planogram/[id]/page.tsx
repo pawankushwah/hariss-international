@@ -297,41 +297,39 @@ export default function Planogram() {
     try {
       const schema = stepSchemas[currentStep - 1];
       await schema.validate(values, { abortEarly: false });
+
+      // 🧼 Clear old validation when step changes
+      actions.setTouched({});
+      actions.setErrors({});
+
+      // Continue to next step
       markStepCompleted(currentStep);
       nextStep();
     } catch (err) {
       if (err instanceof Yup.ValidationError) {
-        // Create a simpler error object that matches FormikErrors type
         const errorMap: FormikErrors<PlanogramFormValues> = {};
+        const touchedMap: FormikTouched<PlanogramFormValues> = {};
 
         err.inner.forEach((error) => {
           if (error.path) {
             // Only set errors for fields that exist in our form values
             const fieldName = error.path as keyof PlanogramFormValues;
-            const errorMap: Record<string, string> = {};
 
             if (fieldName in values) {
-              errorMap[fieldName] = error.message;
+              (errorMap as any)[fieldName] = error.message;
             }
+            (touchedMap as any)[fieldName] = true; // Keep touched for all validated fields
           }
         });
 
         actions.setErrors(errorMap);
-
-        // Set touched for the fields that have errors
-        const touchedMap: FormikTouched<PlanogramFormValues> = {};
-        err.inner.forEach((error) => {
-          if (error.path) {
-            const fieldName = error.path as keyof PlanogramFormValues;
-            if (fieldName in values) {
-              (touchedMap[fieldName] as boolean) = true;
-            }
-          }
-        });
         actions.setTouched(touchedMap);
+
+        return;
       }
     }
   };
+
 
   // ---------------- IMAGE HANDLING ----------------
   const handleImageUpload = (
@@ -458,6 +456,7 @@ export default function Planogram() {
                   value={values.name}
                   onChange={(e) => setFieldValue("name", e.target.value)}
                 // error={touched.name && errors.name}
+                // error={touched.name && errors.name}
                 />
                 {/* <ErrorMessage
                   name="name"
@@ -473,6 +472,7 @@ export default function Planogram() {
                   name="valid_from"
                   value={values.valid_from}
                   onChange={(e) => setFieldValue("valid_from", e.target.value)}
+                // error={touched.valid_from && errors.valid_from}
                 // error={touched.valid_from && errors.valid_from}
                 />
                 {/* <ErrorMessage
@@ -490,6 +490,7 @@ export default function Planogram() {
                   name="valid_to"
                   value={values.valid_to}
                   onChange={(e) => setFieldValue("valid_to", e.target.value)}
+                // error={touched.valid_to && errors.valid_to}
                 // error={touched.valid_to && errors.valid_to}
                 />
                 {/* <ErrorMessage
