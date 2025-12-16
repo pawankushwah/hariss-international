@@ -59,7 +59,7 @@ const icon = new L.Icon({
 /* ================= COMPONENT ================= */
 
 export default function SalesTrackingMap() {
-    const { salesmanOptions, warehouseOptions } = useAllDropdownListData();
+    const { salesmanOptions, warehouseOptions, ensureWarehouseLoaded, ensureSalesmanLoaded } = useAllDropdownListData();
     const router = useRouter();
     const [form, setForm] = useState({
         distributor: "",
@@ -94,6 +94,11 @@ export default function SalesTrackingMap() {
 
         route: demoRoute,
     };
+
+    useEffect(() => {
+        ensureWarehouseLoaded();
+        ensureSalesmanLoaded();
+    }, []);
 
     /* ---------- DEBUG / API READY ---------- */
     useEffect(() => {
