@@ -273,7 +273,8 @@ export default function AddPricing() {
           if (newKeyCombo.Customer) newKeyValue[newKeyCombo.Customer] = data.customer?.map(String) || [];
           // Item/Item Category for keyValue is populated via sync effect from percentageDiscounts
           // or directly from data.item_category / data.items if not percentage promotion.
-          if (!newKeyComboItem) { // Only set if not percentage_discounts driven
+          const isPercentageDriven = Array.isArray(data.percentage_discounts) && data.percentage_discounts.length > 0;
+          if (!isPercentageDriven) { // Only set if not percentage_discounts driven
             if (newKeyCombo.Item === "Item Category") {
               const categories = data.item_category?.map(String) || [];
               newKeyValue["Item Category"] = categories;
@@ -311,18 +312,34 @@ export default function AddPricing() {
 
           // Set Offer Items
           // Response has `offer_items` as object, but state expects array of arrays (for tables)
-          if (data.offer_items) {
-            const offerData = Array.isArray(data.offer_items) ? data.offer_items : [data.offer_items];
-            const offers = offerData.map((o: any) => ({
+          if (data.offer_items && data.offer_items.length > 0) {
+            const allItemIds: string[] = [];
+            let commonUom = ""; 
+            
+            data.offer_items.forEach((o: any) => {
+              if (o.item_id) {
+                allItemIds.push(String(o.item_id));
+              }
+              // Only set commonUom if it's the first item's UOM or if it's consistent.
+              // For simplicity, taking the UOM of the first item found.
+              if (!commonUom && o.uom) { 
+                commonUom = String(o.uom);
+              }
+            });
+
+            const singleOfferItem: OfferItemType = {
               promotionGroupName: "",
-              itemName: "", // Can fetch name if needed
-              itemCode: String(o.item_id || ""),
-              uom: String(o.uom || ""),
-              toQuantity: "", // Not in example response?
+              itemName: "", 
+              itemCode: allItemIds, 
+              uom: commonUom || "BAG", 
+              toQuantity: "", 
               is_discount: "0",
               idx: String(Math.random())
-            }));
-            setOfferItems([offers]);
+            };
+            setOfferItems([[singleOfferItem]]); 
+          } else {
+             // If no offer items, ensure offerItems state is set to its default empty row structure
+             setOfferItems([[{ promotionGroupName: "", itemName: "", itemCode: "", uom: "BAG", toQuantity: "", is_discount: "0", idx: "0" }]]);
           }
         }
       } catch (err) {
