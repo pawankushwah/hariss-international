@@ -208,13 +208,13 @@ export default function AddSalesmanLoadUI() {
                 })),
             };
 
-            console.log("Submitting payload:", payload);
+            // console.log("Submitting payload:", payload);
             const response = await addSalesTeamRecontionOrders(payload);
-            console.log("API Response:", response);
+            // console.log("API Response:", response);
 
             if (response?.status === "success" || response?.success) {
                 showSnackbar("Sales Team Reconciliation created successfully!", "success");
-                router.back();
+                router.push('/salesTeamRecosite');
             } else {
                 // Handle error response with errors object
                 if (response?.errors) {
@@ -227,7 +227,7 @@ export default function AddSalesmanLoadUI() {
                 }
             }
         } catch (error: any) {
-            console.error("Failed to submit data:", error);
+            // console.error("Failed to submit data:", error);
             // Handle API error response
             if (error?.response?.data?.errors) {
                 const errorMessages = Object.values(error.response.data.errors)

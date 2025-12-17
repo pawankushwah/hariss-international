@@ -1020,8 +1020,8 @@ export default function PurchaseOrderAddEditPage() {
                                 onChange={(e) => {
                                   if (e.target.value && !isValidDate(new Date(e.target.value))) {
                                     return;
-                                  } else if (e.target.value)
-                                    recalculateItem(Number(row.idx), "Expiry", e.target.value, values);
+                                  }
+                                  recalculateItem(Number(row.idx), "Expiry", e.target.value, values);
                                 }}
                                 // min={1}
                                 integerOnly={true}
@@ -1239,7 +1239,7 @@ export default function PurchaseOrderAddEditPage() {
                   <SidebarBtn
                     type="submit" isActive={true}
                     label={isSubmitting ? "Creating Return..." : "Create Return"}
-                    disabled={isSubmitting || !values.customer || !values.turnman || !values.truckNo || !values.contactNo || !itemData || itemData.length < 0}
+                    disabled={isSubmitting || !values.customer || !values.turnman || !values.truckNo || !values.contactNo || !itemData || (itemData.length === 1 && !itemData[0].item_name)}
                     onClick={() => submitForm()}
                   />
                 </div>
