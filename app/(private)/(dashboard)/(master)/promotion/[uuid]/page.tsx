@@ -49,12 +49,12 @@ export default function AddPricing() {
     customerCategoryOptions, companyCustomersOptions, itemCategoryOptions, fetchRegionOptions,
     fetchAreaOptions, fetchWarehouseOptions, fetchRouteOptions, fetchCustomerCategoryOptions,
     fetchCompanyCustomersOptions, fetchItemsCategoryWise, salesmanTypeOptions, projectOptions,
-    ensureCompanyLoaded, ensureChannelLoaded, ensureItemCategoryLoaded, ensureSalesmanTypeLoaded, 
+    ensureCompanyLoaded, ensureChannelLoaded, ensureItemCategoryLoaded, ensureSalesmanTypeLoaded,
     ensureProjectLoaded, ensureUomLoaded
   } = useAllDropdownListData();
 
   const { loading: dataLoading } = usePromotionData({
-    isEditMode, id, setPromotion, setKeyCombo, setKeyValue, 
+    isEditMode, id, setPromotion, setKeyCombo, setKeyValue,
     setPercentageDiscounts, setSelectedUom, setOrderTables, setOfferItems, fetchItemsCategoryWise
   });
 
@@ -93,34 +93,14 @@ export default function AddPricing() {
 
   // Cascading Dropdown Effects
   useEffect(() => {
-    const companies = keyValue["Company"];
-    if (Array.isArray(companies) && companies.length > 0) fetchRegionOptions(companies[0]);
-  }, [keyValue["Company"], fetchRegionOptions]);
+    fetchRegionOptions("")
+    fetchAreaOptions("");
+    fetchWarehouseOptions("");
+    fetchRouteOptions("")
+    fetchCustomerCategoryOptions("");
+    fetchCompanyCustomersOptions("")
+  }, [fetchRegionOptions, fetchAreaOptions, fetchWarehouseOptions, fetchRouteOptions, fetchCustomerCategoryOptions, fetchCompanyCustomersOptions])
 
-  useEffect(() => {
-    const regions = keyValue["Region"];
-    if (Array.isArray(regions) && regions.length > 0) fetchAreaOptions(regions[0]);
-  }, [keyValue["Region"], fetchAreaOptions]);
-
-  useEffect(() => {
-    const areas = keyValue["Area"];
-    if (Array.isArray(areas) && areas.length > 0) fetchWarehouseOptions(areas[0]);
-  }, [keyValue["Area"], fetchWarehouseOptions]);
-
-  useEffect(() => {
-    const warehouses = keyValue["Warehouse"];
-    if (Array.isArray(warehouses) && warehouses.length > 0) fetchRouteOptions(warehouses[0]);
-  }, [keyValue["Warehouse"], fetchRouteOptions]);
-
-  useEffect(() => {
-    const channels = keyValue["Channel"];
-    if (Array.isArray(channels) && channels.length > 0) fetchCustomerCategoryOptions(channels[0]);
-  }, [keyValue["Channel"], fetchCustomerCategoryOptions]);
-
-  useEffect(() => {
-    const categories = keyValue["Customer Category"];
-    if (Array.isArray(categories) && categories.length > 0) fetchCompanyCustomersOptions(categories[0]);
-  }, [keyValue["Customer Category"], fetchCompanyCustomersOptions]);
 
   // Item Category -> Items
   useEffect(() => {
