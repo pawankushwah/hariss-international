@@ -1084,6 +1084,7 @@ export default function InputFields({
                         placeholder={
                           placeholder ? placeholder : `Search ${label}`
                         }
+                        disabled={disabled}
                         value={displayValue}
                         autoComplete="off"
                         onChange={(e) => {

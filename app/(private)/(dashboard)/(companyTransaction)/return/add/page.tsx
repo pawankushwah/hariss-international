@@ -27,6 +27,8 @@ interface FormData {
   erp_code: string,
   item_code: string,
   name: string,
+  auom_pc_price: string,
+  buom_ctn_price: string,
   description: string,
   item_uoms: {
     id: number,
@@ -62,7 +64,8 @@ interface FormData {
   is_taxable: boolean,
   has_excies: boolean,
   item_weight: string,
-  volume: number
+  volume: number;
+  warehouse_stock: string;
 }
 interface WarehouseStock {
   item_id: number;
@@ -84,19 +87,17 @@ interface ItemUOM {
 
 interface ItemData {
   item_id: string;
-  item_name: string;
-  item_label?: string;
-  UOM: { label: string; value: string }[];
+  UOM: { label: string; value: string, price: string, upc: string }[];
   uom_id?: string;
   Quantity: string;
   Price: string;
-  Excise: string;
-  Discount: string;
-  Net: string;
-  Vat: string;
   Total: string;
-  Batchs?: { label: string; value: string; price: number }[];
-  [key: string]: string | { label: string; value: string }[] | undefined;
+  Type: string;
+  Reason: string;
+  Expiry: string;
+  Batch: string;
+  Batchs?: { label: string; value: string; price?: string, upc?: string }[];
+  [key: string]: string | { label: string; value: string, price?: string, upc?: string }[] | undefined;
 }
 
 export default function PurchaseOrderAddEditPage() {
@@ -194,31 +195,102 @@ export default function PurchaseOrderAddEditPage() {
     const [itemsWithUOM, setItemsWithUOM] = useState<Record<string, { uoms: ItemUOM[], stock_qty: string, uomDetails: Record<string, { upc: string }> }>>({});
   const [itemData, setItemData] = useState<ItemData[]>([
     {
-      item_id: "",
-      item_name: "",
-      item_label: "",
-      UOM: [],
-      Quantity: "1",
-      Price: "",
-      Excise: "",
-      Discount: "",
-      Net: "",
-      Vat: "",
-      Total: "",
-    },
+        item_id: "",
+        UOM: [],
+        uom_id: "",
+        Quantity: "1",
+        Expiry: "",
+        Batch: "",
+        Type: "",
+        Reason: "",
+        Price: "",
+        Total: "-",
+      }
   ]);
 
+  useEffect(() => {
+    setFinalTotal(itemData.reduce((sum, item) => sum + (Number(item.Total) || 0), 0));
+  }, [itemData]);
+  
   // per-row validation errors for item rows (keyed by row index)
   const [itemErrors, setItemErrors] = useState<Record<number, Record<string, string>>>({});
   // per-row touched tracking so we only show errors after interaction
   const [itemTouched, setItemTouched] = useState<Record<number, Record<string, boolean>>>({});
 
   // per-row loading (for UOM / price) so UI can show skeletons while fetching
-  const [itemLoading, setItemLoading] = useState<Record<number, { uom?: boolean; price?: boolean, Batch?: boolean }>>({});
+  const [itemLoading, setItemLoading] = useState<Record<number, { uom?: boolean; price?: boolean, Batch?: boolean, item?: boolean }>>({});
 
   // Ref to track debounce timeouts for quantity changes per row
   const quantityDebounceRef = useRef<Record<number, NodeJS.Timeout>>({});
   const warehouseDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper: fetch base stock for an item (in smallest unit) from cached warehouse data
+  const getBaseStockForItem = useCallback((itemId: string) => {
+    if (!itemId) return 0;
+    const stockFromWarehouse = itemsWithUOM[itemId]?.stock_qty;
+    const stockFromOrder = orderData.find((od) => String(od.id) === String(itemId))?.warehouse_stock;
+    const parsed = Number(stockFromWarehouse ?? stockFromOrder ?? 0);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [itemsWithUOM, orderData]);
+
+  // Helper: derive UPC/multiplier for an item's UOM (fallback to 1 to avoid divide-by-zero)
+  const getUomMultiplier = useCallback((itemId: string, uomId?: string, row?: ItemData) => {
+    const uomKey = String(uomId ?? "");
+    const fromMap = itemsWithUOM[itemId]?.uomDetails?.[uomKey]?.upc;
+    const fromRow = Array.isArray(row?.UOM) ? row?.UOM.find((u: any) => String(u.value) === uomKey)?.upc : undefined;
+    const fromOrder = orderData
+      .find((od) => String(od.id) === String(itemId))
+      ?.item_uoms?.find((u) => String(u.uom_id) === uomKey)?.upc;
+    const parsed = Number(fromMap ?? fromRow ?? fromOrder ?? 1);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }, [itemsWithUOM, orderData]);
+
+  // Helper: keep available stock in sync across duplicate item rows (different UOMs included)
+  const rebalanceStockForItem = useCallback((data: ItemData[], targetItemId?: string) => {
+    const updated = [...data];
+    const targetIds = targetItemId
+      ? [String(targetItemId)]
+      : Array.from(new Set(updated.map((row) => row.item_id).filter(Boolean).map(String)));
+
+    targetIds.forEach((id) => {
+      const baseStock = getBaseStockForItem(id);
+      if (!baseStock) {
+        updated.forEach((row, idx) => {
+          if (String(row.item_id) === id) {
+            updated[idx] = { ...row, inStock: "0" };
+          }
+        });
+        return;
+      }
+
+      const rowsForItem = updated
+        .map((row, idx) => ({ row, idx }))
+        .filter(({ row }) => String(row.item_id) === id && row.uom_id);
+
+      const allocations = rowsForItem.map(({ row }) => {
+        const upc = getUomMultiplier(id, row.uom_id, row);
+        return (Number(row.Quantity) || 0) * upc;
+      });
+      const totalAllocated = allocations.reduce((sum, qty) => sum + qty, 0);
+
+      rowsForItem.forEach(({ row, idx }, allocIdx) => {
+        const upc = getUomMultiplier(id, row.uom_id, row);
+        const currentAllocation = allocations[allocIdx] ?? 0;
+        const remainingBase = baseStock - (totalAllocated - currentAllocation);
+        const availableQty = Math.max(0, Math.floor(remainingBase / upc));
+        const adjustedRow: ItemData = { ...updated[idx], inStock: String(availableQty) } as ItemData;
+
+        if ((Number(adjustedRow.Quantity) || 0) > availableQty) {
+          adjustedRow.Quantity = String(availableQty);
+          adjustedRow.Total = (Number(adjustedRow.Price) * availableQty).toString();
+        }
+
+        updated[idx] = adjustedRow;
+      });
+    });
+
+    return updated;
+  }, [getBaseStockForItem, getUomMultiplier]);
   
 
   // Debounced function for quantity changes (triggers batch fetch)
@@ -227,7 +299,8 @@ export default function PurchaseOrderAddEditPage() {
     const newData = [...itemData];
     const item: ItemData = newData[index] as ItemData;
     (item as any)["Quantity"] = value;
-    setItemData(newData);
+    const balanced = rebalanceStockForItem(newData, item.item_id);
+    setItemData(balanced);
 
     // Clear any existing timeout for this row
     if (quantityDebounceRef.current[index]) {
@@ -446,8 +519,6 @@ export default function PurchaseOrderAddEditPage() {
   }, []);
 
   const recalculateItem = async (index: number, field: string, value: string, values?: FormikValues) => {
-    const nonAffectedFields = ["item_id", "uom_id"];
-    if(!nonAffectedFields.includes(field)) markTouched(index, field);
     const newData = [...itemData];
     const item: ItemData = newData[index] as ItemData;
     (item as any)[field] = value;
@@ -458,8 +529,6 @@ export default function PurchaseOrderAddEditPage() {
       // set item_id to the chosen value
       item.item_id = value;
       if (!value) {
-        // cleared selection
-        item.item_name = "";
         item.UOM = [];
         item.uom_id = "";
         item.Price = "";
@@ -468,18 +537,36 @@ export default function PurchaseOrderAddEditPage() {
         item.Type = "";
         item.Reason = "";
         item.Expiry = "";
+
+        setItemErrors((prev) => ({
+          ...prev,
+          [index]: { },
+        }));
+        const balanced = rebalanceStockForItem(newData);
+        setItemData(balanced);
+        return;
       } else {
         const selectedOrder = orderData.find((order: FormData) => order.id.toString() === value);
         // console.log(selectedOrder);
         item.item_id = selectedOrder ? String(selectedOrder.id || value) : value;
-        item.item_name = selectedOrder?.name ?? "";
-        item.UOM = selectedOrder?.item_uoms?.map(uom => ({ label: uom.name, value: uom?.id?.toString(), price: uom.price })) || [];
-        console.log(item.UOM);
-        item.uom_id = selectedOrder?.item_uoms?.[0]?.id ? String(selectedOrder.item_uoms[0].id) : "";
-        console.log(item.uom_id);
-        // item.Price = selectedOrder?.item_uoms?.[0]?.price ? String(selectedOrder.item_uoms[0].price) : "";
+        item.UOM = selectedOrder?.item_uoms?.map(uom => ({ 
+          label: uom.name, 
+          value: uom?.uom_id?.toString(), 
+          price: uom.uom_type == "primary" ? String(selectedOrder.pricing.auom_pc_price ?? "0") 
+            : uom.uom_type == "secondary" ? String(selectedOrder.pricing.buom_ctn_price ?? "0") 
+            : "-",
+          upc: uom.upc
+        })) || [];
+        console.log(item.UOM, selectedOrder)
+        item.uom_id = selectedOrder?.item_uoms?.[0]?.uom_id ? String(selectedOrder.item_uoms[0].uom_id) : "";
+        item.Price = item.UOM[0]?.price || "0";
+        // availableStock(item.item_id, item.uom_id);
+        const baseStock = getBaseStockForItem(item.item_id);
+        const upc = getUomMultiplier(item.item_id, item.uom_id, item);
+        item.inStock = String(Math.floor(baseStock / upc));
         item.Quantity = "1";
         item.Expiry = "";
+        item.Total = (Number(item.Price) * Number(item.Quantity)).toString();
         // const initialExc = getExcise({
         //   item: { ...selectedOrder, excies: 1 },
         //   uom: Number(item.uom_id) || 0,
@@ -502,6 +589,11 @@ export default function PurchaseOrderAddEditPage() {
     }
 
     if (field === "uom_id" || field === "item_id") {
+      if (!item.item_id || !item.uom_id) {
+        const balanced = rebalanceStockForItem(newData, item.item_id);
+        setItemData(balanced);
+        return;
+      }
       returnWarehouseStockByCustomer({ customer_id: values?.customer, item_id: item.item_id, quantity: "1", uom: item.uom_id }).then((res) => {
         if (res.error) {
           showSnackbar(res.data?.message || "Failed to fetch warehouse", "error");
@@ -517,6 +609,7 @@ export default function PurchaseOrderAddEditPage() {
     }
 
     if (field === "Expiry" || field === "Quantity" || (field === "uom_id" && item.Expiry)) {
+      item.Total = (Number(item.Price) * Number(item.Quantity)).toString();
       if (!value) return;
       if (item.in_stock === "0") return;
       if (!item.Quantity || !item.Expiry) return;
@@ -536,11 +629,17 @@ export default function PurchaseOrderAddEditPage() {
       });
       if (res.error) {
         showSnackbar(res.data?.message || "Failed to fetch Batch", "error");
+        setItemLoading((prev) => ({
+          ...prev,
+          [index]: { ...(prev[index] || {}), Batch: false },
+        }));
       }
       item.Batchs = res.data?.map((batch: { batch_number: string; batch_expiry_date: string; quantity: number; item_price: number; }) => {
-        return { label: batch.batch_number + " (Stock: " + batch.quantity + ")", value: batch.batch_number, price: batch.item_price }
+        // return { label: batch.batch_number + " (Stock: " + batch.quantity + ")", value: batch.batch_number, price: batch.item_price }
+        return { label: batch.batch_number, value: batch.batch_number, price: batch.item_price }
       }) ?? [];
       item.Batch = (res.data?.[0] as { batch_number: string; batch_expiry_date: string; quantity: number; item_price: number } | undefined)?.batch_number || "";
+      item.Total = (Number(item.Price) * Number(item.Quantity)).toString();
       setItemLoading((prev) => ({
         ...prev,
         [index]: { ...(prev[index] || {}), Batch: false },
@@ -548,60 +647,11 @@ export default function PurchaseOrderAddEditPage() {
 
     }
 
-    // if (field === "Batch") {
-    //   const selectedBatch = item.Batchs?.find(b => b.value === value);
-    //   if (selectedBatch) {
-    //     item.Price = String(selectedBatch.price / 100);
-    //     item.Total = (String((Number(item.Quantity) || 0) * selectedBatch.price / 100)).toString();
-    //     setFinalTotal(Number(item.Total));
-    //   }
-    // }
-
-    // const qty = Number(item.Quantity) || 0;
-    // const price = Number(item.Price) || 0;
-    // const total = qty * price;
-    // const vat = total - total / 1.18;
-    // const preVat = total - vat;
-    // const net = total - vat;
-    // compute excise: prefer the full item object from `orderData` (it contains category info)
-    // const selectedOrder = orderData.find((od) => String(od.id) === String(item.item_id));
-    // const exciseNumeric = getExcise({
-    //   item: selectedOrder
-    //     ? // normalize shape so `getExcise` can read `item_category` as a number
-    //     ({
-    //       ...selectedOrder,
-    //       excies: 1,
-    //       item_category: (selectedOrder as any).item_category?.id ?? (selectedOrder as any).category_id ?? (selectedOrder as any).category?.id ?? (selectedOrder as any).category ?? (selectedOrder as any).category_code ?? 0,
-    //     } as any)
-    //     : {
-    //       id: Number(item.item_id) || 0,
-    //       agent_excise: 0,
-    //       direct_sell_excise: 0,
-    //       base_uom_price: Number(item.Price) || 0,
-    //       item_category: 0,
-    //     },
-    //   uom: Number(item.uom_id) || 0,
-    //   quantity: Number(item.Quantity) || 1,
-    //   itemPrice: Number(item.Price) || null,
-    //   orderType: 0,
-    // });
-    // const excise = (Math.round(exciseNumeric * 100) / 100).toFixed(2);
-    // // keep both `Excise` (existing row shape) and `excise` (table render key) in sync
-    // item.Excise = excise;
-    // console.log(item.Excise, (selectedOrder as any).item_category?.id);
-    // const discount = 0;
-    // const gross = total;
-
-    // item.Total = total.toFixed(2);
-    // item.Vat = vat.toFixed(2);
-    // item.Net = net.toFixed(2);
-    // item.preVat = preVat.toFixed(2);
-    // item.Excise = excise.toFixed(2);
-    // item.Discount = discount.toFixed(2);
-    // item.gross = gross.toFixed(2);
-
-    if(!nonAffectedFields.includes(field)) validateRow(index, newData[index]);
-    setItemData(newData);
+    validateRow(index, newData[index]);
+    const balanced = rebalanceStockForItem(newData, item.item_id);
+    setItemData(balanced);
+    const nonAffectedFields = ["item_id", "uom_id"];
+    if(!nonAffectedFields.includes(field)) markTouched(index, field);
   };
 
   const handleAddNewItem = () => {
@@ -609,18 +659,16 @@ export default function PurchaseOrderAddEditPage() {
       ...itemData,
       {
         item_id: "",
-        item_name: "",
-        item_label: "",
         UOM: [],
         uom_id: "",
         Quantity: "1",
+        Expiry: "",
+        Batch: "",
+        Type: "",
+        Reason: "",
         Price: "",
-        Excise: "0.00",
-        Discount: "0.00",
-        Net: "0.00",
-        Vat: "0.00",
-        Total: "0.00",
-      },
+        Total: "-",
+      }
     ]);
   };
 
@@ -629,25 +677,41 @@ export default function PurchaseOrderAddEditPage() {
       setItemData([
         {
           item_id: "",
-          item_name: "",
-          item_label: "",
           UOM: [],
           uom_id: "",
           Quantity: "1",
+          Expiry: "",
+          Batch: "",
+          Type: "",
+          Reason: "",
           Price: "",
-          Excise: "",
-          Discount: "",
-          Net: "",
-          Vat: "",
-          Total: "",
-        },
+          Total: "-",
+        }
       ]);
       setItemTouched({});
       return;
     }
     const newRows = itemData.filter((_, i) => i !== index);
-    setItemData(newRows);
+    const balanced = rebalanceStockForItem(newRows);
+    setItemData(balanced);
     setItemTouched({});
+  };
+
+  const resetTableData = () => {
+    setItemData([
+      {
+        item_id: "",
+        UOM: [],
+        uom_id: "",
+        Quantity: "1",
+        Expiry: "",
+        Batch: "",
+        Type: "",
+        Reason: "",
+        Price: "",
+        Total: "-",
+      }
+    ]);
   };
 
   // --- Compute totals for summary and payload
@@ -914,28 +978,11 @@ export default function PurchaseOrderAddEditPage() {
                           setFieldValue("warehouse", e.target.value);
                           setSkeleton((prev) => ({ ...prev, customer: true }));
                           setFieldValue("customer", "");
-                          
-                          // Reset items when warehouse changes
-                          setItemData([{
-                            item_id: "",
-                            item_name: "",
-                            item_label: "",
-                            UOM: [],
-                            Quantity: "1",
-                            Price: "",
-                            Excise: "",
-                            Discount: "",
-                            Net: "",
-                            Vat: "",
-                            Total: "",
-                            available_stock: "",
-                          }]);
-                          
-                          // Trigger debounced warehouse items fetch
                           handleWarehouseChange(e.target.value);
                         } else {
                           setFieldValue("warehouse", e.target.value);
                         }
+                        resetTableData();
                       }}
                       error={touched.warehouse && (errors.warehouse as string)}
                     />
@@ -951,13 +998,13 @@ export default function PurchaseOrderAddEditPage() {
                       onSelect={async (opt) => {
                         if (values.customer !== opt.value) {
                           setFieldValue("customer", opt.value);
-                          setItemData([{ item_id: "", item_name: "", item_label: "", UOM: [], Quantity: "1", Price: "", Excise: "", Discount: "", Net: "", Vat: "", Total: "" }]);
+                          resetTableData();
                           setItemTouched({});
                         }
                       }}
                       onClear={() => {
                         setFieldValue("customer", "");
-                        setItemData([{ item_id: "", item_name: "", item_label: "", UOM: [], Quantity: "1", Price: "", Excise: "", Discount: "", Net: "", Vat: "", Total: "" }]);
+                        resetTableData();
                         setItemTouched({});
                       }}
                       // disabled={values.warehouse === ""}
@@ -1045,6 +1092,7 @@ export default function PurchaseOrderAddEditPage() {
                                 onChange={(e) => {
                                   recalculateItem(Number(row.idx), "item_id", e.target.value, values)
                                 }}
+                                showSkeleton={skeleton.item}
                                 options={itemsOptions}
                                 placeholder="Search item"
                                 disabled={!values.customer}
@@ -1072,7 +1120,7 @@ export default function PurchaseOrderAddEditPage() {
                                 width="max-w-[150px]"
                                 options={options}
                                 searchable={true}
-                                disabled={options.length === 0 || !values.customer}
+                                disabled={options.length === 0 || !values.customer || !row.item_id}
                                 showSkeleton={Boolean(itemLoading[idx]?.uom)}
                                 onChange={(e) => {
                                   recalculateItem(Number(row.idx), "uom_id", e.target.value, values)
@@ -1094,25 +1142,28 @@ export default function PurchaseOrderAddEditPage() {
                           const err = itemErrors[idx]?.Quantity;
                           const touchedQty = itemTouched[idx]?.Quantity;
                           return (
-                            <div>
+                            <div className="flex flex-col pt-5">
                               <InputFields
                                 label=""
                                 type="number"
                                 name="Quantity"
-                                // integerOnly={true}
+                                min={0}
+                                max={row.inStock}
+                                integerOnly={true}
                                 placeholder="Enter Qty"
                                 value={row.Quantity}
-                                disabled={!row.uom_id || !values.customer || row.in_stock === "0"}
+                                disabled={!row.uom_id || !values.customer || row.inStock === "0"}
                                 onChange={(e) => {
                                   const raw = (e.target as HTMLInputElement).value;
                                   const intPart = raw.split('.')[0];
                                   const sanitized = intPart === '' ? '' : String(Math.max(0, parseInt(intPart, 10) || 0));
                                   handleQuantityChange(idx, sanitized, values);
                                 }}
-                                min={1}
-                                integerOnly={true}
                                 error={touchedQty ? err : undefined}
                               />
+                              <div className="text-xs text-gray-500 mt-1">
+                                {row.inStock !== undefined && row.inStock !== null ? `In Stock: ${row.inStock}` : 'In Stock: -'}
+                              </div>
                             </div>
                           );
                         },
@@ -1163,14 +1214,17 @@ export default function PurchaseOrderAddEditPage() {
                           if (loading) {
                             return <div className="flex justify-center items-center"><Icon className="text-gray-400 animate-spin" icon="mingcute:loading-fill" width={20} /></div>;
                           }
+                          if(!batch){
+                            return <span className="text-gray-400">-</span>;
+                          }
                           return <>
                             <InputFields
                               label=""
                               type="text"
                               name="Batchs"
-                              // placeholder="Enter Type"
                               value={batch}
-                              disabled={!row.uom_id || !values.customer || row.in_stock === "0"}
+                              // disabled={!row.uom_id || !values.customer || row.in_stock === "0"}
+                              disabled={true}
                               options={batchOptions}
                               onChange={(e) => {
                                 recalculateItem(Number(row.idx), "Batch", e.target.value);
@@ -1227,7 +1281,7 @@ export default function PurchaseOrderAddEditPage() {
                               type="text"
                               name="Reason"
                               // placeholder="Enter Reason"
-                              value={row.Reason}
+                              value={reason}
                               disabled={!row.uom_id || !values.customer || row.in_stock === "0"}
                               options={row.Type === "good" ? [
                                 { label: "Short Expiry", value: "1" },
@@ -1357,7 +1411,7 @@ export default function PurchaseOrderAddEditPage() {
                   <SidebarBtn
                     type="submit" isActive={true}
                     label={isSubmitting ? "Creating Return..." : "Create Return"}
-                    disabled={isSubmitting || !values.customer || !values.turnman || !values.truckNo || !values.contactNo || !itemData || (itemData.length === 1 && !itemData[0].item_name)}
+                    disabled={isSubmitting || !values.customer || !values.turnman || !values.truckNo || !values.contactNo || !itemData || itemData.some(it => !it.item_id || !it.uom_id)}
                     onClick={() => submitForm()}
                   />
                 </div>
