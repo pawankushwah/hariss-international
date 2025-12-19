@@ -537,6 +537,9 @@ export default function PurchaseOrderAddEditPage() {
         item.Type = "";
         item.Reason = "";
         item.Expiry = "";
+        item.Vat = "-";
+        item.Net = "-";
+        item.Total = "-";
 
         setItemErrors((prev) => ({
           ...prev,
@@ -565,18 +568,13 @@ export default function PurchaseOrderAddEditPage() {
         const upc = getUomMultiplier(item.item_id, item.uom_id, item);
         item.inStock = String(Math.floor(baseStock / upc));
         item.Quantity = "1";
-        item.Expiry = "";
+        item.Expiry = new Date().toISOString().slice(0, 10);
+        item.Type = "good";
+        item.Reason = "1";
         item.Total = (Number(item.Price) * Number(item.Quantity)).toString();
-        // const initialExc = getExcise({
-        //   item: { ...selectedOrder, excies: 1 },
-        //   uom: Number(item.uom_id) || 0,
-        //   quantity: Number(item.Quantity) || 1,
-        //   itemPrice: Number(item.Price) || null,
-        //   orderType: 0,
-        // });
-        // const initialExcStr = (Math.round(initialExc * 100) / 100).toFixed(2);
-        // item.Excise = initialExcStr;
-        // console.log("Excise calculated:", item.Excise);
+        item.Vat = String(Number(item.Total) - Number(item.Total) / 1.18);
+        item.Net = String(Number(item.Total) - Number(item.Vat));
+
         const computedLabel = selectedOrder ? `${selectedOrder.item_code ?? selectedOrder.erp_code ?? ''}${selectedOrder.item_code || selectedOrder.erp_code ? ' - ' : ''}${selectedOrder.name ?? ''}` : "";
         item.item_label = computedLabel;
         if (item.item_label) {
@@ -599,19 +597,28 @@ export default function PurchaseOrderAddEditPage() {
           showSnackbar(res.data?.message || "Failed to fetch warehouse", "error");
           return;
         }
-        if (res.data.in_stock === false) {
-          item.in_stock = "0";
-          showSnackbar("Selected item is not in stock", "error");
-          return;
-        }
-        item.in_stock = "1";
+        
+        // Update the state immediately with the stock status
+        setItemData((prevData) => {
+          const updatedData = [...prevData];
+          const targetItem = updatedData[index];
+          if (targetItem) {
+            if (res.data.in_stock === false) {
+              targetItem.availableInStock = "0";
+              showSnackbar("Selected item is not in stock", "error");
+            } else {
+              targetItem.availableInStock = "1";
+            }
+          }
+          return updatedData;
+        });
       });
     }
 
     if (field === "Expiry" || field === "Quantity" || (field === "uom_id" && item.Expiry)) {
       item.Total = (Number(item.Price) * Number(item.Quantity)).toString();
       if (!value) return;
-      if (item.in_stock === "0") return;
+      if (item.availableInStock === "0") return;
       if (!item.Quantity || !item.Expiry) return;
       if (field === "Expiry" && !isValidDate(new Date(value))) return;
       if (field === "Quantity" && Number(value) <= 0) return;
@@ -715,31 +722,36 @@ export default function PurchaseOrderAddEditPage() {
   };
 
   // --- Compute totals for summary and payload
-  // const computeTotals = () => {
-  //   const grossTotal = itemData.reduce(
-  //     (sum, item) => sum + Number(item.Total || 0),
-  //     0
-  //   );
-  //   const totalVat = itemData.reduce(
-  //     (sum, item) => sum + Number(item.Vat || 0),
-  //     0
-  //   );
-  //   const netAmount = itemData.reduce(
-  //     (sum, item) => sum + Number(item.Net || 0),
-  //     0
-  //   );
-  //   const totalExcise = itemData.reduce(
-  //     (sum, item) => sum + Number(item.Excise || 0),
-  //     0
-  //   );
-  //   const discount = itemData.reduce(
-  //     (sum, item) => sum + Number(item.Discount || 0),
-  //     0
-  //   );
-  //   const finalTotalValue = netAmount + totalVat + totalExcise;
+  const grossTotal = itemData.reduce(
+    (sum, item) => sum + Number(item.Total || 0),
+    0
+  );
+  const totalVat = itemData.reduce(
+    (sum, item) => sum + Number(item.Vat || 0),
+    0
+  );
+  const netAmount = itemData.reduce(
+    (sum, item) => sum + Number(item.Net || 0),
+    0
+  );
+  const totalExcise = itemData.reduce(
+    (sum, item) => sum + Number(item.Excise || 0),
+    0
+  );
+  const discount = itemData.reduce(
+    (sum, item) => sum + Number(item.Discount || 0),
+    0
+  );
+  const finalTotalValue = netAmount + totalVat + totalExcise;
 
-  //   return { grossTotal, totalVat, netAmount, totalExcise, discount, finalTotal: finalTotalValue };
-  // };
+  const keyValueData = [
+    // { key: "Gross Total", value: `AED ${toInternationalNumber(grossTotal)}` },
+    // { key: "Discount", value: `AED ${toInternationalNumber(discount)}` },
+    { key: "Net Total", value: `${CURRENCY} ${toInternationalNumber(netAmount)}` },
+    { key: "VAT", value: `${CURRENCY} ${toInternationalNumber(totalVat)}` },
+    // { key: "Pre VAT", value: `AED ${toInternationalNumber(preVat)}` },
+    // { key: "Delivery Charges", value: `AED ${toInternationalNumber(0.00)}` },
+  ];
 
   const generatePayload = (values?: FormikValues) => {
     // Use the VAT formula from the order: vat = total - total / 1.18
@@ -757,8 +769,8 @@ export default function PurchaseOrderAddEditPage() {
         item_id: Number(item.item_id) || null,
         item_price: Number(item.Price) || 0,
         quantity: Number(item.Quantity) || 0,
-        vat,
         uom_id: Number(item.uom_id) || null,
+        vat,
         net_total: net,
         total,
         batch_number: (item as any).Batch ?? "",
@@ -770,11 +782,13 @@ export default function PurchaseOrderAddEditPage() {
     return {
       order_code: code,
       customer_id: Number(values?.customer) || null,
-      delivery_date: values?.delivery_date || form.delivery_date,
       turnman: values?.turnman || "",
       truck_no: values?.truckNo || "",
       contact_no: values?.contactNo || "",
-      return_no: values?.returnNo || "",
+      // return_no: values?.returnNo || "",
+      warehouse_id: Number(values?.warehouse) || null,
+      // driver_id: Number(values?.driver) || null,
+      driver_id: 0,
       total: finalTotal,
       vat: +totalVat.toFixed(2),
       net: +totalNet.toFixed(2),
@@ -1152,7 +1166,7 @@ export default function PurchaseOrderAddEditPage() {
                                 integerOnly={true}
                                 placeholder="Enter Qty"
                                 value={row.Quantity}
-                                disabled={!row.uom_id || !values.customer || row.inStock === "0"}
+                                disabled={!row.uom_id || !values.customer || row.availableInStock === "0"}
                                 onChange={(e) => {
                                   const raw = (e.target as HTMLInputElement).value;
                                   const intPart = raw.split('.')[0];
@@ -1185,7 +1199,7 @@ export default function PurchaseOrderAddEditPage() {
                                 // integerOnly={true}
                                 placeholder="Enter Expiry"
                                 value={row.Expiry}
-                                disabled={!row.uom_id || !values.customer || row.in_stock === "0"}
+                                disabled={!row.uom_id || !values.customer || row.availableInStock === "0"}
                                 onChange={(e) => {
                                   if (e.target.value && !isValidDate(new Date(e.target.value))) {
                                     return;
@@ -1223,7 +1237,7 @@ export default function PurchaseOrderAddEditPage() {
                               type="text"
                               name="Batchs"
                               value={batch}
-                              // disabled={!row.uom_id || !values.customer || row.in_stock === "0"}
+                              // disabled={!row.uom_id || !values.customer || row.availableInStock === "0"}
                               disabled={true}
                               options={batchOptions}
                               onChange={(e) => {
@@ -1251,7 +1265,7 @@ export default function PurchaseOrderAddEditPage() {
                               name="Type"
                               // placeholder="Enter Type"
                               value={row.Type}
-                              disabled={!row.uom_id || !values.customer || row.in_stock === "0"}
+                              disabled={!row.uom_id || !values.customer || row.availableInStock === "0"}
                               options={[
                                 { label: "Good", value: "good" },
                                 { label: "Bad", value: "bad" }
@@ -1282,7 +1296,7 @@ export default function PurchaseOrderAddEditPage() {
                               name="Reason"
                               // placeholder="Enter Reason"
                               value={reason}
-                              disabled={!row.uom_id || !values.customer || row.in_stock === "0"}
+                              disabled={!row.uom_id || !values.customer || row.availableInStock === "0"}
                               options={row.Type === "good" ? [
                                 { label: "Short Expiry", value: "1" },
                                 { label: "Non Moving", value: "2" },
@@ -1322,8 +1336,8 @@ export default function PurchaseOrderAddEditPage() {
                       // { key: "excise", label: "Excise", render: (row) => <>{toInternationalNumber(row.Excise) || "0.00"}</> },
                       // { key: "discount", label: "Discount", render: (row) => <span>{toInternationalNumber(row.Discount) || "0.00"}</span> },
                       // { key: "preVat", label: "Pre VAT", render: (row) => <span>{toInternationalNumber(row.preVat) || "0.00"}</span> },
-                      // { key: "Net", label: "Net", render: (row) => <span>{toInternationalNumber(row.Net) || "0.00"}</span> },
-                      // { key: "Vat", label: "VAT", render: (row) => <span>{toInternationalNumber(row.Vat) || "0.00"}</span> },
+                      { key: "Net", label: "Net", render: (row) => <span>{toInternationalNumber(row.Net) || "0.00"}</span> },
+                      { key: "Vat", label: "VAT", render: (row) => <span>{toInternationalNumber(row.Vat) || "0.00"}</span> },
                       // { key: "gross", label: "Gross", render: (row) => <span>{toInternationalNumber(row.gross) || "0.00"}</span> },
                       { key: "Total", label: "Total", render: (row) => <span>{toInternationalNumber(row.Total) || "0.00"}</span> },
                       {
@@ -1384,12 +1398,12 @@ export default function PurchaseOrderAddEditPage() {
                     </div>
 
                     <div className="flex flex-col gap-[10px] w-full lg:w-[350px]">
-                      {/* {keyValueData.map((item) => (
+                      {keyValueData.map((item) => (
                         <Fragment key={item.key}>
                           <KeyValueData data={[item]} />
                           <hr className="text-[#D5D7DA]" />
                         </Fragment>
-                      ))} */}
+                      ))}
                       <div className="font-semibold text-[#181D27] text-[18px] flex justify-between">
                         <span>Total</span>
                         <span>{CURRENCY} {toInternationalNumber(finalTotal)}</span>
