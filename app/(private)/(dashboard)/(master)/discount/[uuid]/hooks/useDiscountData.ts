@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getDiscountById, genearateCode } from "@/app/services/allApi";
+import { getDiscountById } from "@/app/services/allApi";
 import { DiscountState, KeyComboType } from "../types";
 
 type UseDiscountDataProps = {
@@ -27,57 +27,55 @@ export function useDiscountData({
             const d = res.data;
             setDiscount(s => ({
               ...s,
-              discount_code: d.osa_code || "",
-              discountType: d.discount_type?.id?.toString() || "",
-              discountValue: d.discount_value?.toString() || "",
-              minQuantity: d.min_quantity?.toString() || "",
-              minOrderValue: d.min_order_value?.toString() || "",
-              startDate: d.start_date ? d.start_date.split("T")[0] : "",
-              endDate: d.end_date ? d.end_date.split("T")[0] : "",
+              name: d.discount_name || "",
+              discountMethod: d.discount_type === "PERCENTAGE" ? "Percentage" : "Amount",
+              salesTeam: Array.isArray(d.sales_team_type) ? d.sales_team_type.map(String) : [],
+              projects: Array.isArray(d.project_list) ? d.project_list.map(String) : [],
+              scope: d.discount_apply_on === "header" ? "header" : "details",
+              startDate: d.from_date ? d.from_date.split("T")[0] : "",
+              endDate: d.to_date ? d.to_date.split("T")[0] : "",
               status: d.status?.toString() || "1",
+              header: {
+                headerMinAmount: d.header?.headerMinAmount || "",
+                headerRate: d.header?.headerRate || ""
+              },
+              discountItems: Array.isArray(d.discount_details) && d.discount_details.length > 0
+                ? d.discount_details.map((detail: any) => ({
+                    key: detail.item_id || detail.category_id || "",
+                    rate: d.discount_type === "PERCENTAGE" ? detail.percentage : detail.amount,
+                    idx: detail.id ? String(detail.id) : String(Math.random())
+                  }))
+                : [{ key: "", rate: "", idx: "0" }]
             }));
 
-            // Determine Keys from data
-            // This logic depends on what keys are present in the response
-            // Assuming simplified logic: if item_id exists -> Item key, etc.
             const newKeyCombo = {
-              Location: d.location_type || "", // Hypothetical: API needs to return which key was used
-              Customer: d.customer_type || "",
-              Item: d.item_type || "",
+              Location: d.key?.Location?.[0] || "",
+              Customer: d.key?.Customer?.[0] || "",
+              Item: d.key?.Item?.[0] || "",
             };
             
-            // Fallback inference if API doesn't return types explicitly
-            if (!newKeyCombo.Item) {
-                if (d.item) newKeyCombo.Item = "Item";
-                else if (d.item_category) newKeyCombo.Item = "Item Category";
-            }
-            if (!newKeyCombo.Customer) {
-                if (d.customer) newKeyCombo.Customer = "Customer";
-                else if (d.outlet_channel) newKeyCombo.Customer = "Channel";
-            }
-            // ... infer Location ...
-
             setKeyCombo(newKeyCombo);
 
-            // Populate KeyValues
             const newValues: Record<string, string[]> = {};
-            if (d.item?.id) newValues["Item"] = [d.item.id.toString()];
-            if (d.item_category?.id) {
-              newValues["Item Category"] = [d.item_category.id.toString()];
-              // If in Item mode and category is pre-filled, fetch items for that category
-              if (newKeyCombo.Item === "Item" && d.item_category.id) {
-                fetchItemsCategoryWise(d.item_category.id.toString());
-              }
+            if (newKeyCombo.Location && Array.isArray(d.location)) {
+                newValues[newKeyCombo.Location] = d.location.map(String);
             }
-            if (d.customer?.id) newValues["Customer"] = [d.customer.id.toString()];
-            if (d.outlet_channel?.id) newValues["Channel"] = [d.outlet_channel.id.toString()];
+            if (newKeyCombo.Customer && Array.isArray(d.customer)) {
+                newValues[newKeyCombo.Customer] = d.customer.map(String);
+            }
+            if (newKeyCombo.Item) {
+                if (newKeyCombo.Item === "Item" && Array.isArray(d.items)) {
+                    newValues["Item"] = d.items.map(String);
+                    // Also populate category if present
+                    if (Array.isArray(d.item_category)) {
+                      newValues["Item Category"] = d.item_category.map(String);
+                    }
+                } else if (newKeyCombo.Item === "Item Category" && Array.isArray(d.item_category)) {
+                    newValues["Item Category"] = d.item_category.map(String);
+                }
+            }
             
             setKeyValue(newValues);
-          }
-        } else {
-          const res = await genearateCode({ model_name: "discounts" });
-          if (res?.code) {
-            setDiscount(prev => ({ ...prev, discount_code: res.code }));
           }
         }
       } catch (err) {

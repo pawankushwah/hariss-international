@@ -216,7 +216,7 @@ type Props = {
 
               required
 
-              label="Discount Method"
+              label="Discount Type"
 
               type="select"
 
@@ -362,9 +362,9 @@ type Props = {
 
                type="number"
 
-               value={discount.headerMinAmount}
+               value={discount.header.headerMinAmount}
 
-               onChange={(e) => setDiscount(s => ({ ...s, headerMinAmount: e.target.value }))}
+               onChange={(e) => setDiscount(s => ({ ...s, header: { ...s.header, headerMinAmount: e.target.value } }))}
 
                placeholder="Enter Order Amount"
 
@@ -380,9 +380,9 @@ type Props = {
 
                 type="number"
 
-                value={discount.headerRate}
+                value={discount.header.headerRate}
 
-                onChange={(e) => setDiscount(s => ({ ...s, headerRate: e.target.value }))}
+                onChange={(e) => setDiscount(s => ({ ...s, header: { ...s.header, headerRate: e.target.value } }))}
 
                 placeholder="Enter Percentage"
 
@@ -400,9 +400,9 @@ type Props = {
 
                 type="number"
 
-                value={discount.headerRate}
+                value={discount.header.headerRate}
 
-                onChange={(e) => setDiscount(s => ({ ...s, headerRate: e.target.value }))}
+                onChange={(e) => setDiscount(s => ({ ...s, header: { ...s.header, headerRate: e.target.value } }))}
 
                 placeholder="Enter Discount Amount"
 

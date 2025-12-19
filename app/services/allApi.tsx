@@ -1964,7 +1964,7 @@ export const deleteDiscount = async (uuid: string) => {
 
 export const getDiscountById = async (uuid?: string) => {
   try {
-    const res = await API.get(`/api/master/discount/discount/${uuid}`);
+    const res = await API.get(`/api/master/discount/${uuid}`);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

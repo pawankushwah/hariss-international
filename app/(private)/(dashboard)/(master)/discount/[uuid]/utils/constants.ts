@@ -35,13 +35,10 @@ export const steps: StepperStep[] = [
 ];
 
 export const initialDiscountState: DiscountState = {
-  discount_code: "",
   name: "",
   salesTeam: [],
   projects: [],
   scope: "header",
-  headerRate: "",
-  headerMinAmount: "",
   discountMethod: "Amount", 
   discountItems: [{ key: "", rate: "", idx: "0" }],
   
@@ -52,4 +49,8 @@ export const initialDiscountState: DiscountState = {
   startDate: "",
   endDate: "",
   status: "1",
+  header: {
+    headerMinAmount: "",
+    headerRate: ""
+  }
 };

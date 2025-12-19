@@ -14,24 +14,24 @@ export type DiscountItemType = {
   idx: string;
 };
 
-export type DiscountState = {
-  discount_code: string;
-  // UI Fields
+export interface DiscountState {
   name: string;
   salesTeam: string[];
   projects: string[];
-  scope: 'header' | 'details';
-  headerRate: string;
-  headerMinAmount: string; // New field for Minimum Order Amount in header
-  discountMethod: string;
+  scope: "header" | "details";
+  discountMethod: "Amount" | "Percentage";
   discountItems: DiscountItemType[];
   
-  // Legacy/Backend Fields (keep for now or map)
   discountType: string;
   discountValue: string;
   minQuantity: string;
   minOrderValue: string;
   startDate: string;
   endDate: string;
-  status: string;
-};
+  status: string | number;
+  header: {
+    headerMinAmount: string;
+    headerRate: string;
+  };
+}
+

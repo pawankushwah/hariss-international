@@ -1,9 +1,7 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Icon } from "@iconify-icon/react";
-import * as yup from "yup";
 
 import StepperForm, { useStepperForm } from "@/app/components/stepperForm";
 import Loading from "@/app/components/Loading";
@@ -14,7 +12,6 @@ import { addDiscount, updateDiscount, saveFinalCode } from "@/app/services/allAp
 import { useDiscountForm } from "./hooks/useDiscountForm";
 import { useDiscountData } from "./hooks/useDiscountData";
 import { steps } from "./utils/constants";
-import { discountValidationSchema } from "./utils/validation";
 
 import StepKeyCombination from "./components/StepKeyCombination";
 import StepKeyValue from "./components/StepKeyValue";
@@ -24,7 +21,7 @@ export default function AddDiscount() {
   const params = useParams();
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
-  
+
   const paramsTyped = params as { uuid?: string | string[]; id?: string | string[] } | undefined;
   const rawParam = (paramsTyped?.uuid ?? paramsTyped?.id) as string | string[] | undefined;
   const id = Array.isArray(rawParam) ? rawParam[0] : rawParam;
@@ -95,30 +92,33 @@ export default function AddDiscount() {
 
   // Item Category -> Items
   useEffect(() => {
-    async function fetchItemsCategory(itemCategories: string[]) {
-      setItemLoading(true);
-      try {
-        const result = await fetchItemsCategoryWise(itemCategories.toString());
-        setItemOptions(result);
-      } catch (error) {
-        console.warn(error);
-      } finally {
-        setItemLoading(false);
+    if (keyCombo.Item === "Item") {
+      async function fetchItemsCategory(itemCategories: string[]) {
+        setItemLoading(true);
+        try {
+          const result = await fetchItemsCategoryWise(itemCategories.toString());
+          setItemOptions(result);
+        } catch (error) {
+          console.warn(error);
+        } finally {
+          setItemLoading(false);
+        }
+      }
+
+      const itemCategories = keyValue["Item Category"];
+      if (Array.isArray(itemCategories) && itemCategories.length > 0) {
+        try {
+          fetchItemsCategory(itemCategories ?? []);
+        } catch (err) {
+          console.error("Failed to fetch item options for category", itemCategories, err);
+        }
+      } else {
+        setItemOptions([]);
       }
     }
 
-    const itemCategories = keyValue["Item Category"];
-    if (Array.isArray(itemCategories) && itemCategories.length > 0) {
-      try {
-        fetchItemsCategory(itemCategories ?? []);
-      } catch (err) {
-        console.error("Failed to fetch item options for category", itemCategories, err);
-      }
-    } else {
-      setItemOptions([]);
-    }
   }, [keyValue["Item Category"], fetchItemsCategoryWise]);
-
+  // console.log(keyValue, "keyValue")
   // Filter keyValue["Item"]
   useEffect(() => {
     if (itemLoading) return;
@@ -202,10 +202,9 @@ export default function AddDiscount() {
     }
     if (step === 3) {
       // Basic validation for new fields
-      if (keyCombo.Item === "Item" && (!keyValue["Item Category"] || keyValue["Item Category"].length === 0)) return false;
+      if (discount.scope === "details" && keyCombo.Item === "Item" && (!keyValue["Item Category"] || keyValue["Item Category"].length === 0)) return false;
       if (!discount.name || !discount.startDate || !discount.endDate || discount.salesTeam.length === 0) return false;
-      if (discount.isProjectSpecific && discount.projects.length === 0) return false;
-      if (discount.scope === "header" && !discount.headerRate) return false;
+      if (discount.scope === "header" && !discount.header.headerRate) return false;
       if (discount.scope === "details") {
         if (discount.discountItems.length === 0) return false;
         // Check if every row has a key and a rate
@@ -223,7 +222,7 @@ export default function AddDiscount() {
       if (!keyCombo.Location) missing.push("Location");
       if (!keyCombo.Item) missing.push("Item");
       if (!keyCombo.Customer) missing.push("Customer");
-      
+
       if (missing.length > 0) {
         showSnackbar(`Please select ${missing.join(", ")} before proceeding.`, "warning");
         return;
@@ -239,60 +238,135 @@ export default function AddDiscount() {
   };
 
   const handleSubmit = async () => {
+
     // Validate final step
+
     if (!validateStep(3)) {
-       showSnackbar("Please fill in all required fields.", "error");
-       return;
+
+      showSnackbar("Please fill in all required fields.", "error");
+
+      return;
+
     }
+
+
 
     setSubmitLoading(true);
+
     try {
-        const payload = new FormData();
-        
-        // ... Logic to map new state to payload ...
-        // Using placeholder logic for now as API might not support new fields yet
-        if (keyCombo.Item === "Item" && keyValue["Item"]?.[0]) payload.append("item_id", keyValue["Item"][0]);
-        if (keyCombo.Item === "Item Category" && keyValue["Item Category"]?.[0]) payload.append("category_id", keyValue["Item Category"][0]);
-        
-        if (keyCombo.Customer === "Customer" && keyValue["Customer"]?.[0]) payload.append("customer_id", keyValue["Customer"][0]);
-        if (keyCombo.Customer === "Channel" && keyValue["Channel"]?.[0]) payload.append("customer_channel_id", keyValue["Channel"][0]);
-        
-        payload.append("discount_code", discount.discount_code);
-        // Map new fields to legacy if possible or send as is
-        // payload.append("name", discount.name);
-        payload.append("start_date", discount.startDate);
-        payload.append("end_date", discount.endDate);
-        payload.append("status", discount.status);
 
-        let res;
-        if (isEditMode && id) {
-            res = await updateDiscount(String(id), payload);
-        } else {
-            res = await addDiscount(payload);
+      const payload = {
+
+        discount_name: discount.name,
+
+        discount_apply_on: discount.scope,
+
+        discount_type: discount.discountMethod.toUpperCase(),
+
+        bundle_combination: "normal",
+
+        from_date: discount.startDate,
+
+        to_date: discount.endDate,
+
+        status: Number(discount.status),
+
+        sales_team_type: discount.salesTeam,
+
+        project_list: discount.projects,
+
+        location: keyValue[keyCombo.Location] || [],
+
+        customer: keyValue[keyCombo.Customer] || [],
+
+        item_category: discount.scope === "details" && keyCombo.Item === "Item" ? (keyValue["Item Category"] || []) : [],
+
+        discount_details: discount.scope === "details" ? discount.discountItems.map(item => ({
+
+          item_id: keyCombo.Item === "Item" ? item.key : null,
+
+          category_id: keyCombo.Item === "Item Category" ? item.key : null,
+
+          percentage: discount.discountMethod === "Percentage" ? Number(item.rate) : null,
+
+          amount: discount.discountMethod === "Amount" ? Number(item.rate) : null
+
+        })) : [],
+
+        header: discount.scope === "header" ? {
+
+          headerMinAmount: discount.header.headerMinAmount,
+
+          headerRate: discount.header.headerRate
+
+        } : {
+
+          headerMinAmount: "",
+
+          headerRate: ""
+
+        },
+
+        key: {
+
+          Location: [keyCombo.Location],
+
+          Customer: [keyCombo.Customer],
+
+          Item: [keyCombo.Item]
+
         }
 
-        if (res.error) {
-            showSnackbar(res.data?.message || "Failed to submit form", "error");
-        } else {
-            showSnackbar(
-                isEditMode ? "Discount Updated Successfully" : "Discount Created Successfully",
-                "success"
-            );
-            if (!isEditMode) {
-                await saveFinalCode({
-                    reserved_code: discount.discount_code,
-                    model_name: "discounts",
-                }).catch(() => { });
-            }
-            router.push("/discount");
-        }
+      };
+      console.log(payload, "payload")
+
+
+      let res;
+
+      if (isEditMode && id) {
+
+        res = await updateDiscount(String(id), payload);
+
+      } else {
+
+        res = await addDiscount(payload);
+
+      }
+
+
+
+      if (res.error) {
+
+        showSnackbar(res.data?.message || "Failed to submit form", "error");
+
+      } else {
+
+        showSnackbar(
+
+          isEditMode ? "Discount Updated Successfully" : "Discount Created Successfully",
+
+          "success"
+
+        );
+
+        router.push("/discount");
+
+      }
+
+
 
     } catch (err) {
-        console.error("Submit error:", err);
-        showSnackbar("An error occurred during submission", "error");
+
+      console.error("Submit error:", err);
+
+      showSnackbar("An error occurred during submission", "error");
+
     } finally {
-        setSubmitLoading(false);
+
+      setSubmitLoading(false);
+
     }
+
   };
 
   const renderStepContent = () => {
