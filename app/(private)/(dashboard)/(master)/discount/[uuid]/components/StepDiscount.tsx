@@ -20,73 +20,65 @@ type Props = {
 
   itemDropdownMap: Record<string, any[]>;
 
-    keyValue: Record<string, string[]>;
+  keyValue: Record<string, string[]>;
 
-    setKeyValue: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
+  setKeyValue: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
 
-    itemLoading: boolean;
+  itemLoading: boolean;
+
+};
+
+
+
+export default function StepDiscount({
+
+  discount,
+
+  setDiscount,
+
+  salesmanTypeOptions,
+
+  projectOptions,
+
+  keyCombo,
+
+  itemDropdownMap,
+
+  keyValue,
+
+  setKeyValue,
+
+  itemLoading
+
+}: Props) {
+
+
+
+  const isCategoryMode = keyCombo.Item === "Item Category";
+
+  const dropdownLabel = isCategoryMode ? "Item Category" : "Item";
+
+  // Determine options based on keyCombo.Item (if "Item Category" or "Item")
+
+  const dropdownOptions = isCategoryMode
+
+
+
+    ? (itemDropdownMap["Item Category"] ? [{ label: `Select ${dropdownLabel}`, value: "" }, ...itemDropdownMap["Item Category"]] : [])
+
+
+
+    : (itemDropdownMap["Item"] ? [{ label: `Select ${dropdownLabel}`, value: "" }, ...itemDropdownMap["Item"]] : []);
+
+  const getFilteredOptions = (currentKey: string) => {
+
+    const selectedKeys = new Set(discount.discountItems.map(item => item.key).filter(k => k && k !== currentKey));
+
+    return dropdownOptions.filter(option => !option.value || !selectedKeys.has(option.value));
 
   };
 
-  
-
-  export default function StepDiscount({ 
-
-    discount, 
-
-    setDiscount, 
-
-    salesmanTypeOptions, 
-
-    projectOptions,
-
-    keyCombo,
-
-    itemDropdownMap,
-
-    keyValue,
-
-    setKeyValue,
-
-    itemLoading
-
-  }: Props) {
-
-    
-
-    const isCategoryMode = keyCombo.Item === "Item Category";
-
-    const dropdownLabel = isCategoryMode ? "Item Category" : "Item";
-
-    // Determine options based on keyCombo.Item (if "Item Category" or "Item")
-
-                const dropdownOptions = isCategoryMode
-
-            
-
-                  ? (itemDropdownMap["Item Category"] ? [{ label: `Select ${dropdownLabel}`, value: "" }, ...itemDropdownMap["Item Category"]] : [])
-
-            
-
-                  : (itemDropdownMap["Item"] ? [{ label: `Select ${dropdownLabel}`, value: "" }, ...itemDropdownMap["Item"]] : []);
-
-            
-
-            
-
-                const getFilteredOptions = (currentKey: string) => {
-
-                  const selectedKeys = new Set(discount.discountItems.map(item => item.key).filter(k => k && k !== currentKey));
-
-                  return dropdownOptions.filter(option => !option.value || !selectedKeys.has(option.value));
-
-                };
-
-              
-
-            
-
-                const handleAddItem = () => {
+  const handleAddItem = () => {
 
     setDiscount(prev => ({
 
@@ -252,21 +244,21 @@ type Props = {
 
               onChange={(e) => {
 
-                 const val = e.target.value;
+                const val = e.target.value;
 
-                 const arr = Array.isArray(val) ? val : [val];
+                const arr = Array.isArray(val) ? val : [val];
 
-                 setDiscount(s => ({
+                setDiscount(s => ({
 
-                   ...s,
+                  ...s,
 
-                   salesTeam: arr,
+                  salesTeam: arr,
 
-                   // Clear projects if "6" is deselected
+                  // Clear projects if "6" is deselected
 
-                   projects: arr.includes("6") ? s.projects : []
+                  projects: arr.includes("6") ? s.projects : []
 
-                 }));
+                }));
 
               }}
 
@@ -277,14 +269,13 @@ type Props = {
           </div>
 
 
-
           {/* Conditionally Render Project Team */}
 
           {isProjectSelected && (
 
             <div >
 
-               <InputFields
+              <InputFields
 
                 label="Project Team"
 
@@ -298,11 +289,11 @@ type Props = {
 
                 onChange={(e) => {
 
-                   const val = e.target.value;
+                  const val = e.target.value;
 
-                   const arr = Array.isArray(val) ? val : [val];
+                  const arr = Array.isArray(val) ? val : [val];
 
-                   setDiscount(s => ({ ...s, projects: arr }));
+                  setDiscount(s => ({ ...s, projects: arr }));
 
                 }}
 
@@ -313,6 +304,16 @@ type Props = {
             </div>
 
           )}
+          <div>
+            <InputFields
+              required={true}
+              label="Status"
+              isSingle={true}
+              options={[{ label: "Active", value: "1" }, { label: "Inactive", value: "0" }]}
+              value={String(discount.status)}
+              onChange={e => setDiscount(s => ({ ...s, status: e.target.value }))}
+            />
+          </div>
 
         </div>
 
@@ -326,25 +327,25 @@ type Props = {
 
         <div className="flex gap-4 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
 
-           <TabBtn
+          <TabBtn
 
-             label="Header Level"
+            label="Header Level"
 
-             isActive={discount.scope === "header"}
+            isActive={discount.scope === "header"}
 
-             onClick={() => setDiscount(s => ({ ...s, scope: "header" }))}
+            onClick={() => setDiscount(s => ({ ...s, scope: "header" }))}
 
-           />
+          />
 
-           <TabBtn
+          <TabBtn
 
-             label="Item Details"
+            label="Item Details"
 
-             isActive={discount.scope === "details"}
+            isActive={discount.scope === "details"}
 
-             onClick={() => setDiscount(s => ({ ...s, scope: "details" }))}
+            onClick={() => setDiscount(s => ({ ...s, scope: "details" }))}
 
-           />
+          />
 
         </div>
 
@@ -356,21 +357,21 @@ type Props = {
 
           <div className="max-w-md flex flex-col gap-4">
 
-             <InputFields
+            <InputFields
 
-               label="Order Amount"
+              label="Order Amount"
 
-               type="number"
+              type="number"
 
-               value={discount.header.headerMinAmount}
+              value={discount.header.headerMinAmount}
 
-               onChange={(e) => setDiscount(s => ({ ...s, header: { ...s.header, headerMinAmount: e.target.value } }))}
+              onChange={(e) => setDiscount(s => ({ ...s, header: { ...s.header, headerMinAmount: e.target.value } }))}
 
-               placeholder="Enter Order Amount"
+              placeholder="Enter Order Amount"
 
-               className="text-lg"
+              className="text-lg"
 
-             />
+            />
 
             {discount.discountMethod === "Percentage" ? (
 
@@ -380,9 +381,16 @@ type Props = {
 
                 type="number"
 
+                max={100}
+
                 value={discount.header.headerRate}
 
-                onChange={(e) => setDiscount(s => ({ ...s, header: { ...s.header, headerRate: e.target.value } }))}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val <= 100) {
+                    setDiscount(s => ({ ...s, header: { ...s.header, headerRate: e.target.value } }));
+                  }
+                }}
 
                 placeholder="Enter Percentage"
 
@@ -418,114 +426,119 @@ type Props = {
 
           <div>
 
-                          {/* Filter items by Category if in Item mode (Slab style) */}
+            {/* Filter items by Category if in Item mode (Slab style) */}
 
-                          {keyCombo.Item === "Item" && (
+            {keyCombo.Item === "Item" && (
 
-                            <div className="mb-4 max-w-md">
+              <div className="mb-4 max-w-md">
 
-                              <InputFields
+                <InputFields
 
-                                 required
+                  required
 
-                                 label="Category"
+                  label="Category"
 
-                                 type="select"
+                  type="select"
 
-                                 isSingle={false}
+                  isSingle={false}
 
-                                 options={itemDropdownMap["Item Category"] || []}
+                  options={itemDropdownMap["Item Category"] || []}
 
-                                 value={keyValue["Item Category"] || []}
+                  value={keyValue["Item Category"] || []}
 
-                                 onChange={e => {
+                  onChange={e => {
 
-                                   const val = e.target.value;
+                    const val = e.target.value;
 
-                                   const arr = Array.isArray(val) ? val : [val];
+                    const arr = Array.isArray(val) ? val : [val];
 
-                                   setKeyValue(prev => ({ ...prev, "Item Category": arr }));
+                    setKeyValue(prev => ({ ...prev, "Item Category": arr }));
 
-                                 }}
+                  }}
 
-                                 placeholder="Select Category"
+                  placeholder="Select Category"
 
-                              />
+                />
 
-                            </div>
+              </div>
 
-                          )}
-
-
-
-             <Table
-
-                data={discount.discountItems}
-
-                config={{
+            )}
 
 
-                  showNestedLoading: false,
-                  columns: [
-                    {
-                      key: "key",
-                      label: (<span>{dropdownLabel}<span className="text-red-500 ml-1">*</span></span>),
-                      width: 250,
-                      render: (row: any) => (
-                        <InputFields
-                          type="select"
-                          isSingle={true}
-                          showSkeleton={itemLoading}
-                          options={getFilteredOptions(row.key)}
-                          value={row.key}
-                          onChange={(e) => updateItem(row.idx, "key", e.target.value)}
-                          placeholder={`Select ${dropdownLabel}`}
-                        />
-                      )
-                    },
-                    {
-                      key: "rate",
-                      label: (<span>{discount.discountMethod === "Percentage" ? "Rate (%)" : "Amount"}<span className="text-red-500 ml-1">*</span></span>),
-                      width: 150,
-                      render: (row: any) => (
-                        <InputFields
-                          type="number"
-                          value={row.rate}
-                          onChange={(e) => updateItem(row.idx, "rate", e.target.value)}
-                          placeholder="0.00"
-                          trailingElement={discount.discountMethod === "Percentage" ? <span className="text-gray-500 font-semibold">%</span> : undefined}
-                        />
-                      )
-                    },
-                    {
-                      key: "action",
-                      label: "Action",
-                      width: 50,
-                      render: (row: any) => (
-                        <button
-                          type="button"
-                          className="text-red-500 hover:text-red-700 disabled:text-gray-300 disabled:cursor-not-allowed"
-                          onClick={() => handleRemoveItem(row.idx)}
-                          disabled={discount.discountItems.length <= 1}
-                        >
-                          <Icon icon="lucide:trash-2" width={20} />
-                        </button>
-                      )
-                    }
-                  ],
-                  pageSize: 10
-                }}
-             />
-             <div className="mt-4">
-                <button
-                  type="button"
-                  className="text-[#E53935] font-medium text-[16px] flex items-center gap-2 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
-                  onClick={handleAddItem}
-                >
-                  <Icon icon="material-symbols:add-circle-outline" width={20} />
-                  Add Row
-                </button>
-             </div>
+
+            <Table
+
+              data={discount.discountItems}
+
+              config={{
+
+
+                showNestedLoading: false,
+                columns: [
+                  {
+                    key: "key",
+                    label: (<span>{dropdownLabel}<span className="text-red-500 ml-1">*</span></span>),
+                    width: 250,
+                    render: (row: any) => (
+                      <InputFields
+                        type="select"
+                        isSingle={true}
+                        showSkeleton={itemLoading}
+                        options={getFilteredOptions(row.key)}
+                        value={row.key}
+                        onChange={(e) => updateItem(row.idx, "key", e.target.value)}
+                        placeholder={`Select ${dropdownLabel}`}
+                      />
+                    )
+                  },
+                  {
+                    key: "rate",
+                    label: (<span>{discount.discountMethod === "Percentage" ? "Rate (%)" : "Amount"}<span className="text-red-500 ml-1">*</span></span>),
+                    width: 150,
+                    render: (row: any) => (
+                      <InputFields
+                        type="number"
+                        max={discount.discountMethod === "Percentage" ? 100 : undefined}
+                        value={row.rate}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (discount.discountMethod !== "Percentage" || val <= 100) {
+                            updateItem(row.idx, "rate", e.target.value);
+                          }
+                        }}
+                        placeholder="0.00"
+                        trailingElement={discount.discountMethod === "Percentage" ? <span className="text-gray-500 font-semibold">%</span> : undefined}
+                      />
+                    )
+                  }, {
+                    key: "action",
+                    label: "Action",
+                    width: 50,
+                    render: (row: any) => (
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700 disabled:text-gray-300 disabled:cursor-not-allowed"
+                        onClick={() => handleRemoveItem(row.idx)}
+                        disabled={discount.discountItems.length <= 1}
+                      >
+                        <Icon icon="lucide:trash-2" width={20} />
+                      </button>
+                    )
+                  }
+                ],
+                pageSize: 10
+              }}
+            />
+            <div className="mt-4">
+              <button
+                type="button"
+                className="text-[#E53935] font-medium text-[16px] flex items-center gap-2 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                onClick={handleAddItem}
+              >
+                <Icon icon="material-symbols:add-circle-outline" width={20} />
+                Add Row
+              </button>
+            </div>
           </div>
         )}
       </ContainerCard>

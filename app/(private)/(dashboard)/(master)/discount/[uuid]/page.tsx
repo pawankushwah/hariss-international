@@ -48,7 +48,6 @@ export default function AddDiscount() {
   });
 
   const [itemOptions, setItemOptions] = useState<any[]>([]);
-  const [itemCache, setItemCache] = useState<Record<string, any[]>>({});
   const [itemLoading, setItemLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -60,8 +59,8 @@ export default function AddDiscount() {
       if (prev.Item !== next.Item) {
         setKeyValue(kv => ({ ...kv, "Item": [], "Item Category": [] }));
         setDiscount(prevD => ({
-           ...prevD,
-           discountItems: [{ key: "", rate: "", idx: "0" }]
+          ...prevD,
+          discountItems: [{ key: "", rate: "", idx: "0" }]
         }));
       }
       return next;
@@ -221,11 +220,20 @@ export default function AddDiscount() {
       // Basic validation for new fields
       if (discount.scope === "details" && keyCombo.Item === "Item" && (!keyValue["Item Category"] || keyValue["Item Category"].length === 0)) return false;
       if (!discount.name || !discount.startDate || !discount.endDate || discount.salesTeam.length === 0) return false;
-      if (discount.scope === "header" && !discount.header.headerRate) return false;
+      if (discount.scope === "header") {
+        if (!discount.header.headerRate) return false;
+        if (discount.discountMethod === "Percentage" && Number(discount.header.headerRate) > 100) return false;
+        if (discount.discountMethod === "Amount" && Number(discount.header.headerRate) > Number(discount.header.headerMinAmount)) return false;
+      }
       if (discount.scope === "details") {
         if (discount.discountItems.length === 0) return false;
         // Check if every row has a key and a rate
-        const allRowsValid = discount.discountItems.every(item => item.key && item.key !== "" && item.rate && item.rate !== "");
+        const allRowsValid = discount.discountItems.every(item => {
+          const hasRequired = item.key && item.key !== "" && item.rate && item.rate !== "";
+          if (!hasRequired) return false;
+          if (discount.discountMethod === "Percentage" && Number(item.rate) > 100) return false;
+          return true;
+        });
         if (!allRowsValid) return false;
       }
       return true;
@@ -257,6 +265,10 @@ export default function AddDiscount() {
   const handleSubmit = async () => {
 
     // Validate final step
+    if (discount.scope === "header" && discount.discountMethod === "Amount" && Number(discount.header.headerRate) > Number(discount.header.headerMinAmount)) {
+      showSnackbar("Discount amount cannot be greater than Order amount.", "error");
+      return;
+    }
 
     if (!validateStep(3)) {
 
@@ -421,41 +433,42 @@ export default function AddDiscount() {
 
   return (
     <>
-      {(dataLoading || submitLoading) && <Loading />}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => {
-            if (currentStep > 1) {
-              prevStep();
-            } else {
-              router.push("/discount");
-            }
-          }}
-          className="p-1 rounded-full hover:bg-gray-100"
-          aria-label="Go back"
-        >
-          <Icon icon="lucide:arrow-left" width={24} />
-        </button>
-        <h1 className="text-xl font-semibold text-gray-900">
-          {isEditMode ? "Update Discount" : "Add New Discount"}
-        </h1>
-      </div>
-      <div className="flex justify-between items-center mb-6 pb-6">
-        <StepperForm
-          steps={steps.map(step => ({ ...step, isCompleted: isStepCompleted(step.id) }))}
-          currentStep={currentStep}
-          onStepClick={() => { }}
-          onBack={prevStep}
-          onNext={handleNext}
-          onSubmit={handleSubmit}
-          showSubmitButton={isLastStep}
-          showNextButton={!isLastStep}
-          nextButtonText="Save & Next"
-          submitButtonText={isEditMode ? "Update" : "Submit"}
-        >
-          {renderStepContent()}
-        </StepperForm>
-      </div>
-    </>
+      {(dataLoading || submitLoading) ? <Loading />
+        : <>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (currentStep > 1) {
+                  prevStep();
+                } else {
+                  router.push("/discount");
+                }
+              }}
+              className="p-1 rounded-full hover:bg-gray-100"
+              aria-label="Go back"
+            >
+              <Icon icon="lucide:arrow-left" width={24} />
+            </button>
+            <h1 className="text-xl font-semibold text-gray-900">
+              {isEditMode ? "Update Discount" : "Add New Discount"}
+            </h1>
+          </div>
+          <div className="flex justify-between items-center mb-6 pb-6">
+            <StepperForm
+              steps={steps.map(step => ({ ...step, isCompleted: isStepCompleted(step.id) }))}
+              currentStep={currentStep}
+              onStepClick={() => { }}
+              onBack={prevStep}
+              onNext={handleNext}
+              onSubmit={handleSubmit}
+              showSubmitButton={isLastStep}
+              showNextButton={!isLastStep}
+              nextButtonText="Save & Next"
+              submitButtonText={isEditMode ? "Update" : "Submit"}
+            >
+              {renderStepContent()}
+            </StepperForm>
+          </div>
+        </>}</>
   );
 }
