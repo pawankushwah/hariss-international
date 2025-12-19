@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getDiscountById } from "@/app/services/allApi";
 import { DiscountState, KeyComboType } from "../types";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 type UseDiscountDataProps = {
   isEditMode: boolean;
@@ -9,12 +10,13 @@ type UseDiscountDataProps = {
   setKeyCombo: React.Dispatch<React.SetStateAction<KeyComboType>>;
   setKeyValue: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   fetchItemsCategoryWise: (categories: string) => Promise<any>;
+  router: AppRouterInstance;
 };
 
 export function useDiscountData({
-  isEditMode, id, setDiscount, setKeyCombo, setKeyValue, fetchItemsCategoryWise
+  isEditMode, id, setDiscount, setKeyCombo, setKeyValue, fetchItemsCategoryWise, router
 }: UseDiscountDataProps) {
-  
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -46,10 +48,10 @@ export function useDiscountData({
               },
               discountItems: Array.isArray(d.discount_details) && d.discount_details.length > 0
                 ? d.discount_details.map((detail: any) => ({
-                    key: detail.item_id || detail.category_id || "",
-                    rate: d.discount_type === "PERCENTAGE" ? detail.percentage : detail.amount,
-                    idx: detail.id ? String(detail.id) : String(Math.random())
-                  }))
+                  key: detail.item_id || detail.category_id || "",
+                  rate: d.discount_type === "PERCENTAGE" ? detail.percentage : detail.amount,
+                  idx: detail.id ? String(detail.id) : String(Math.random())
+                }))
                 : [{ key: "", rate: "", idx: "0" }]
             }));
 
@@ -58,29 +60,31 @@ export function useDiscountData({
               Customer: d.key?.Customer?.[0] || "",
               Item: d.key?.Item?.[0] || "",
             };
-            
+
             setKeyCombo(newKeyCombo);
 
             const newValues: Record<string, string[]> = {};
             if (newKeyCombo.Location && Array.isArray(d.location)) {
-                newValues[newKeyCombo.Location] = d.location.map(String);
+              newValues[newKeyCombo.Location] = d.location.map(String);
             }
             if (newKeyCombo.Customer && Array.isArray(d.customer)) {
-                newValues[newKeyCombo.Customer] = d.customer.map(String);
+              newValues[newKeyCombo.Customer] = d.customer.map(String);
             }
             if (newKeyCombo.Item) {
-                if (newKeyCombo.Item === "Item" && Array.isArray(d.items)) {
-                    newValues["Item"] = d.items.map(String);
-                    // Also populate category if present
-                    if (Array.isArray(d.item_category)) {
-                      newValues["Item Category"] = d.item_category.map(String);
-                    }
-                } else if (newKeyCombo.Item === "Item Category" && Array.isArray(d.item_category)) {
-                    newValues["Item Category"] = d.item_category.map(String);
+              if (newKeyCombo.Item === "Item" && Array.isArray(d.items)) {
+                newValues["Item"] = d.items.map(String);
+                // Also populate category if present
+                if (Array.isArray(d.item_category)) {
+                  newValues["Item Category"] = d.item_category.map(String);
                 }
+              } else if (newKeyCombo.Item === "Item Category" && Array.isArray(d.item_category)) {
+                newValues["Item Category"] = d.item_category.map(String);
+              }
             }
-            
+
             setKeyValue(newValues);
+          } else {
+            router.push("/discount");
           }
         }
       } catch (err) {

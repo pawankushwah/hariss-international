@@ -44,7 +44,7 @@ export default function AddDiscount() {
   } = useAllDropdownListData();
 
   const { loading: dataLoading } = useDiscountData({
-    isEditMode, id, setDiscount, setKeyCombo, setKeyValue, fetchItemsCategoryWise
+    isEditMode, id, setDiscount, setKeyCombo, setKeyValue, fetchItemsCategoryWise,router
   });
 
   const [itemOptions, setItemOptions] = useState<any[]>([]);

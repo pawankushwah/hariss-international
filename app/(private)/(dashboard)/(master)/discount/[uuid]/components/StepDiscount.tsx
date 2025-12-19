@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import ContainerCard from "@/app/components/containerCard";
 import InputFields from "@/app/components/inputFields";
-import TabBtn from "@/app/components/tabBtn";
 import Table from "@/app/components/customTable";
 import { Icon } from "@iconify-icon/react";
 import { DiscountState, KeyComboType } from "../types";
@@ -315,41 +314,31 @@ export default function StepDiscount({
             />
           </div>
 
+          <div>
+            <InputFields
+              required
+              label="Discount Applied On"
+              type="select"
+              isSingle={true}
+              options={[
+                { label: "Header Level", value: "header" },
+                { label: "Detail Level", value: "details" }
+              ]}
+              value={discount.scope}
+              onChange={(e) => setDiscount(s => ({ ...s, scope: e.target.value as "header" | "details" }))}
+              placeholder="Select Discount Applied On"
+            />
+          </div>
         </div>
 
       </ContainerCard>
 
 
-
       {/* 2. Scope Switch */}
-
       <ContainerCard className="bg-[#fff] p-6 rounded-xl border border-[#E5E7EB]">
-
-        <div className="flex gap-4 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
-
-          <TabBtn
-
-            label="Header Level"
-
-            isActive={discount.scope === "header"}
-
-            onClick={() => setDiscount(s => ({ ...s, scope: "header" }))}
-
-          />
-
-          <TabBtn
-
-            label="Item Details"
-
-            isActive={discount.scope === "details"}
-
-            onClick={() => setDiscount(s => ({ ...s, scope: "details" }))}
-
-          />
-
-        </div>
-
-
+        <h2 className="text-xl font-semibold mb-6">
+          {discount.scope === "header" ? "Header Level" : "Detail Level"}
+        </h2>
 
         {/* 3. Dynamic View */}
 
@@ -494,7 +483,7 @@ export default function StepDiscount({
                   {
                     key: "rate",
                     label: (<span>{discount.discountMethod === "Percentage" ? "Rate (%)" : "Amount"}<span className="text-red-500 ml-1">*</span></span>),
-                    width: 150,
+                    width: 170,
                     render: (row: any) => (
                       <InputFields
                         type="number"
@@ -511,6 +500,11 @@ export default function StepDiscount({
                       />
                     )
                   }, {
+                    key: "empty",
+                    label: "",
+                    width: 100, // Small width for visual spacing
+                    render: () => null, // Renders nothing
+                  }, {
                     key: "action",
                     label: "Action",
                     width: 50,
@@ -524,7 +518,7 @@ export default function StepDiscount({
                         <Icon icon="lucide:trash-2" width={20} />
                       </button>
                     )
-                  }
+                  },
                 ],
                 pageSize: 10
               }}

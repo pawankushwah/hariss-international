@@ -55,7 +55,7 @@ export default function AddPricing() {
 
   const { loading: dataLoading } = usePromotionData({
     isEditMode, id, setPromotion, setKeyCombo, setKeyValue,
-    setPercentageDiscounts, setSelectedUom, setOrderTables, setOfferItems, fetchItemsCategoryWise
+    setPercentageDiscounts, setSelectedUom, setOrderTables, setOfferItems, fetchItemsCategoryWise, router
   });
 
   const [itemOptions, setItemOptions] = useState<any[]>([]);
