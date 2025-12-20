@@ -19,6 +19,7 @@ import { useAllDropdownListData } from "@/app/components/contexts/allDropdownLis
 import { salesTeamTracking } from "@/app/services/agentTransaction";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
+import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 
 /* ================= TYPES ================= */
 
@@ -136,6 +137,7 @@ function RouteOnRoad({ route }: { route: RoutePoint[] }) {
 /* ================= MAIN COMPONENT ================= */
 
 export default function SalesTrackingMap() {
+  const { can, permissions } = usePagePermissions();
   const {
     warehouseOptions,
     salesmanOptions,
