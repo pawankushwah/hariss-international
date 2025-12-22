@@ -160,6 +160,7 @@ export default function AuditTrailPage() {
                             {
                                 key: "role_id",
                                 label: "Role",
+                                type: "select",
                                 isSingle: false,
                                 multiSelectChips: true,
                                 options: roleOptions || [],
@@ -167,6 +168,7 @@ export default function AuditTrailPage() {
                             {
                                 key: "user_id",
                                 label: "User",
+                                type: "select",
                                 isSingle: false,
                                 multiSelectChips: true,
                                 options: userOptions || [],
@@ -174,6 +176,7 @@ export default function AuditTrailPage() {
                             {
                                 key: "menu_id",
                                 label: "Menu",
+                                type: "select",
                                 isSingle: false,
                                 multiSelectChips: true,
                                 options: menuOptions || [],
@@ -181,6 +184,7 @@ export default function AuditTrailPage() {
                             {
                                 key: "sub_menu_id",
                                 label: "Sub Menu",
+                                type: "select",
                                 isSingle: false,
                                 multiSelectChips: true,
                                 options: submenuOptions || [],
