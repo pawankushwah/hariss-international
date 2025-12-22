@@ -73,7 +73,7 @@ export default function AuditTrailDetailDrawer({ uuid, onClose }: AuditTrailDeta
                             { value: auditData?.user_name?.toString() || "-", key: "User ID" },
                             { value: auditData?.user_role?.toString() || "-", key: "User Role" },
                             { value: auditData?.mode || "-", key: "Mode" },
-                            { value: auditData?.created_at || "-", key: "Created At" },
+                            // { value: auditData?.created_at || "-", key: "Created At" },
                         ]}
                     />
                 </ContainerCard>

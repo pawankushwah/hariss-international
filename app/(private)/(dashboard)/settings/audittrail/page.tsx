@@ -60,6 +60,9 @@ export default function AuditTrailPage() {
         userOptions,
         menuOptions,
         submenuOptions,
+        roles,
+        menuList,
+        userList, // Destructure raw lists
         ensureRolesLoaded,
         ensureUserLoaded,
         ensureMenuListLoaded,
@@ -106,14 +109,10 @@ export default function AuditTrailPage() {
     };
 
     const fetchList = useCallback(
-        async () => ({
-            data: [],
-            total: 1,
-            currentPage: 1,
-            pageSize: 10,
-            totalRecords: 0,
-        }),
-        []
+        async (page?: number, pageSize?: number) => {
+            return loadData({ page: page?.toString() }, pageSize);
+        },
+        [loadData]
     );
 
     // ✔ FILTER LIST
@@ -124,25 +123,45 @@ export default function AuditTrailPage() {
             // page number
             if (payload.page) params.page = String(payload.page);
 
-            // extract filters
+            // Helper to map single value
+            const mapValue = (key: string, val: string | number): string | number => {
+                const strVal = String(val);
+                if (key === "role_id") {
+                    const found = roles.find((r) => String(r.id) === strVal);
+                    return found ? found.name : strVal;
+                }
+                if (key === "menu_id") {
+                    const found = menuList.find((m) => String(m.id) === strVal);
+                    return found ? (found.osa_code || found.name || strVal) : strVal;
+                }
+                if (key === "sub_menu_id") {
+                    const found = submenuOptions.find((o) => String(o.value) === strVal);
+                    // Match API expectation (e.g., agent_customer)
+                    return found ? found.label.toLowerCase().replace(/\s+/g, '_') : strVal;
+                }
+                if (key === "user_id") {
+                    const found = userList.find((u) => String(u.id) === strVal);
+                    return found ? found.name : strVal;
+                }
+                return val;
+            };
+
             Object.keys(payload || {}).forEach((key) => {
                 if (key === "page") return;
 
                 const value = payload[key];
-
                 if (value === null || value === "" || value === undefined) return;
 
-                // support array filters
-                if (Array.isArray(value)) {
-                    if (value.length > 0) params[key] = value;
-                } else {
-                    params[key] = String(value);
-                }
+                let targetKey = key;
+                if (key === "role_id") targetKey = "user_role";
+                if (key === "user_id") targetKey = "user_name";
+
+                params[targetKey] = mapValue(key, value);
             });
 
             return loadData(params, pageSize);
         },
-        []
+        [roles, menuList, submenuOptions, userList, loadData]
     );
 
     return (
@@ -161,7 +180,7 @@ export default function AuditTrailPage() {
                                 key: "role_id",
                                 label: "Role",
                                 type: "select",
-                                isSingle: false,
+                                isSingle: true,
                                 multiSelectChips: true,
                                 options: roleOptions || [],
                             },
@@ -169,7 +188,7 @@ export default function AuditTrailPage() {
                                 key: "user_id",
                                 label: "User",
                                 type: "select",
-                                isSingle: false,
+                                isSingle: true,
                                 multiSelectChips: true,
                                 options: userOptions || [],
                             },
@@ -177,7 +196,7 @@ export default function AuditTrailPage() {
                                 key: "menu_id",
                                 label: "Menu",
                                 type: "select",
-                                isSingle: false,
+                                isSingle: true,
                                 multiSelectChips: true,
                                 options: menuOptions || [],
                             },
@@ -185,7 +204,7 @@ export default function AuditTrailPage() {
                                 key: "sub_menu_id",
                                 label: "Sub Menu",
                                 type: "select",
-                                isSingle: false,
+                                isSingle: true,
                                 multiSelectChips: true,
                                 options: submenuOptions || [],
                             },
