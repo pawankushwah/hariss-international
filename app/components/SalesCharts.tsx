@@ -27,6 +27,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
   const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
   const [is3DLoaded, setIs3DLoaded] = useState(false);
   const [hiddenWarehouses, setHiddenWarehouses] = useState<string[]>([]);
+  const CURRENCY = localStorage.getItem('country') + " " || ' ';
 
   // Load Highcharts 3D module
   useEffect(() => {
@@ -905,7 +906,9 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
               align="right"
               wrapperStyle={{
                 paddingBottom: '20px',
-                color: '#1f2937'
+                color: '#1f2937',
+                height: '80px',
+                overflowY: 'auto'
               }}
               onClick={(e) => e.value && handleLegendClick(e.value)}
               formatter={(value) => (
@@ -1226,7 +1229,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                     return (
                       <>
                         <div className="bg-white p-6 border rounded-lg shadow-sm">
-                          <h3 className="text-xl font-semibold text-gray-800 mb-4">Region Contribution (Top Items)</h3>
+                          <h3 className="text-xl font-semibold text-gray-800 mb-4">Region Contribution</h3>
                           <MaximizedExplodedPieChart data={chartData} outerRadius={200} />
                         </div>
                         <div className="bg-white p-6 border rounded-lg shadow-sm">
@@ -1245,7 +1248,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                                   <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                                     <td className="px-6 py-4 text-gray-600">{index + 1}</td>
                                     <td className="px-6 py-4 text-gray-800 font-medium">{row.name}</td>
-                                    <td className="px-6 py-4 text-right text-gray-800 font-semibold">{(row.value || 0).toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-right text-gray-800 font-semibold">{CURRENCY}{(row.value || 0).toLocaleString()}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1748,7 +1751,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                             ) : regionContributionData && regionContributionData.length > 0 ? (
                               <MaximizedExplodedPieChart
                                 data={regionContributionData.map((r: any) => ({ name: `${r.regionName} - ${r.itemName}`, value: r.value || 0, color: r.color }))}
-                                title="Region Contribution (Top Items)"
+                                title="Region Contribution"
                                 outerRadius={200}
                               />
                             ) : (
@@ -2012,7 +2015,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
           {/* Left: Region Contribution by Top Item (aggregate by region) */}
           <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Region Contribution (Top Items)</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Region Contribution</h3>
               <button onClick={() => setSelectedMaxView('regionItems')} className="p-1 hover:bg-gray-100 rounded"><Maximize2 size={16} /></button>
             </div>
             <div className="w-full h-[420px]">
@@ -2341,7 +2344,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
         {filteredWarehouses.length >= 10 ? (
           <>
             {/* 3D Column Chart for 10+ warehouses */}
-            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            {/* <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold text-gray-800">Warehouse Sales</h3>
@@ -2365,10 +2368,10 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                   />
                 )}
               </div>
-            </div>
+            </div> */}
 
             {/* Table for 10+ warehouses */}
-            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            {/* <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Warehouse Sales Table</h3>
               </div>
@@ -2401,11 +2404,12 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                   </tbody>
                 </table>
               </div>
-            </div>
+            </div> */}
           </>
         ) : filteredWarehouses.length > 0 ? (
           /* Table only for < 10 warehouses */
-          <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+          <>
+          {/* <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <h3 className="text-lg font-semibold text-gray-800">Warehouse Sales</h3>
@@ -2442,7 +2446,8 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                 </tbody>
               </table>
             </div>
-          </div>
+          </div> */}
+          </>
         ) : null}
 
         {/* Row 3 - Sales Trend: Neon Area Chart split by warehouse_label */}

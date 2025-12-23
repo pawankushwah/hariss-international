@@ -36,7 +36,7 @@ const SalesReportDashboard = () => {
   const [dateRange, setDateRange] = useState('dd-mm-yyyy - dd-mm-yyyy');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [searchbyopen, setSearchbyclose] = useState(false);
 
@@ -56,8 +56,8 @@ const SalesReportDashboard = () => {
   const [tableData, setTableData] = useState<any>(null);
   const [isLoadingTable, setIsLoadingTable] = useState(false);
   const [selectedDataview, setSelectedDataview] = useState('default');
-  const [searchType, setSearchType] = useState(''); // 'amount' or 'quantity'
-  const [displayQuantity, setDisplayQuantity] = useState(''); // 'Free-Good' or 'Without-Free-Good'
+  const [searchType, setSearchType] = useState('amount'); // 'amount' or 'quantity'
+  const [displayQuantity, setDisplayQuantity] = useState('with_free_good'); // 'Free-Good' or 'Without-Free-Good'
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 50; // pagination size
   
@@ -65,6 +65,7 @@ const SalesReportDashboard = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const lastChangedFilterRef = useRef<string | null>(null);
 
   // Filter metadata (static)
   const filterMetadata: Record<string, { name: string; icon: string }> = {
@@ -217,9 +218,10 @@ const SalesReportDashboard = () => {
       }
     });
 
-    if(filtersToLoad.size === 0) return;
+    if(availableFilters.length > 0 && filtersToLoad.size === 0) return;
     // Set loading state for specific filters
     setLoadingFilterIds(filtersToLoad);
+    if(availableFilters.length <= 0) setIsLoadingFilters(true);
 
     try {
       // Build query params
@@ -326,13 +328,46 @@ const SalesReportDashboard = () => {
 
       setAvailableFilters(transformedFilters);
       setLoadingFilterIds(new Set());
+      if(availableFilters.length <= 0) setIsLoadingFilters(false);
     } catch (error) {
       console.error('Failed to fetch filters:', error);
       setFilterError(error instanceof Error ? error.message : 'Failed to load filters');
       setAvailableFilters([]);
       setLoadingFilterIds(new Set());
+      if(availableFilters.length <= 0) setIsLoadingFilters(false);
     }
   };
+
+  // Debounce wrapper for fetchFiltersData to avoid rapid consecutive requests
+  const filtersFetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedFetchFiltersData = (currentFilterId?: string, delay = 400) => {
+    if (filtersFetchDebounceRef.current) {
+      clearTimeout(filtersFetchDebounceRef.current);
+    }
+    filtersFetchDebounceRef.current = setTimeout(() => {
+      fetchFiltersData(currentFilterId);
+    }, delay);
+  };
+
+  // Cleanup pending debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (filtersFetchDebounceRef.current) {
+        clearTimeout(filtersFetchDebounceRef.current);
+      }
+    };
+  }, []);
+
+  // Watch for selection changes and trigger debounced fetch
+  useEffect(() => {
+    if (droppedFilters.length > 0 && lastChangedFilterRef.current) {
+      const hasSelections = Object.values(selectedChildItems).some(items => items.length > 0);
+      if (hasSelections || lastChangedFilterRef.current) {
+        debouncedFetchFiltersData(lastChangedFilterRef.current);
+      }
+      lastChangedFilterRef.current = null;
+    }
+  }, [selectedChildItems, droppedFilters.length]);
 
   // Fetch Table Data function
   const handleTableView = async (page?: number) => {
@@ -712,6 +747,9 @@ const SalesReportDashboard = () => {
       // Close the dropdowns after dropping
       setShowMoreFilters(false);
       setSearchbyclose(false);
+
+      const index = hierarchyOrder.findIndex(id => id === draggedFilter.id) - 1;
+      fetchFiltersData( index >= 0 ? hierarchyOrder[index] : undefined );
     }
   };
 
@@ -750,6 +788,7 @@ const SalesReportDashboard = () => {
   };
 
   const handleChildItemToggle = (filterId: string, childItemId: string) => {
+    lastChangedFilterRef.current = filterId;
     setSelectedChildItems(prev => {
       const current = prev[filterId] || [];
       const newValue = current.includes(childItemId) ? current.filter(id => id !== childItemId) : [...current, childItemId];
@@ -788,6 +827,7 @@ const SalesReportDashboard = () => {
   };
 
   const handleSelectAll = (filterId: string, ids: string[]) => {
+    lastChangedFilterRef.current = filterId;
     setSelectedChildItems(prev => {
       const current = prev[filterId] || [];
       const allSelected = ids.length > 0 && ids.every(id => current.includes(id));
@@ -887,7 +927,6 @@ const SalesReportDashboard = () => {
                     onChange={(e) => setSearchType(e.target.value)}
                     className="px-4 py-2 pr-10 bg-white border border-gray-200 rounded-lg appearance-none cursor-pointer text-sm w-full sm:w-auto"
                   >
-                    <option value="">Search Type</option>
                     <option value="amount"> Amount</option>
                     <option value="quantity"> Quantity</option>
                   </select>
@@ -899,7 +938,6 @@ const SalesReportDashboard = () => {
                     onChange={(e) => setDisplayQuantity(e.target.value)}
                     className="px-4 py-2 pr-10 bg-white border border-gray-200 rounded-lg appearance-none cursor-pointer text-sm w-full sm:w-auto"
                   >
-                    <option value=""> Display Quantity</option>
                     <option value="with_free_good"> With Free Good</option>
                     <option value="without_free_good">Without Free Good</option>
                   </select>
@@ -963,24 +1001,24 @@ const SalesReportDashboard = () => {
                   <span className="font-semibold text-gray-800 text-sm sm:text-base whitespace-nowrap">Drag & Drop Filter</span>
                   
                  <div className="flex h-auto sm:h-[28px] justify-center items-center w-full sm:w-auto">
-  {/* {isLoadingFilters && (
+  {isLoadingFilters && (
     <div className="h-auto sm:h-[28px] px-3 py-1 bg-blue-50 border border-blue-200 rounded-lg text-xs sm:text-sm text-blue-700 flex items-center gap-2">
       <div className="animate-spin w-3 h-3 rounded-full border-b-2 border-blue-700"></div>
       <span className="whitespace-nowrap">Loading filters...</span>
     </div>
-  )} */}
+  )}
 
-  {/* {filterError && (
+  {filterError && (
     <div className="h-auto sm:h-[28px] flex justify-center items-center px-3 py-1 bg-red-50 border border-red-200 rounded-lg text-xs sm:text-sm text-red-700">
       <span className="truncate">{filterError}</span>
       <button
-        onClick={fetchFiltersData}
+        onClick={() => fetchFiltersData()}
         className="ml-2 underline hover:text-red-900 font-medium whitespace-nowrap"
       >
         Retry
       </button>
     </div>
-  )} */}
+  )}
 </div>
 
                   <div className="flex flex-wrap gap-2 flex-1 w-full">
@@ -1042,7 +1080,7 @@ const SalesReportDashboard = () => {
                                   <div 
                                     key={filter.id} 
                                     draggable={!isUndraggable} 
-                                    onDragStart={!isUndraggable ? (e) => handleDragStart(e, filter) : undefined} 
+                                    onDragStart={!isUndraggable ? (e) => { handleDragStart(e, filter); setShowMoreFilters(!showMoreFilters); } : undefined} 
                                     className={`flex items-center gap-2 px-2 sm:px-3 py-2 justify-between rounded hover:bg-gray-50 ${isUndraggable ? 'cursor-not-allowed opacity-50' : 'cursor-grab'}`}
                                   >
                                     <div className='flex gap-2 sm:gap-4 items-center'>
@@ -1134,7 +1172,7 @@ const SalesReportDashboard = () => {
                                             const isSelected = (selectedChildItems[filter.id] || []).includes(childItem.id);
                                             return (
                                               <label key={childItem.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                                <input type="checkbox" checked={isSelected} onChange={() => { handleChildItemToggle(filter.id, childItem.id); fetchFiltersData(filter.id) }} className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" />
+                                                <input type="checkbox" checked={isSelected} onChange={() => { handleChildItemToggle(filter.id, childItem.id); }} className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" />
                                                 <span className="text-sm text-gray-700">{childItem.name}</span>
                                               </label>
                                             );
