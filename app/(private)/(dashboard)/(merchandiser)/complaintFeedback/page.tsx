@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify-icon/react";
 
@@ -16,17 +16,26 @@ import {
 } from "@/app/services/merchandiserApi";
 import { formatDate } from "../../(master)/salesTeam/details/[uuid]/page";
 import ImagePreviewModal from "@/app/components/ImagePreviewModal";
+import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 const dropdownDataList = [
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
   { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
 
 export default function Complaint() {
+  const { can, permissions } = usePagePermissions();
   const { setLoading } = useLoading();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [popupImages, setPopupImages] = useState<string[]>([]);
+
+  // Refresh table when permissions load
+  useEffect(() => {
+    if (permissions.length > 0) {
+      setRefreshKey((prev) => prev + 1);
+    }
+  }, [permissions]);
 
   const router = useRouter();
   const { showSnackbar } = useSnackbar();

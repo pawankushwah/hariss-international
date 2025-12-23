@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import Table, { TableDataType } from "@/app/components/customTable";
@@ -12,8 +12,10 @@ import {
   campaignInformationList,
   exportCompaignData,
 } from "@/app/services/merchandiserApi";
+import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 
 export default function CampaignPage() {
+  const { can, permissions } = usePagePermissions();
   const { setLoading } = useLoading();
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
