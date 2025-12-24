@@ -91,8 +91,8 @@ const LoginPage = () => {
                                                 )}
                                             />
                                             <ErrorMessage
-                                                name="password"
-                                                component="p"
+                                                name="passwor"
+                                                component="p" 
                                                 className="text-red-500 text-sm"
                                             />
                                         </div>
