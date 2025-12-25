@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import ContainerCard from "@/app/components/containerCard";
 import InputFields from "@/app/components/inputFields";
 import AutoSuggestion from "@/app/components/autoSuggestion";
@@ -14,19 +14,54 @@ type Props = {
 };
 
 export default function StepKeyValue({ keyCombo, keyValue, setKeyValue, locationDropdownMap, customerDropdownMap }: Props) {
+  const [hasMoreCustomers, setHasMoreCustomers] = useState(false);
+
   const handleCustomerSearch = useCallback(async (q: string) => {
-    if (!q || q.trim().length === 0) return customerDropdownMap["Customer"] || [];
+    if (!q || q.trim().length === 0) {
+      setHasMoreCustomers(false);
+      return customerDropdownMap["Customer"] || [];
+    }
     try {
-      const res = await agentCustomerGlobalSearch({ query: q, dropdown: 'true' });
+      const res = await agentCustomerGlobalSearch({ query: q, dropdown: 'true', page: '1', limit: '50', perPage: "50" });
       const data = Array.isArray(res?.data) ? res.data : [];
+
+      // Update hasMore based on pagination
+      if (res.pagination) {
+        setHasMoreCustomers(Number(res.pagination.page) < Number(res.pagination.totalPages));
+      } else {
+        setHasMoreCustomers(false);
+      }
+
       return data.map((c: any) => ({
         value: String(c.id),
         label: `${c.osa_code || ""} - ${c.business_name || c.name || ""}`
       }));
     } catch (err) {
+      setHasMoreCustomers(false);
       return [];
     }
   }, [customerDropdownMap]);
+
+  const handleCustomerLoadMore = useCallback(async (q: string, page: number) => {
+    try {
+      const res = await agentCustomerGlobalSearch({ query: q, dropdown: 'true', page: String(page), limit: '50' });
+      const data = Array.isArray(res?.data) ? res.data : [];
+
+      if (res.pagination) {
+        setHasMoreCustomers(Number(res.pagination.page) < Number(res.pagination.totalPages));
+      } else {
+        setHasMoreCustomers(false);
+      }
+
+      return data.map((c: any) => ({
+        value: String(c.id),
+        label: `${c.osa_code || ""} - ${c.business_name || c.name || ""}`
+      }));
+    } catch (err) {
+      setHasMoreCustomers(false);
+      return [];
+    }
+  }, []);
 
   return (
     <ContainerCard className="bg-[#fff] p-6 rounded-xl border border-[#E5E7EB]">
@@ -80,13 +115,19 @@ export default function StepKeyValue({ keyCombo, keyValue, setKeyValue, location
                     key="customer-selection-autosuggest"
                     placeholder="Search Customer"
                     multiple={true}
+                    infiniteScroll={true}
+                    hasMore={hasMoreCustomers}
+                    onLoadMore={handleCustomerLoadMore}
                     initialSelected={(customerDropdownMap["Customer"] || []).filter(o => (keyValue["Customer"] || []).includes(o.value))}
                     onSearch={handleCustomerSearch}
-                    onSelect={() => {}} // onChangeSelected handles state updates for multiple selection
+                    onSelect={() => { }} // onChangeSelected handles state updates for multiple selection
                     onChangeSelected={(selected) => {
                       setKeyValue(s => ({ ...s, [keyCombo.Customer]: selected.map(o => o.value) }));
                     }}
-                    onClear={() => setKeyValue(s => ({ ...s, [keyCombo.Customer]: [] }))}
+                    onClear={() => {
+                      setKeyValue(s => ({ ...s, [keyCombo.Customer]: [] }));
+                      setHasMoreCustomers(false);
+                    }}
                     width="w-full"
                   />
                 ) : (
