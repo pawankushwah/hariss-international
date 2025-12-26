@@ -44,9 +44,16 @@ export default function FilterComponent(filterProps: FilterRendererProps) {
   const {
     customerSubCategoryOptions,
     companyOptions,
+    ensureCompanyLoaded,
     salesmanOptions,
+    ensureSalesmanLoaded,
     channelOptions,
   } = useAllDropdownListData();
+
+  useEffect(() => {
+    ensureCompanyLoaded();
+    ensureSalesmanLoaded();
+  }, [ensureCompanyLoaded, ensureSalesmanLoaded]);
 
   const [skeleton, setSkeleton] = useState({
     company: false,
@@ -215,7 +222,7 @@ export default function FilterComponent(filterProps: FilterRendererProps) {
     fetchRoutes();
   }, [warehouseVal.join(",")]);
 
-  console.log("FilterComponent payload:", payload);
+  // console.log("FilterComponent payload:", payload);
 
   return (
     <div className="grid grid-cols-2 gap-4">
