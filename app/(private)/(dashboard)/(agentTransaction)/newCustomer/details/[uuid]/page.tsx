@@ -78,8 +78,8 @@
 
     const params = useParams();
     let uuid: string = "";
-    if (params.uuid) {
-      uuid = Array.isArray(params.uuid) ? params.uuid[0] : (params.uuid as string);
+    if (params?.uuid) {
+      uuid = Array.isArray(params?.uuid) ? params?.uuid[0] : (params?.uuid as string);
     }
 
     const [item, setItem] = useState<NewCustomerDetails | null>(null);

@@ -126,7 +126,7 @@ export default function AddEditItem() {
   const router = useRouter();
   const params = useParams();
 
-  const itemId = params.id as string | undefined;
+  const itemId = params?.id as string | undefined;
   const isEditMode = !!(itemId && itemId !== "add");
   const [skeleton, setSkeleton] = useState({
     itemSubCategory: false,
@@ -487,7 +487,7 @@ export default function AddEditItem() {
         uoms: mappedUoms
       };
 
-      const itemId = Array.isArray(params.id) ? params.id[0] : params.id ?? "";
+      const itemId = Array.isArray(params?.id) ? params?.id[0] : params?.id ?? "";
 
       const reqType: "json" | "form-data" = values.itemImage instanceof File ? "form-data" : "json";
       // console.log("Submitting payload with request type:", reqType);

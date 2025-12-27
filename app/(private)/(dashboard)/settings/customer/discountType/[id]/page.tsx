@@ -49,12 +49,12 @@ export default function AddEditDiscountType() {
   const codeGeneratedRef = useRef(false);
 
   useEffect(() => {
-    if (params.id && params.id !== "add") {
+    if (params?.id && params?.id !== "add") {
       setIsEditMode(true);
       setLoading(true);
       (async () => {
         try {
-          const res = await getDiscountTypeById(String(params.id));
+          const res = await getDiscountTypeById(String(params?.id));
           if (res?.data) {
             setInitialValues({
               discount_type_code: res.data.discount_code || "",
@@ -85,7 +85,7 @@ export default function AddEditDiscountType() {
         }
       })();
     }
-  }, [params.id]);
+  }, [params?.id]);
 
   const handleSubmit = async (
     values: DiscountTypeFormValues,
@@ -98,8 +98,8 @@ export default function AddEditDiscountType() {
     };
     try {
       let res;
-      if (isEditMode && params.id !== "add") {
-        res = await updateDiscountType(String(params.id), payload);
+      if (isEditMode && params?.id !== "add") {
+        res = await updateDiscountType(String(params?.id), payload);
       } else {
         res = await createDiscountType(payload);
       }
@@ -107,7 +107,7 @@ export default function AddEditDiscountType() {
         showSnackbar(res.data?.message || "Failed to submit form", "error");
       } else {
         // Finalize the reserved code only after successful add
-        if (!isEditMode || params.id === "add") {
+        if (!isEditMode || params?.id === "add") {
           try {
             await saveFinalCode({ reserved_code: values.discount_type_code, model_name: "Discount_type" });
           } catch (e) {}

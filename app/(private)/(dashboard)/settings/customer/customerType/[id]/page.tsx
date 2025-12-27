@@ -58,8 +58,8 @@ export default function AddCustomerTypePage() {
         };
 
         let res;
-        if (isEditMode && params.id && params.id !== "add") {
-          res = await updateCustomerType(String(params.id), payload);
+        if (isEditMode && params?.id && params?.id !== "add") {
+          res = await updateCustomerType(String(params?.id), payload);
         } else {
           res = await addCustomerType(payload);
         }
@@ -75,7 +75,7 @@ export default function AddCustomerTypePage() {
             "success"
           );
           // Finalize the reserved code only after successful add
-          if (!isEditMode || params.id === "add") {
+          if (!isEditMode || params?.id === "add") {
             try {
               await saveFinalCode({ reserved_code: values.code, model_name: "customer_types" });
             } catch (e) {}
@@ -92,12 +92,12 @@ export default function AddCustomerTypePage() {
 
   // ✅ Load existing data for edit mode and generate code in add mode
   useEffect(() => {
-    if (params.id && params.id !== "add") {
+    if (params?.id && params?.id !== "add") {
       setIsEditMode(true);
       setLoading(true);
       (async () => {
         try {
-          const res = await getCustomerTypeById(String(params.id));
+          const res = await getCustomerTypeById(String(params?.id));
           if (res?.data) {
             formik.setValues({
               code: res.data.code || "",
@@ -121,7 +121,7 @@ export default function AddCustomerTypePage() {
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [params?.id]);
 
   return (
     <>

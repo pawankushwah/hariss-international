@@ -255,7 +255,7 @@ export default function AddCompanyCustomer() {
 
   const fetchData = async () => {
     try {
-      const uuid = params.uuid as string;
+      const uuid = params?.uuid as string;
       setLoading(true);
       const res = await getCompanyCustomerById(uuid);
 
@@ -303,8 +303,8 @@ export default function AddCompanyCustomer() {
 
   useEffect(() => {
     setLoading(true);
-    if (!params.uuid) return;
-    const idStr = params.uuid.toString().trim().toLowerCase();
+    if (!params?.uuid) return;
+    const idStr = params?.uuid.toString().trim().toLowerCase();
     if (idStr !== "add") {
       setIsEditMode(true);
       fetchData().finally(() => setLoading(false));
@@ -329,7 +329,7 @@ export default function AddCompanyCustomer() {
       }
       setLoading(false);
     })();
-  }, [params.uuid]);
+  }, [params?.uuid]);
 
   const handleNext = async (
     values: CompanyCustomerFormValues,
@@ -411,7 +411,7 @@ export default function AddCompanyCustomer() {
       let res;
       setLoading(true);
       if (isEditMode) {
-        res = await updateCompanyCustomer(String(params.uuid), payload);
+        res = await updateCompanyCustomer(String(params?.uuid), payload);
       } else {
         res = await addCompanyCustomers(payload);
       }

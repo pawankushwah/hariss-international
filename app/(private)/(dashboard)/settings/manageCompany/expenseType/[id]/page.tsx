@@ -45,12 +45,12 @@ export default function AddEditExpenseType() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (params.id && params.id !== "add") {
+    if (params?.id && params?.id !== "add") {
       setIsEditMode(true);
       setLoading(true);
       (async () => {
         try {
-          const res = await getExpenseTypeByUUID(String(params.id));
+          const res = await getExpenseTypeByUUID(String(params?.id));
           if (res?.data) {
             setInitialValues({
               osa_code: res.data.osa_code || "",
@@ -87,7 +87,7 @@ export default function AddEditExpenseType() {
 
 
     }
-  }, [params.id]);
+  }, [params?.id]);
 
 
   const handleSubmit = async (
@@ -102,8 +102,8 @@ export default function AddEditExpenseType() {
 
     try {
       let res;
-      if (isEditMode && params.id !== "add") {
-        res = await updateExpenseType(String(params.id), payload);
+      if (isEditMode && params?.id !== "add") {
+        res = await updateExpenseType(String(params?.id), payload);
       } else {
         res = await addExpenseType(payload);
         try {
