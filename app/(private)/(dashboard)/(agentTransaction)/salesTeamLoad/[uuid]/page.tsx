@@ -469,7 +469,7 @@ export default function AddEditSalesmanLoad() {
 
           {/* Show Project List only when salesman_type id = 36 */}
           {form.salesman_type === "6" && (
-            <div className="flex flex-col w-full sm:w-[30%]">
+            <div className="flex flex-col w-full">
               <InputFields
                 required
                 label="Project List"
