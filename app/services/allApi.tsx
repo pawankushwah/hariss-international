@@ -503,9 +503,9 @@ export const merchandiserData = async (params?: Params) => {
     return handleError(error);
   }
 };
-export const getCustomerByMerchandiser = async (merchandiser_id: string) => {
+export const getCustomerByMerchandiser = async (merchandiser_id: string, params?: Params) => {
   try {
-    const res = await API.get(`/api/master/route-visits/customerlist/${merchandiser_id}`);
+    const res = await API.get(`/api/master/route-visits/customerlist/${merchandiser_id}`, { params });
     return res.data;
   } catch (error) {
     return handleError(error);
@@ -513,13 +513,15 @@ export const getCustomerByMerchandiser = async (merchandiser_id: string) => {
 };
 
 export const getRouteVisitList = async (params: {
-  from_date: string | null;
-  to_date: string | null;
-  customer_type: string | null;
-  status: string | null;
+  from_date?: string | null;
+  to_date?: string | null;
+  customer_type?: string | null;
+  status?: string | null;
+  page?: number | string;
+  limit?: number | string;
 }) => {
   try {
-    const res = await API.get("/api/master/route-visits/list");
+    const res = await API.get("/api/master/route-visits/list", { params });
     return res.data;
   } catch (error) {
     return handleError(error);
@@ -1990,6 +1992,26 @@ export const addDiscount = async (body: object) => {
   }
 };
 
+export const importCustomerExcel = async (body: FormData) => {
+  try {
+    const res = await APIFormData.post("api/master/promotion-headers/customers/upload-xlsx", body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getPromotionCustomerDetails = async (customerIds: string) => {
+  try {
+    const res = await API.get(`/api/master/promotion-headers/customerdetails`, {
+      params: { customer_id: customerIds },
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 export const customerCategoryGlobalSearch = async (params?: Params) => {
   try {
     const res = await API.get(`/api/settings/customer-category/global_search`, {
@@ -2100,6 +2122,16 @@ export const warehouseLowStocksKpi = async (id: string) => {
 export const warehouseStockTopOrders = async (id: string, params?: Params) => {
   try {
     const res = await API.get(`/api/settings/warehouse-stocks/${id}/stock-details`, { params });
+
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const returnWarehouseStock = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/settings/warehouse-stocks/stockitemdetails`, { params });
 
     return res.data;
   } catch (error: unknown) {
@@ -3900,9 +3932,18 @@ export const custCatByChId = async (params?: Params) => {
   }
 };
 
-export const changePassword = async (body?: Object) => {
+export const changePassword = async (body?: object) => {
   try {
     const res = await API.post(`/api/master/change-password`,body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const warehouseStockItem = async (id:string,params?: Params) => {
+  try {
+    const res = await API.get(`/api/settings/warehouse-stocks/warehouseStockInfo/${id}`,{params});
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
