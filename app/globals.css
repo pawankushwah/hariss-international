@@ -4,13 +4,22 @@
 
 
 
+
 body {
   margin: 0;
   padding: 0;
   /* box-sizing:border-box; */
   font-family: "Twemoji Country Flags", "Inter", sans-serif;
   line-height: 20px;
-  user-select: none;
+  /* user-select: none; */
+}
+
+:root {
+  --primary-color: #3b82f6; /* Tailwind blue-500 as default */
+}
+
+.dark {
+  --primary-color: #2563eb; /* Tailwind blue-600 for dark mode */
 }
 
 @theme {
@@ -47,16 +56,33 @@ body {
 
 /* Loader spin keyframes used by Tailwind-based loader component */
 @keyframes spin-clock {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
+
 @keyframes spin-anticlock {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
+  }
 }
+
 .loader-spin {
   animation: spin-clock 1s linear infinite;
 }
+
 .loader-spin-reverse {
   animation: spin-anticlock 0.85s linear infinite;
+}
+
+.leaflet-routing-container {
+  display: none !important;
 }

@@ -72,8 +72,8 @@ const { showSnackbar } = useSnackbar();
           status: values.status === "active" ? 1 : 0,
         };
         let res;
-        if (isEditMode && params?.id && params.id !== "add") {
-          res = await updateRouteTypeById(String(params.id), payload);
+        if (isEditMode && params?.id && params?.id !== "add") {
+          res = await updateRouteTypeById(String(params?.id), payload);
         } else {
           res = await addRouteType(payload);
         }
@@ -105,12 +105,12 @@ const { showSnackbar } = useSnackbar();
 
   // ✅ Load existing data for edit mode and generate code in add mode
   useEffect(() => {
-    if (params?.id && params.id !== "add") {
+    if (params?.id && params?.id !== "add") {
       setIsEditMode(true);
       setLoading(true);
       (async () => {
         try {
-          const res = await getRouteTypeById(String(params.id));
+          const res = await getRouteTypeById(String(params?.id));
           if (res?.data) {
             formik.setValues({
               route_type_code: res.data.route_type_code || "",
@@ -243,17 +243,20 @@ const { showSnackbar } = useSnackbar();
             <button
               className="px-4 py-2 h-[40px] w-[80px] rounded-md font-semibold border border-gray-300 text-gray-700 hover:bg-gray-100"
               type="button"
-              onClick={() => formik.resetForm()}
+              // onClick={() => formik.resetForm()}
+              onClick={() => router.push("/settings/route-type")}
+
             >
               Cancel
             </button>
 
             <SidebarBtn
-              label="Submit"
+              label={isEditMode ? (formik.isSubmitting ? "Updating..." : "Update") : (formik.isSubmitting ? "Submitting..." : "Submit")}
               isActive={true}
               leadingIcon="mdi:check"
               type="submit"
-            />
+              disabled={formik.isSubmitting}
+            />    
           </div>
         </form>
       )}

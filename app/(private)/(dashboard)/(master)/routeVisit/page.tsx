@@ -1,37 +1,52 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Icon } from "@iconify-icon/react";
-import { useRouter } from "next/navigation";
 import Table, {
   listReturnType,
   searchReturnType,
   TableDataType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { getRouteVisitList } from "@/app/services/allApi"; // Adjust import path
-import { useSnackbar } from "@/app/services/snackbarContext";
+import { getRouteVisitList, downloadFile, exportRouteVisit, routeVisitGlobalSearch } from "@/app/services/allApi"; // Adjust import path
 import { useLoading } from "@/app/services/loadingContext";
+import { useSnackbar } from "@/app/services/snackbarContext";
+import { useRouter } from "next/navigation";
+import StatusBtn from "@/app/components/statusBtn2";
+import { useCallback, useEffect, useState } from "react";
+import { formatDate, formatWithPattern } from "@/app/(private)/utils/date";
+import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 
 const columns = [
-  { key: "from_date", label: "From Date" },
-  { key: "to_date", label: "To Date" },
-  { key: "customer_type", label: "Customer Type" },
-  { key: "status", label: "Status" },
+  { key: "osa_code", label: "Code" },
+  { key: "from_date", label: "From Date", render: (row: TableDataType) => row.from_date ? formatWithPattern(new Date(row.from_date), "DD MMM YYYY", "en-GB") : "" },
+  { key: "to_date", label: "To Date", render: (row: TableDataType) => row.to_date ? formatWithPattern(new Date(row.to_date), "DD MMM YYYY", "en-GB") : "" },
+  {
+    key: "customer_type",
+    label: "Customer Type",
+    render: (row: TableDataType) =>
+      String(row.customer_type) === "1" ? "Merchandiser" : "Agent Customer",
+  },
+
+  {
+    key: "status",
+    label: "Status",
+    render: (row: TableDataType) => (
+      <StatusBtn isActive={String(row.status) === "1"} />
+    ),
+  },
 ];
 
 export default function RouteVisits() {
-  interface RouteVisitItem {
-    uuid?: string;
-    id?: number | string;
-    from_date?: string;
-    to_date?: string;
-    customer_type?: string;
-    status?: string;
-  }
-
+  const { can, permissions } = usePagePermissions();
   const { setLoading } = useLoading();
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh table when permissions load
+  useEffect(() => {
+    if (permissions.length > 0) {
+      setRefreshKey((prev) => prev + 1);
+    }
+  }, [permissions]);
+
   const [filters, setFilters] = useState({
     from_date: null as string | null,
     to_date: null as string | null,
@@ -42,13 +57,15 @@ export default function RouteVisits() {
   const { showSnackbar } = useSnackbar();
   type TableRow = TableDataType & { uuid?: string };
 
+
+
   const fetchRouteVisits = useCallback(
     async (
       page: number = 1,
       pageSize: number = 50
     ): Promise<listReturnType> => {
       try {
-        setLoading(true);
+        // setLoading(true);
 
         // Prepare params for the API call
         const params = {
@@ -59,19 +76,21 @@ export default function RouteVisits() {
         };
 
         const listRes = await getRouteVisitList(params);
-        console.log("Route Visits", listRes);
+        // console.log("Route Visits", listRes);
 
-        setLoading(false);
+        // setLoading(false);
 
         // ✅ Added: transform customer_type names only
         const transformedData = (listRes.data || []).map((item: any) => ({
           ...item,
           customer_type:
             item.customer_type == 1 ? "Agent Customer" : "Merchandiser",
-          status: item.status == 1 ? "Active" : "Inactive",
+          // Keep numeric status so StatusBtn (which checks String(row.status) === "1") works
+          status: item.status,
           // Add date formatting:
-          from_date: item.from_date ? item.from_date.split("T")[0] : "",
-          to_date: item.to_date ? item.to_date.split("T")[0] : "",
+          // keep full timestamp here and let column renderer format it via formatDate
+          from_date: item.from_date ?? "",
+          to_date: item.to_date ?? "",
         }));
 
         // Adjust this based on your actual API response structure
@@ -93,53 +112,47 @@ export default function RouteVisits() {
 
   const searchRouteVisits = useCallback(
     async (
-      searchQuery: string,
-      pageSize: number
-    ): Promise<searchReturnType> => {
+      query: string,
+      pageSize: number = 50,
+      column?: string,
+      page: number = 1
+    ): Promise<listReturnType> => {
       try {
         setLoading(true);
-
-        // For search, you might want to adjust the params
-        // or use a different search endpoint if available
-        const params = {
-          from_date: filters.from_date,
-          to_date: filters.to_date,
-          customer_type: filters.customer_type,
-          status: filters.status,
-          // Add search query if your API supports it
-          search: searchQuery || null,
-        };
-
-        const result = await getRouteVisitList(params);
+        const listRes = await routeVisitGlobalSearch({
+          query,
+          per_page: pageSize.toString(),
+          page: page.toString(),
+        });
         setLoading(false);
-
-        // ✅ Added: transform customer_type names only
-        const transformedData = (result.data || []).map((item: any) => ({
-          ...item,
-          customer_type:
-            item.customer_type == 1 ? "Agent Customer" : "Merchandiser",
-          status: item.status == 1 ? "Active" : "Inactive",
-          // Add date formatting:
-          from_date: item.from_date ? item.from_date.split("T")[0] : "",
-          to_date: item.to_date ? item.to_date.split("T")[0] : "",
-        }));
-
         return {
-          data: transformedData,
-          total: result.pagination?.totalPages || 0,
-          currentPage: result.pagination?.page || 1,
-          pageSize: result.pagination?.limit || pageSize,
+          data: listRes.data || [],
+          total: listRes.pagination.totalPages,
+          currentPage: listRes.pagination.page,
+          pageSize: listRes.pagination.limit,
         };
       } catch (error: unknown) {
-        console.error("Search Error:", error);
+        console.error("API Error:", error);
         setLoading(false);
-        showSnackbar("Search failed", "error");
         throw error;
       }
     },
-    [filters, setLoading, showSnackbar]
+    []
   );
-
+  const exportFile = async (format: string) => {
+    try {
+      const response = await exportRouteVisit({ format });
+      if (response && typeof response === 'object' && response.file_url) {
+        await downloadFile(response.file_url);
+        showSnackbar("File downloaded successfully ", "success");
+      } else {
+        showSnackbar("Failed to get download URL", "error");
+      }
+    } catch (error) {
+      showSnackbar("Failed to download route visit data", "error");
+    } finally {
+    }
+  };
   // Refresh table when filters change
   useEffect(() => {
     setRefreshKey((prev) => prev + 1);
@@ -160,18 +173,33 @@ export default function RouteVisits() {
             },
             header: {
               title: "Route Visits",
+              threeDot: [
+                {
+                  icon: "gala:file-document",
+                  label: "Export CSV",
+                  labelTw: "text-[12px] hidden sm:block",
+                  onClick: () => exportFile("csv"),
+                },
+                {
+                  icon: "gala:file-document",
+                  label: "Export Excel",
+                  labelTw: "text-[12px] hidden sm:block",
+                  onClick: () => exportFile("xls"),
+
+                },
+              ],
               searchBar: true,
               columnFilter: true,
-              actions: [
+              actions: can("create") ? [
                 <SidebarBtn
                   key={0}
                   href="/routeVisit/add"
                   isActive
                   leadingIcon="lucide:plus"
-                  label="Add Route Visit"
+                  label="Add"
                   labelTw="hidden sm:block"
                 />,
-              ],
+              ] : [],
             },
             localStorageKey: "route-visits-table",
             table: {
@@ -183,7 +211,14 @@ export default function RouteVisits() {
             },
             columns,
             rowSelection: false, // Set to true if you need row selection
-            rowActions: [
+            rowActions: can("edit") ? [
+              // {
+              //   icon: "lucide:eye",
+              //   onClick: (data: object) => {
+              //     const row = data as TableRow;
+              //     router.push(`/routeVisit/details/${row.uuid}`);
+              //   },
+              // },
               {
                 icon: "lucide:edit-2",
                 onClick: (data: object) => {
@@ -191,7 +226,7 @@ export default function RouteVisits() {
                   router.push(`/routeVisit/${row.uuid}`);
                 },
               },
-            ],
+            ] : [],
             pageSize: 50,
           }}
         />

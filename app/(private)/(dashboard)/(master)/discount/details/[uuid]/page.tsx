@@ -1,6 +1,6 @@
 "use client";
 
-import KeyValueData from "@/app/(private)/(dashboard)/(master)/customer/[customerId]/keyValueData";
+import KeyValueData from "@/app/components/keyValueData";
 import ContainerCard from "@/app/components/containerCard";
 import { useLoading } from "@/app/services/loadingContext";
 import { getDiscountById } from "@/app/services/allApi";
@@ -17,7 +17,6 @@ import SummaryCard from "@/app/components/summaryCard";
 interface Discount {
     uuid?: string;
     id?: string | number;
-    osa_code?: string;
     item?: {
         id?: number;
         code?: string;
@@ -54,7 +53,7 @@ const backBtnUrl = "/discount";
 
 export default function ViewPage() {
     const params = useParams();
-    const uuid = Array.isArray(params.uuid) ? (params.uuid[0] || '') : (params.uuid as string || '');
+    const uuid = Array.isArray(params?.uuid) ? (params?.uuid[0] || '') : (params?.uuid as string || '');
 
     // state variables
     const [isChecked, setIsChecked] = useState(false);
@@ -104,7 +103,6 @@ export default function ViewPage() {
                             height={400}
                             className="w-full h-[180px] object-cover rounded-md border border-[#E4E4E4] bg-[#E9EAEB]"
                         />
-                        <span className="text-[#181D27] text-[20px] font-semibold">{discount?.osa_code || '-'}</span>
                         <div className="flex justify-center">
                             <StatusBtn isActive={!!discount?.status} />
                         </div>

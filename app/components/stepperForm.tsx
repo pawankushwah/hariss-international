@@ -2,7 +2,7 @@
 
 import { Icon } from "@iconify-icon/react";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLoading } from "../services/loadingContext";
 
@@ -53,6 +53,45 @@ export default function StepperForm({
   const { setLoading } = useLoading();
   const router = useRouter();
 
+  // Keyboard shortcuts: Ctrl+ArrowLeft for Back, Ctrl+ArrowRight for Next
+  useEffect(() => {
+    const isEditableTarget = (el: EventTarget | null) => {
+      const node = el as HTMLElement | null;
+      if (!node) return false;
+      const tag = node.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return true;
+      if ((node as HTMLElement).isContentEditable) return true;
+      return false;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.ctrlKey) return;
+      if (isEditableTarget(e.target)) return; // don't hijack text navigation inside fields
+
+      const isBack = e.key === "ArrowLeft" || e.key === "<";
+      const isNext = e.key === "ArrowRight" || e.key === ">";
+
+      if (isBack) {
+        e.preventDefault();
+        if (isSubmitting) return;
+        if (currentStep === 1) {
+          router.back();
+          return;
+        }
+        onBack && onBack();
+      } else if (isNext) {
+        e.preventDefault();
+        if (isSubmitting) return;
+        if (showNextButton && !isLastStep) {
+          onNext && onNext();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [currentStep, isLastStep, isSubmitting, onBack, onNext, router, showNextButton]);
+
 
   // Returns 'completed', 'active', or 'pending'
   // When going back, the previous step should be 'active' (red) just like the current step
@@ -91,18 +130,19 @@ export default function StepperForm({
     }
   };
 
-  const handleSubmit = async () => { 
-    setIsSubmitting(true); 
-    setLoading(true); 
-    if(onSubmit) 
-      {await onSubmit();
- setLoading(false); 
+  const handleSubmit = async () => {
+    onNext && onNext();
+    setIsSubmitting(true);
+    setLoading(true);
+    if (onSubmit) {
+      await onSubmit();
+      setLoading(false);
 
-  setTimeout(()=>{
-    setIsSubmitting(false); 
-    },2000)
-      }
-   
+      setTimeout(() => {
+        setIsSubmitting(false);
+      }, 2000)
+    }
+
   }
 
   return (
@@ -164,7 +204,7 @@ export default function StepperForm({
           className="px-4 py-2 h-10 rounded-md font-semibold border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors w-full sm:w-auto"
           type="button"
         >
-          { currentStep === 1 ? cancelButtonText : backButtonText}
+          {currentStep === 1 ? cancelButtonText : backButtonText}
         </button>
 
         {showNextButton && !isLastStep && (
@@ -180,17 +220,17 @@ export default function StepperForm({
 
         {showSubmitButton && isLastStep && (
           <div className="w-full sm:w-auto">
-           {isSubmitting? <SidebarBtn
+            {isSubmitting ? <SidebarBtn
               label={isSubmitting ? "Submitting..." : submitButtonText}
               // disabled={isSubmitting}
               disabled
               isActive={true}
               leadingIcon="mdi:check"
               onClick={handleSubmit}
-            />:<SidebarBtn
+            /> : <SidebarBtn
               label={isSubmitting ? "Submitting..." : submitButtonText}
               // disabled={isSubmitting}
-              
+
               isActive={true}
               leadingIcon="mdi:check"
               onClick={handleSubmit}

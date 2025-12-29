@@ -5,11 +5,10 @@ import KeyValueData from "@/app/components/keyValueData";
 import { NewCustomerDetails } from "./page";
 
 export default function Financial({ data }: { data: NewCustomerDetails | null }) {
-    // Map payment_type values to readable names
     const paymentTypeMap: Record<string, string> = {
         "1": "Cash",
-        "2": "Credit",
-        "3": "bill Tobill",
+        "2": "cheque",
+        "3": "Transfer",
     };
 
     const paymentType =
@@ -22,24 +21,14 @@ export default function Financial({ data }: { data: NewCustomerDetails | null })
             <KeyValueData
                 title="Financial Information"
                 data={[
-                    {
-                        key: "Payment Type",
-                        value: paymentType,
-                    },
-                    {
-                        key: "Buyer Type",
-                        value: data?.buyertype === 0 ? "B2B" : "B2C",
-                    },
-                    {
-                        key: "Credit Day",
-                        value: data?.creditday || "-",
-                    },
-                    {
-                        key: "Credit Limit",
-                        value: data?.credit_limit || "-",
-                    },
+                    { key: "Payment Type", value: paymentType },
+                    { key: "Buyer Type", value: data?.buyertype === 0 ? "B2B" : "B2C" },
+                    { key: "Credit Day", value: data?.creditday || "-" },
+                    { key: "Credit Limit", value: data?.credit_limit || "-" },
                 ]}
             />
+
+          
         </ContainerCard>
     );
 }

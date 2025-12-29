@@ -1,9 +1,9 @@
 "use client";
 
-import KeyValueData from "@/app/(private)/(dashboard)/(master)/customer/[customerId]/keyValueData";
+import KeyValueData from "@/app/components/keyValueData";
 import ContainerCard from "@/app/components/containerCard";
 import { useLoading } from "@/app/services/loadingContext";
-import { pricingHeaderById } from "@/app/services/allApi";
+// import { pricingHeaderById } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -61,47 +61,51 @@ interface PricingItem {
   id?: number | string;
   code?: string;
   name?: string;
+  applicable_for?: string;
   start_date?: string;
   end_date?: string;
   description?: number[] | string;
   status?: string;
 }
 
-export default function Overview() {
-  const params = useParams();
-  const uuid = Array.isArray(params.uuid)
-    ? params.uuid[0] || ""
-    : (params.uuid as string) || "";
+interface OverviewProps {
+  pricing: PricingItem | null;
+}
 
-  const [pricing, setpricing] = useState<PricingItem | null>(null);
+export default function Overview({ pricing }: OverviewProps) {
+  const params = useParams();
+  const uuid = Array.isArray(params?.uuid)
+    ? params?.uuid[0] || ""
+    : (params?.uuid as string) || "";
+
   const [isChecked, setIsChecked] = useState(false);
   const { showSnackbar } = useSnackbar();
   const { setLoading } = useLoading();
 
-  useEffect(() => {
-    if (!uuid) return;
+  // useEffect(() => {
+  //   if (!uuid) return;
 
-    const fetchPricingDetails = async () => {
-      setLoading(true);
-      try {
-        const res = await pricingHeaderById(uuid);
-        if (res.error) {
-          showSnackbar(
-            res.data?.message || "Unable to fetch pricing Details",
-            "error"
-          );
-          return;
-        }
-        setpricing(res.data);
-      } catch (error) {
-        showSnackbar("Unable to fetch pricing Details", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
+  //   const fetchPricingDetails = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const res = await pricingHeaderById(uuid);
+  //       if (res.error) {
+  //         showSnackbar(
+  //           res.data?.message || "Unable to fetch pricing Details",
+  //           "error"
+  //         );
+  //         return;
+  //       }
+  //       setpricing(res.data);
+  //     } catch (error) {
+  //       showSnackbar("Unable to fetch pricing Details", "error");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchPricingDetails();
-  }, [uuid, setLoading, showSnackbar]);
+  //   fetchPricingDetails();
+  // }, [uuid, setLoading, showSnackbar]);
 
  return (
     <>
@@ -112,6 +116,7 @@ export default function Overview() {
               data={[
                 { key: "Code", value: pricing?.code || "-" },
                 { key: "Name", value: pricing?.name || "-" },
+                { key: "Pricing Type", value: pricing?.applicable_for || "-" },
                 { key: "Start Date", value: pricing?.start_date || "-" },
                 { key: "End Date", value: pricing?.end_date || "-" },
                 { key: "Description", value: pricing?.description ? getDescriptionLabels(pricing.description) : "-" }

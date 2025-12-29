@@ -8,13 +8,11 @@ import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
 import Table, {
   listReturnType,
-  searchReturnType,
   TableDataType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import {
   countryList,
-  countryListGlobalSearch,
   deleteCountry,
 } from "@/app/services/allApi";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
@@ -40,20 +38,23 @@ const columns = [
   {
     key: "country_code",
     label: "Country Code",
+    showByDefault: true,
     render: (row: TableDataType) => (
       <span className="font-semibold text-[#181D27] text-[14px]">
         {row.country_code}
       </span>
     ),
+    showBydefault: true,
   },
-  { key: "country_name", label: "Country Name" },
-  { key: "currency", label: "Currency" },
+  { key: "country_name", label: "Country Name", showByDefault: true },
+  { key: "currency", label: "Currency", showByDefault: true },
   {
     key: "status",
     label: "Status",
     render: (row: TableDataType) => (
       <StatusBtn isActive={row.status ? true : false} />
     ),
+    showBydefault: true,
   },
 ];
 
@@ -101,29 +102,7 @@ export default function Country() {
     []
   );
 
-  const searchCountries = useCallback(
-    async (
-      searchQuery: string,
-      pageSize: number
-    ): Promise<searchReturnType> => {
-      setLoading(true);
-      const result = await countryListGlobalSearch({
-        query: searchQuery,
-        per_page: pageSize.toString(),
-      });
-      setLoading(false);
-      if (result.error) throw new Error(result.data.message);
-      else {
-        return {
-          data: result.data || [],
-          total: result.pagination.pagination.totalPages || 0,
-          currentPage: result.pagination.pagination.current_page || 0,
-          pageSize: result.pagination.pagination.limit || pageSize,
-        };
-      }
-    },
-    []
-  );
+  // global search removed: use column filters and list API only
 
   useEffect(() => {
     setLoading(true);
@@ -137,41 +116,10 @@ export default function Country() {
           config={{
             api: {
               list: fetchCountries,
-              search: searchCountries,
             },
             header: {
               title: "Country",
-              wholeTableActions: [
-                <div key={0} className="flex gap-[12px] relative">
-                  <DismissibleDropdown
-                    isOpen={showDropdown}
-                    setIsOpen={setShowDropdown}
-                    button={<BorderIconButton icon="ic:sharp-more-vert" />}
-                    dropdown={
-                      <div className="absolute top-[40px] right-0 z-30 w-[226px]">
-                        <CustomDropdown>
-                          {dropdownDataList.map((link, idx) => (
-                            <div
-                              key={idx}
-                              className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
-                            >
-                              <Icon
-                                icon={link.icon}
-                                width={link.iconWidth}
-                                className="text-[#717680]"
-                              />
-                              <span className="text-[#181D27] font-[500] text-[16px]">
-                                {link.label}
-                              </span>
-                            </div>
-                          ))}
-                        </CustomDropdown>
-                      </div>
-                    }
-                  />
-                </div>,
-              ],
-              searchBar: true,
+              searchBar: false,
               columnFilter: true,
               actions: [
                 <SidebarBtn
@@ -184,7 +132,7 @@ export default function Country() {
                 />,
               ],
             },
-            localStorageKey: "country",
+            localStorageKey: "country-table-settings",
             footer: { nextPrevBtn: true, pagination: true },
             columns,
             rowSelection: true,

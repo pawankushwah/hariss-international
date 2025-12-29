@@ -44,8 +44,10 @@ const LoginPage = () => {
                             else {
                                 localStorage.setItem("token", res.data.access_token);
                                 localStorage.setItem("role", res?.data?.user?.role?.id);
+                                localStorage.setItem("userId", res?.data?.user?.id);
+                                localStorage.setItem("country", res?.data?.user?.companies[0]?.selling_currency);
 
-                                router.push("/warehouse");
+                                router.push("/profile");
                             }
                         }}
                     >

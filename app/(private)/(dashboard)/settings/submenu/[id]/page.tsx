@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -34,8 +34,8 @@ const menuSchema = Yup.object().shape({
 
 type submenuIncomingType = {
   name: string,
-  menu: {id: number} | null,
-  parent: {id: number} | null,
+  menu: { id: number } | null,
+  parent: { id: number } | null,
   url: string,
   display_order: number,
   action_type: number,
@@ -59,11 +59,18 @@ export default function AddShelfDisplay() {
   const id = params?.id || "";
   const isEditMode = id !== "add" && id !== "";
   let ID = (isEditMode) ? id : null;
-  if(ID && Array.isArray(ID)){
-      ID = ID[0] || "";
+  if (ID && Array.isArray(ID)) {
+    ID = ID[0] || "";
   }
 
-  const { submenuOptions, menuOptions } = useAllDropdownListData();
+  const { submenuOptions, menuOptions, ensureMenuListLoaded, ensureSubmenuLoaded } = useAllDropdownListData();
+
+  // Load dropdown data
+  useEffect(() => {
+    ensureMenuListLoaded();
+    ensureSubmenuLoaded();
+  }, [ensureMenuListLoaded, ensureSubmenuLoaded]);
+  console.log(useAllDropdownListData());
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const [menu, setMenu] = useState<submenuIncomingType | null>(null);
@@ -71,15 +78,15 @@ export default function AddShelfDisplay() {
   useEffect(() => {
     if (!isEditMode) return;
     const fetchPermission = async () => {
-        setLoading(true);
-        const res = await submenuByUUID(id as string);
-        setLoading(false);
-        if(res.error) {
-            showSnackbar(res.data.message || "Unable to Submenu", "error");
-            throw new Error("Unable to Submenu");
-        } else {
-          setMenu(res.data);
-        }
+      setLoading(true);
+      const res = await submenuByUUID(id as string);
+      setLoading(false);
+      if (res.error) {
+        showSnackbar(res.data.message || "Unable to Submenu", "error");
+        throw new Error("Unable to Submenu");
+      } else {
+        setMenu(res.data);
+      }
     }
     fetchPermission();
   }, []);
@@ -91,8 +98,8 @@ export default function AddShelfDisplay() {
     // If API explicitly returns parent: null => select "None" (value 0).
     parent: menu
       ? (menu.parent === null
-          ? 0
-          : (menu.parent?.id ?? (submenuOptions.length > 0 ? parseInt(submenuOptions[0]?.value) : 0)))
+        ? 0
+        : (menu.parent?.id ?? (submenuOptions.length > 0 ? parseInt(submenuOptions[0]?.value) : 0)))
       : (submenuOptions.length > 0 ? parseInt(submenuOptions[0]?.value) : 0),
     url: menu?.url ?? "",
     display_order: menu?.display_order ?? 0,
@@ -123,7 +130,7 @@ export default function AddShelfDisplay() {
     }
     setLoading(false);
 
-    if(res.error) {
+    if (res.error) {
       showSnackbar(res.data.message, "error");
       throw new Error("Unable to add submenu");
     } else {
@@ -132,7 +139,7 @@ export default function AddShelfDisplay() {
     }
     setSubmitting(false);
   };
-  
+
   return (
     <div className="w-full h-full p-4">
       <div className="flex items-center gap-4 mb-6">
@@ -180,14 +187,10 @@ export default function AddShelfDisplay() {
                     name="menu"
                     value={values.menu.toString()}
                     options={menuOptions}
-                    onChange={(e) => {setFieldValue("menu", e.target.value)}}
+                    onChange={(e) => { setFieldValue("menu", e.target.value) }}
                     error={touched.menu && errors.menu}
                   />
-                  <ErrorMessage
-                    name="menu"
-                    component="span"
-                    className="text-xs text-red-500"
-                  />
+                 
                 </div>
 
                 {/* parent */}
@@ -197,15 +200,11 @@ export default function AddShelfDisplay() {
                     label="Parent"
                     name="parent"
                     value={values.parent.toString()}
-                    options={[{label: "None", value: "0"}, ...submenuOptions]}
+                    options={[{ label: "None", value: "0" }, ...submenuOptions]}
                     onChange={(e) => setFieldValue("parent", e.target.value)}
                     error={touched.parent && errors.parent}
                   />
-                  <ErrorMessage
-                    name="parent"
-                    component="span"
-                    className="text-xs text-red-500"
-                  />
+                  
                 </div>
 
                 {/* url */}
@@ -218,11 +217,7 @@ export default function AddShelfDisplay() {
                     onChange={(e) => setFieldValue("url", e.target.value)}
                     error={touched.url && errors.url}
                   />
-                  <ErrorMessage
-                    name="url"
-                    component="span"
-                    className="text-xs text-red-500"
-                  />
+                  
                 </div>
 
                 {/* display_order */}
@@ -235,11 +230,7 @@ export default function AddShelfDisplay() {
                     onChange={(e) => setFieldValue("display_order", e.target.value)}
                     error={touched.display_order && errors.display_order}
                   />
-                  <ErrorMessage
-                    name="display_order"
-                    component="span"
-                    className="text-xs text-red-500"
-                  />
+                 
                 </div>
 
                 {/* action_type */}
@@ -252,11 +243,7 @@ export default function AddShelfDisplay() {
                     onChange={(e) => setFieldValue("action_type", e.target.value)}
                     error={touched.action_type && errors.action_type}
                   />
-                  <ErrorMessage
-                    name="action_type"
-                    component="span"
-                    className="text-xs text-red-500"
-                  />
+                 
                 </div>
 
                 {/* is_visible */}
@@ -266,32 +253,32 @@ export default function AddShelfDisplay() {
                     label="Is Visible"
                     name="is_visible"
                     options={[
-                      {label: "Yes", value: "1"},
-                      {label: "No", value: "0"},
+                      { label: "Yes", value: "1" },
+                      { label: "No", value: "0" },
                     ]}
                     value={values.is_visible.toString()}
                     onChange={(e) => setFieldValue("is_visible", e.target.value)}
                     error={touched.is_visible && errors.is_visible}
                   />
-                  <ErrorMessage
-                    name="is_visible"
-                    component="span"
-                    className="text-xs text-red-500"
-                  />
+                 
                 </div>
               </div>
             </ContainerCard>
 
             <div className="flex justify-end gap-4 mt-6">
               <button
-                type="reset"
+                // type="reset"
+                type="button"
+                // onClick={() => router.back()}
+                onClick={() => router.push("/settings/submenu")}
+
                 className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Cancel
               </button>
               <SidebarBtn
                 type="submit"
-                label={isSubmitting ? "Submitting..." : (isEditMode ? "Update" : "Add")}
+                label={isEditMode ? (isSubmitting ? "Updating..." : "Update") : (isSubmitting ? "Submitting..." : "Submit")}
                 isActive
                 leadingIcon="mdi:check"
                 disabled={isSubmitting}

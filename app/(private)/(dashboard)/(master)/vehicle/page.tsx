@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Table, { TableDataType, listReturnType, searchReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { vehicleListData, deleteVehicle, vehicleGlobalSearch ,exportVehicleData,vehicleStatusUpdate, downloadFile} from "@/app/services/allApi";
+import { downloadFile, exportVehicleData, vehicleGlobalSearch, vehicleListData, vehicleStatusUpdate } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
-import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import StatusBtn from "@/app/components/statusBtn2";
+import toInternationalNumber from "@/app/(private)/utils/formatNumber";
+import { formatWithPattern } from "@/app/utils/formatDate";
+import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 
 // 🔹 API response type
 interface Vehicle {
@@ -35,13 +37,13 @@ interface DropdownItem {
   iconWidth: number;
 }
 
-const dropdownDataList: DropdownItem[] = [
-  // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
-  // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
-  // { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
-  { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
-  { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
-];
+// const dropdownDataList: DropdownItem[] = [
+//   // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
+//   // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
+//   // { icon: "lucide:printer", label: "Print QR Code", iconWidth: 20 },
+//   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
+//   { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
+// ];
 
 // 🔹 Table columns
 const columns = [
@@ -49,7 +51,7 @@ const columns = [
   { key: "number_plat", label: "Number Plate", render: (row: TableDataType) => row.number_plat || "-" },
   { key: "vehicle_chesis_no", label: "Chassis Number", render: (row: TableDataType) => row.vehicle_chesis_no || "-" },
   { key: "vehicle_brand", label: "Brand", render: (row: TableDataType) => row.vehicle_brand || "-" },
-  { key: "opening_odometer", label: "Odo Meter", render: (row: TableDataType) => row.opening_odometer || "-" },
+  { key: "opening_odometer", label: "Odo Meter", render: (row: TableDataType) => toInternationalNumber(row.opening_odometer, {maximumFractionDigits: 0}) || "-" },
   {
     key: "vehicle_type",
     label: "Vehicle Type",
@@ -64,7 +66,7 @@ const columns = [
       return strValue;
     },
   },
-  { key: "capacity", label: "Capacity", render: (row: TableDataType) => row.capacity || "-" },
+  { key: "capacity", label: "Capacity", render: (row: TableDataType) => toInternationalNumber(row.capacity, {maximumFractionDigits: 0}) || "-" },
   {
     key: "owner_type",
     label: "Owner Type",
@@ -78,61 +80,53 @@ const columns = [
     },
   },
   {
-    key: "depotLocation", label: "Warehouse", render: (data: TableDataType) => {
-      const warehouseObj = typeof data.warehouse === "string"
-        ? JSON.parse(data.warehouse)
-        : data.warehouse;
-      return warehouseObj?.warehouse_name || "-";
-    }, filter: {
-        isFilterable: true,
-        render: (data: TableDataType[]) => {
-            return data.map((item, index) => <div key={item.id+index} className="w-full text-left p-2">{item.warehouse_name}</div>);
+    key: "warehouse", label: "Distributor",render: (row: TableDataType) => {
+        const wh = row.warehouse;
+        let code = "";
+        let name = "";
+        if (wh && typeof wh === "object" && wh !== null) {
+          const w = wh as { warehouse_code?: string; warehouse_name?: string };
+          code = w.warehouse_code ?? "-";
+          name = w.warehouse_name ?? "-";
+        } else if (typeof wh === "string") {
+          name = wh;
         }
-    } },
+
+        
+        return <>{code && name? code +" - "+name : "-"}</>;
+      },
+      
+  },
   // { key: "ownerReference", label: "Owner Reference" },
   // { key: "vehicleRoute", label: "Vehicle Route" },
   { key: "description", label: "Description", render: (row: TableDataType) => row.description || "-" },
-  { key: "valid_from", label: "Valid From", render: (row: TableDataType) => row.valid_from || "-" },
-  { key: "valid_to", label: "Valid To", render: (row: TableDataType) => row.valid_to || "-" },
+  { key: "valid_from", label: "Valid From", render: (row: TableDataType) => formatWithPattern(new Date(row.valid_from), "DD MMM YYYY", "en-GB") || "-" },
+  { key: "valid_to", label: "Valid To", render: (row: TableDataType) => formatWithPattern(new Date(row.valid_to), "DD MMM YYYY", "en-GB") || "-" },
   {
     key: "status",
     label: "Status",
+    // isSortable: true,
     render: (row: TableDataType) => (
-      <StatusBtn isActive={String(row.status) === "1"} />
+      <StatusBtn isActive={String(row.status) > "0"} />
     ),
   },
 ];
 
 export default function VehiclePage() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const { can, permissions } = usePagePermissions();
   const { setLoading } = useLoading();
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<Vehicle | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Refresh table when permissions load
+  useEffect(() => {
+    if (permissions.length > 0) {
+      setRefreshKey((prev) => prev + 1);
+    }
+  }, [permissions]);
+
+  const [threeDotLoading, setThreeDotLoading] = useState<{ [key: string]: boolean }>({ csv: false, xlsx: false });
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
-
-  // ✅ Map vehicles → TableDataType safely
-  const tableData: TableDataType[] = vehicles.map((v) => ({
-    id: String(v.id ?? ""),
-    vehicle_code: v.vehicle_code ?? "-",
-    vehicle_brand: v.vehicle_brand !== undefined ? String(v.vehicle_brand) : "-",
-    number_plat: v.number_plat ?? "-",
-    vehicle_chesis_no: v.vehicle_chesis_no ?? "-",
-    opening_odometer: v.opening_odometer ?? "-",
-    vehicle_type: v.vehicle_type ?? "-",
-    capacity: v.capacity ?? "-",
-    owner_type: v.owner_type ?? "-",
-    warehouse: v.warehouse?.warehouse_name ?? "-",
-    ownerReference: v.owner_reference ?? "-",
-    vehicleRoute: v.vehicle_route ?? "-",
-    description: v.description ?? "-",
-    valid_from: v.valid_from !== undefined ? String(v.valid_from) : "-",
-    valid_to: v.valid_to !== undefined ? String(v.valid_to) : "-",
-    status: v.status === 1 ? "Active" : "Inactive",
-  }));
 
 
   const fetchVehicles = useCallback(
@@ -141,12 +135,12 @@ export default function VehiclePage() {
       pageSize: number = 50
     ): Promise<listReturnType> => {
       try {
-        setLoading(true);
+        // setLoading(true);
         const listRes = await vehicleListData({
           limit: pageSize.toString(),
           page: page.toString(),
         });
-        setLoading(false);
+        // setLoading(false);
         return {
           data: listRes.data || [],
           total: listRes.pagination.totalPages,
@@ -165,81 +159,69 @@ export default function VehiclePage() {
   const searchVehicle = useCallback(
     async (
       searchQuery: string,
+      pageSize: number = 10,
+      columnName?: string,
+      page: number = 1
     ): Promise<searchReturnType> => {
-      setLoading(true);
+      // setLoading(true);
       const result = await vehicleGlobalSearch({
         search: searchQuery,
-        // per_page: pageSize.toString(),
+        per_page: pageSize.toString(),
+        page: page.toString(),
       });
-      setLoading(false);
+      // setLoading(false);
       if (result.error) throw new Error(result.data.message);
-      const pagination = result.pagination && result.pagination.pagination ? result.pagination.pagination : {};
+      const pagination = result.pagination || result.pagination.pagination || {};
       return {
         data: result.data || [],
-        total: pagination.totalPages || 10,
+        total: pagination.totalPages || 1,
         currentPage: pagination.current_page || 1,
-        pageSize: pagination.limit || 10,
+        pageSize: pagination.limit || 1,
       };
     },
     []
   );
 
-           const exportFile = async () => {
-           try {
-             const response = await exportVehicleData({ format: "xlsx"}); 
-             if (response && typeof response === 'object' && response.url) {
-             await downloadFile(response.url);
-               showSnackbar("File downloaded successfully ", "success");
-             } else {
-               showSnackbar("Failed to get download URL", "error");
-             }
-           } catch (error) {
-             showSnackbar("Failed to download warehouse data", "error");
-           } finally {
-           }
-         };
-
-                const statusUpdate = async (ids?: (string | number)[], status: number = 0) => {
-                        try {
-                          if (!ids || ids.length === 0) {
-                            showSnackbar("No warehouses selected", "error");
-                            return;
-                          }
-                          const selectedRowsData: number[] = ids.map((id) => Number(id)).filter((n) => !Number.isNaN(n));
-                          console.log("selectedRowsData", selectedRowsData);
-                          if (selectedRowsData.length === 0) {
-                            showSnackbar("No warehouses selected", "error");
-                            return;
-                          }
-                          await vehicleStatusUpdate({ vehicle_ids: selectedRowsData, status });
-                          setRefreshKey((k) => k + 1);
-                          showSnackbar("Vehicle status updated successfully", "success");
-                        } catch (error) {
-                          showSnackbar("Failed to update vehicle status", "error");
-                        }
-                      };
-                
-  const handleConfirmDelete = async () => {
-    if (!selectedRow?.id) return;
-
-    const res = await deleteVehicle(String(selectedRow.id));
-    if (res.error) {
-      showSnackbar(res.data.message || "Failed to delete vehicle ❌", "error");
-    } else {
-      showSnackbar(res.message || "Vehicle deleted successfully ✅", "success");
-      setRefreshKey(prev => prev+1);
-      setLoading(false);
+  const exportFile = async (format: string) => {
+    try {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+      const response = await exportVehicleData({ format });
+      if (response && typeof response === 'object' && response.url) {
+        await downloadFile(response.url);
+        showSnackbar("File downloaded successfully", "success");
+      } else {
+        showSnackbar("Failed to get download URL", "error");
+        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+      }
+    } catch (error) {
+      showSnackbar("Failed to download vehicle data", "error");
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+    } finally {
     }
-    setShowDeletePopup(false);
-    setSelectedRow(null);
   };
-  useEffect(() => {
-    setLoading(true);
-  }, []);
 
+  const statusUpdate = async (ids?: (string | number)[], status: number = 0) => {
+    try {
+      if (!ids || ids.length === 0) {
+        showSnackbar("No vehicle selected", "error");
+        return;
+      }
+      const selectedRowsData: number[] = ids.map((id) => Number(id)).filter((n) => !Number.isNaN(n));
+      console.log("selectedRowsData", selectedRowsData);
+      if (selectedRowsData.length === 0) {
+        showSnackbar("No vehicle selected", "error");
+        return;
+      }
+      await vehicleStatusUpdate({ vehicle_ids: selectedRowsData, status });
+      setRefreshKey((k) => k + 1);
+      showSnackbar("Vehicle status updated successfully", "success");
+    } catch (error) {
+      showSnackbar("Failed to update vehicle status", "error");
+    }
+  };
   return (
     <>
-    
+
       <div className="flex flex-col h-full">
         <Table
           refreshKey={refreshKey}
@@ -249,69 +231,66 @@ export default function VehiclePage() {
               search: searchVehicle,
             },
             header: {
-               threeDot: [
+              threeDot: [
                 {
-                  icon: "gala:file-document",
+                  icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
                   label: "Export CSV",
                   labelTw: "text-[12px] hidden sm:block",
-                  onClick: exportFile,
+                  onClick: () => !threeDotLoading.csv && exportFile("csv"),
                 },
                 {
-                  icon: "gala:file-document",
+                  icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                   label: "Export Excel",
                   labelTw: "text-[12px] hidden sm:block",
-                  onClick: exportFile,
-                  // You can add onClick for Excel if needed
+                  onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
                 },
                 {
-                                    icon: "lucide:radio",
-                                    label: "Inactive",
-                                    // showOnSelect: true,
-                                    showWhen: (data: TableDataType[], selectedRow?: number[]) => {
-                                        if(!selectedRow || selectedRow.length === 0) return false;
-                                        const status = selectedRow?.map((id) => data[id].status).map(String);
-                                        return status?.includes("1") || false;
-                                    },
-                                    onClick: (data: TableDataType[], selectedRow?: number[]) => {
-                                        const status: string[] = [];
-                                        const ids = selectedRow?.map((id) => {
-                                            const currentStatus = data[id].status;
-                                            if(!status.includes(currentStatus)){
-                                                status.push(currentStatus);
-                                            }
-                                            return data[id].id;
-                                        })
-                                        statusUpdate(ids, Number(0));
-                                    },
-                                },
-                                {
-                                    icon: "lucide:radio",
-                                    label: "Active",
-                                    // showOnSelect: true,
-                                    showWhen: (data: TableDataType[], selectedRow?: number[]) => {
-                                        if(!selectedRow || selectedRow.length === 0) return false;
-                                        const status = selectedRow?.map((id) => data[id].status).map(String);
-                                        return status?.includes("0") || false;
-                                    },
-                                    onClick: (data: TableDataType[], selectedRow?: number[]) => {
-                                        const status: string[] = [];
-                                        const ids = selectedRow?.map((id) => {
-                                            const currentStatus = data[id].status;
-                                            if(!status.includes(currentStatus)){
-                                                status.push(currentStatus);
-                                            }
-                                            return data[id].id;
-                                        })
-                                        statusUpdate(ids, Number(1));
-                                    },
-                                },
+                  icon: "lucide:radio",
+                  label: "Inactive",
+                  // showOnSelect: true,
+                  showWhen: (data: TableDataType[], selectedRow?: number[]) => {
+                    if (!selectedRow || selectedRow.length === 0) return false;
+                    const status = selectedRow?.map((id) => data[id].status).map(String);
+                    return status?.includes("1") || false;
+                  },
+                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                    const status: string[] = [];
+                    const ids = selectedRow?.map((id) => {
+                      const currentStatus = data[id].status;
+                      if (!status.includes(currentStatus)) {
+                        status.push(currentStatus);
+                      }
+                      return data[id].id;
+                    })
+                    statusUpdate(ids, Number(0));
+                  },
+                },
+                {
+                  icon: "lucide:radio",
+                  label: "Active",
+                  // showOnSelect: true,
+                  showWhen: (data: TableDataType[], selectedRow?: number[]) => {
+                    if (!selectedRow || selectedRow.length === 0) return false;
+                    const status = selectedRow?.map((id) => data[id].status).map(String);
+                    return status?.includes("0") || false;
+                  },
+                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                    const status: string[] = [];
+                    const ids = selectedRow?.map((id) => {
+                      const currentStatus = data[id].status;
+                      if (!status.includes(currentStatus)) {
+                        status.push(currentStatus);
+                      }
+                      return data[id].id;
+                    })
+                    statusUpdate(ids, Number(1));
+                  },
+                },
               ],
               title: "Vehicle",
-              
-             
               searchBar: true,
               columnFilter: true,
-              actions: [
+              actions: can("create") ? [
                 <SidebarBtn
                   key={0}
                   href="/vehicle/add"
@@ -320,28 +299,29 @@ export default function VehiclePage() {
                   label="Add"
                   labelTw="hidden sm:block"
                 />,
-              ],
+              ] : [],
             },
             localStorageKey: "vehicle-table",
             footer: { nextPrevBtn: true, pagination: true },
             columns,
             rowSelection: true,
+            showNestedLoading: true,
             rowActions: [
-               {
+              {
                 icon: "lucide:eye",
                 onClick: (data: TableDataType) => {
-                  router.push(`/vehicle/details/${data.id}`);
+                  router.push(`/vehicle/details/${data.uuid}`);
                 },
               },
-              {
+              ...(can("edit") ? [{
                 icon: "lucide:edit-2",
                 onClick: (row: object) => {
                   const r = row as TableDataType;
                   router.push(
-                    `/vehicle/${r.id}`
+                    `/vehicle/${r.uuid}`
                   );
                 },
-              },
+              }] : []),
               // {
               //   icon: "lucide:trash-2",
               //   onClick: (row: object) => {
@@ -357,7 +337,7 @@ export default function VehiclePage() {
       </div>
 
       {/* Delete Popup */}
-      {showDeletePopup && (
+      {/* {showDeletePopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <DeleteConfirmPopup
             title="Delete Vehicle"
@@ -365,7 +345,7 @@ export default function VehiclePage() {
             onConfirm={handleConfirmDelete}
           />
         </div>
-      )}
+      )} */}
     </>
   );
 }

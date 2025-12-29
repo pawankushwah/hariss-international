@@ -8,13 +8,11 @@ import BorderIconButton from "@/app/components/borderIconButton";
 import CustomDropdown from "@/app/components/customDropdown";
 import Table, {
   listReturnType,
-  searchReturnType,
   TableDataType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import {
   getArea,
-  subRegionListGlobalSearch,
   deleteArea,
 } from "@/app/services/allApi";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
@@ -117,34 +115,7 @@ export default function SubRegion() {
     []
   );
 
-  // ✅ Search SubRegions
-  const searchSubRegions = useCallback(
-    async (
-      searchQuery: string,
-      pageSize: number
-    ): Promise<searchReturnType> => {
-      setLoading(true);
-      const result = await subRegionListGlobalSearch({
-        search: searchQuery,
-        per_page: pageSize.toString(),
-      });
-      setLoading(false);
-      if (result.error) throw new Error(result.data.message);
-      else {
-        const pagination =
-          result.pagination && result.pagination.pagination
-            ? result.pagination.pagination
-            : {};
-        return {
-          data: result.data || [],
-          total: pagination.totalPages || 10,
-          currentPage: pagination.current_page || 1,
-          pageSize: pagination.limit || pageSize,
-        };
-      }
-    },
-    []
-  );
+  // global search removed: use column filters and list API only
 
   useEffect(() => {
     setLoading(true);
@@ -158,41 +129,40 @@ export default function SubRegion() {
           config={{
             api: {
               list: fetchSubRegions,
-              search: searchSubRegions,
             },
             header: {
               title: "Area",
-              wholeTableActions: [
-                <div key={0} className="flex gap-[12px] relative">
-                  <DismissibleDropdown
-                    isOpen={showDropdown}
-                    setIsOpen={setShowDropdown}
-                    button={<BorderIconButton icon="ic:sharp-more-vert" />}
-                    dropdown={
-                      <div className="absolute top-[40px] right-0 z-30 w-[226px]">
-                        <CustomDropdown>
-                          {dropdownDataList.map((link, idx) => (
-                            <div
-                              key={idx}
-                              className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
-                            >
-                              <Icon
-                                icon={link.icon}
-                                width={link.iconWidth}
-                                className="text-[#717680]"
-                              />
-                              <span className="text-[#181D27] font-[500] text-[16px]">
-                                {link.label}
-                              </span>
-                            </div>
-                          ))}
-                        </CustomDropdown>
-                      </div>
-                    }
-                  />
-                </div>,
-              ],
-              searchBar: true,
+              // wholeTableActions: [
+              //   <div key={0} className="flex gap-[12px] relative">
+              //     <DismissibleDropdown
+              //       isOpen={showDropdown}
+              //       setIsOpen={setShowDropdown}
+              //       button={<BorderIconButton icon="ic:sharp-more-vert" />}
+              //       dropdown={
+              //         <div className="absolute top-[40px] right-0 z-30 w-[226px]">
+              //           <CustomDropdown>
+              //             {dropdownDataList.map((link, idx) => (
+              //               <div
+              //                 key={idx}
+              //                 className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
+              //               >
+              //                 <Icon
+              //                   icon={link.icon}
+              //                   width={link.iconWidth}
+              //                   className="text-[#717680]"
+              //                 />
+              //                 <span className="text-[#181D27] font-[500] text-[16px]">
+              //                   {link.label}
+              //                 </span>
+              //               </div>
+              //             ))}
+              //           </CustomDropdown>
+              //         </div>
+              //       }
+              //     />
+              //   </div>,
+              // ],
+              searchBar: false,
               columnFilter: true,
               actions: [
                 <SidebarBtn
@@ -206,6 +176,9 @@ export default function SubRegion() {
               ],
             },
             localStorageKey: "area",
+            table: {
+              height: 400,
+            },
             footer: { nextPrevBtn: true, pagination: true },
             columns,
             rowSelection: true,

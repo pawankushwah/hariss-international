@@ -58,10 +58,13 @@ export default function Page() {
     const fetchData = useCallback(
         async (
             page: number = 1,
-            pageSize: number = 50
+            pageSize: number = 100
         ): Promise<listReturnType> => {
             setLoading(true);
-            const listRes = await menuList();
+            const listRes = await menuList({
+                // page: page.toString(),
+                // per_page: pageSize.toString()
+            });
             setLoading(false);
             if (listRes.error) {
                 showSnackbar(
@@ -118,11 +121,11 @@ export default function Page() {
 
     return (
         <>
-            <div className="h-[calc(100%-60px)] pb-[22px]">
+            <div className="flex flex-col h-full">
                 <Table
                     refreshKey={refreshKey}
                     config={{
-                        api: { list: fetchData, search: searchList },
+                        api: { list: fetchData, },
                         header: {
                             title: "Menus",
                             wholeTableActions: [
@@ -166,7 +169,7 @@ export default function Page() {
                                     />
                                 </div>,
                             ],
-                            searchBar: true,
+                            searchBar: false,
                             columnFilter: true,
                             actions: [
                                 <SidebarBtn

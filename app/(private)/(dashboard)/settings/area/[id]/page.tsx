@@ -27,10 +27,10 @@ export default function AddEditSubRegion() {
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const params = useParams(); // 👈 gets route param
-  const { regionOptions } = useAllDropdownListData();
+  const { regionOptions, ensureRegionLoaded } = useAllDropdownListData();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [codeMode, setCodeMode] = useState<'auto'|'manual'>('auto');
+  const [codeMode, setCodeMode] = useState<'auto' | 'manual'>('auto');
   const [prefix, setPrefix] = useState('');
   const codeGeneratedRef = useRef(false);
   const [initialValues, setInitialValues] = useState({
@@ -51,12 +51,15 @@ export default function AddEditSubRegion() {
 
   // ✅ Fetch data if editing, or generate code in add mode
   useEffect(() => {
-    if (params?.id && params.id !== "add") {
+    // Load region dropdown data
+    ensureRegionLoaded();
+
+    if (params?.id && params?.id !== "add") {
       setIsEditMode(true);
       setLoading(true);
       (async () => {
         try {
-          const res = await getAreaById(String(params.id));
+          const res = await getAreaById(String(params?.id));
           if (res?.data) {
             setInitialValues({
               area_code: res.data.area_code || "",
@@ -87,7 +90,7 @@ export default function AddEditSubRegion() {
         }
       })();
     }
-  }, [params?.id]);
+  }, [params?.id, ensureRegionLoaded]);
 
   // ✅ Handle form submit
   const handleSubmit = async (
@@ -102,12 +105,12 @@ export default function AddEditSubRegion() {
 
     let res;
     if (isEditMode && params?.id !== "add") {
-      res = await updateAreaById(String(params.id), payload);
+      res = await updateAreaById(String(params?.id), payload);
     } else {
       res = await addArea(payload);
       try {
         await saveFinalCode({ reserved_code: values.area_code, model_name: "sub_region" });
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (res.error) {
@@ -115,9 +118,9 @@ export default function AddEditSubRegion() {
     } else {
       showSnackbar(
         res.message ||
-          (isEditMode
-            ? "Area Updated Successfully"
-            : "Area Created Successfully"),
+        (isEditMode
+          ? "Area Updated Successfully"
+          : "Area Created Successfully"),
         "success"
       );
       router.push("/settings/area");
@@ -153,7 +156,7 @@ export default function AddEditSubRegion() {
         validationSchema={SubRegionSchema}
         onSubmit={handleSubmit}
       >
-        {({ handleSubmit, values, setFieldValue, errors, touched }) => (
+        {({ handleSubmit, values, setFieldValue, errors, touched, isSubmitting }) => (
           <Form onSubmit={handleSubmit}>
             <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
               <div className="p-6">
@@ -163,7 +166,7 @@ export default function AddEditSubRegion() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Area Code */}
-                  <div className="flex items-start gap-2 max-w-[406px]">
+                  <div>
                     <div className="w-full">
                       <InputFields
                         required
@@ -179,11 +182,11 @@ export default function AddEditSubRegion() {
                         className="text-xs text-red-500"
                       />
                     </div>
-                    {!isEditMode && (
+                    {/* {!isEditMode && (
                       <>
                         <IconButton
                           bgClass="white"
-                           className="  cursor-pointer text-[#252B37] pt-12"
+                          className="  cursor-pointer text-[#252B37] pt-12"
                           icon="mi:settings"
                           onClick={() => setIsOpen(true)}
                         />
@@ -203,7 +206,7 @@ export default function AddEditSubRegion() {
                           }}
                         />
                       </>
-                    )}
+                    )} */}
                   </div>
 
                   {/* Area Name */}
@@ -218,6 +221,24 @@ export default function AddEditSubRegion() {
                     />
                     <ErrorMessage
                       name="area_name"
+                      component="span"
+                      className="text-xs text-red-500"
+                    />
+                  </div>
+
+                  <div>
+                    <InputFields
+                      required
+                      label="Region"
+                      name="region_id"
+                      value={values.region_id}
+                      options={regionOptions}
+                      onChange={(e) =>
+                        setFieldValue("region_id", e.target.value)
+                      }
+                    />
+                    <ErrorMessage
+                      name="region_id"
                       component="span"
                       className="text-xs text-red-500"
                     />
@@ -245,23 +266,7 @@ export default function AddEditSubRegion() {
                   </div>
 
                   {/* Region */}
-                  <div>
-                    <InputFields
-                      required
-                      label="Region"
-                      name="region_id"
-                      value={values.region_id}
-                      options={regionOptions}
-                      onChange={(e) =>
-                        setFieldValue("region_id", e.target.value)
-                      }
-                    />
-                    <ErrorMessage
-                      name="region_id"
-                      component="span"
-                      className="text-xs text-red-500"
-                    />
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -269,16 +274,20 @@ export default function AddEditSubRegion() {
             {/* Buttons */}
             <div className="flex justify-end gap-4 mt-6 pr-0">
               <button
+                onClick={() => router.push("/settings/area")}
+
                 type="reset"
                 className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Cancel
               </button>
               <SidebarBtn
-                label={isEditMode ? "Update" : "Submit"}
+                label={isEditMode ? (isSubmitting ? "Updating.." : "Update") : (isSubmitting ? "Submitting.." : "Submit")}
                 isActive={true}
                 leadingIcon="mdi:check"
                 type="submit"
+                disabled={isSubmitting}
+
               />
             </div>
           </Form>

@@ -3,14 +3,33 @@ import { Icon } from "@iconify-icon/react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Toggle from "@/app/components/toggle";
 import Loading from "@/app/components/Loading";
+import Skeleton from "@mui/material/Skeleton";
 
 // Add your API function import
 import { getRouteVisitDetails } from "@/app/services/allApi";
 
+const TableRowSkeleton = () => (
+  <tr className="border-b-[1px] border-[#E9EAEB]">
+    <td className="px-4 py-3 sticky left-0 bg-white z-10 border-r border-[#E9EAEB]">
+      <div className="flex items-center gap-3">
+        <Skeleton variant="circular" width={32} height={32} />
+        <Skeleton variant="text" width={150} height={20} />
+      </div>
+    </td>
+    {Array.from({ length: 7 }).map((_, i) => (
+      <td key={i} className="px-4 py-3 border-l border-[#E9EAEB]">
+        <div className="flex justify-center">
+          <Skeleton variant="circular" width={24} height={24} />
+        </div>
+      </td>
+    ))}
+  </tr>
+);
+
 const transformCustomerList = (apiResponse: any[]) => {
   return apiResponse.map((item) => ({
     id: item.id,
-    name: `${item.osa_code} - ${item.owner_name}`,
+    name: `${item.osa_code} - ${item.name.toUpperCase()}`,
   }));
 };
 
@@ -27,6 +46,9 @@ type TableProps = {
   loading?: boolean;
   editMode?: boolean;
   visitUuid?: string;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 };
 
 export default function Table({
@@ -36,16 +58,50 @@ export default function Table({
   loading = false,
   editMode = false,
   visitUuid = "",
+  hasMore = false,
+  onLoadMore,
+  isLoadingMore = false,
 }: TableProps) {
   const data = transformCustomerList(customers);
   const isInitialMount = useRef(true);
   const [internalLoading, setInternalLoading] = useState(false);
   const hasFetchedData = useRef(false);
+  const observerRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ Track pre-filled customer IDs and their days from API
-  const [prefilledCustomerData, setPrefilledCustomerData] = useState<
-    Record<number, string[]>
-  >({});
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!onLoadMore || !hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          console.log("Observer triggered - loading more...");
+          onLoadMore();
+        }
+      },
+      { 
+        root: scrollContainerRef.current,
+        threshold: 0.0,
+        rootMargin: '300px'
+      }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [onLoadMore, hasMore, isLoadingMore]);
+
+  // ✅ Track pre-filled customer IDs from API
+  const [prefilledCustomerIds, setPrefilledCustomerIds] = useState<Set<number>>(
+    new Set()
+  );
 
   const [rowStates, setRowStates] = useState<
     Record<
@@ -72,8 +128,12 @@ export default function Table({
     Sunday: false,
   });
 
-  // ✅ Show ALL customers, not filtered
-  const displayData = data;
+  // ✅ Filtered data - only show customers that are in both current customer_type AND pre-filled data
+  // Added bypass for dummy data (IDs >= 5000) to allow testing infinite scroll in edit mode
+  const filteredData = data.filter(
+    (customer) => !editMode || prefilledCustomerIds.has(customer.id) || customer.id >= 5000
+  );
+  console.log(filteredData,"filteredData")
 
   // ✅ Load visit data for editing
   const loadVisitData = useCallback(async (uuid: string) => {
@@ -107,15 +167,12 @@ export default function Table({
           const initialRowStates: typeof rowStates = {};
           initialRowStates[existing.customer.id] = daysMap;
 
-          // ✅ Store pre-filled customer data with days
-          const prefilledData: Record<number, string[]> = {};
-          prefilledData[existing.customer.id] = existing.days || [];
-
           setRowStates(initialRowStates);
-          setPrefilledCustomerData(prefilledData);
+          // ✅ Store the pre-filled customer ID
+          setPrefilledCustomerIds(new Set([existing.customer.id]));
           hasFetchedData.current = true;
           console.log("Table initialized with schedule:", initialRowStates);
-          console.log("Prefilled customer data:", prefilledData);
+          console.log("Prefilled customer IDs:", [existing.customer.id]);
         } else {
           console.log("No customer data found in API response");
         }
@@ -150,7 +207,7 @@ export default function Table({
     ) {
       console.log("Using initialSchedules:", initialSchedules);
       const initialRowStates: typeof rowStates = {};
-      const prefilledData: Record<number, string[]> = {};
+      const prefilledIds = new Set<number>();
 
       initialSchedules.forEach((schedule) => {
         const daysMap = {
@@ -164,19 +221,19 @@ export default function Table({
         };
 
         initialRowStates[schedule.customer_id] = daysMap;
-        prefilledData[schedule.customer_id] = schedule.days;
+        prefilledIds.add(schedule.customer_id);
       });
 
       setRowStates(initialRowStates);
-      setPrefilledCustomerData(prefilledData);
+      setPrefilledCustomerIds(prefilledIds);
       console.log("Initialized with initialSchedules:", initialRowStates);
-      console.log("Prefilled customer data:", prefilledData);
+      console.log("Prefilled customer IDs:", Array.from(prefilledIds));
     }
 
     isInitialMount.current = false;
   }, [initialSchedules, editMode, visitUuid, loadVisitData]);
 
-  // Update parent when rowStates change - SUPPORT MULTIPLE CUSTOMERS
+  // Update parent when rowStates change - DEBOUNCED VERSION
   useEffect(() => {
     if (Object.keys(rowStates).length > 0) {
       console.log("Row states updated, notifying parent:", rowStates);
@@ -185,16 +242,23 @@ export default function Table({
   }, [rowStates, setCustomerSchedules]);
 
   // Reset row states when customers change - ONLY in create mode
-  const previousCustomers = useRef(customers);
-  useEffect(() => {
-    if (!editMode && customers.length > 0) {
-      const customersChanged =
-        JSON.stringify(previousCustomers.current) !== JSON.stringify(customers);
+  const previousCustomersLength = useRef(customers.length);
+  const previousFirstCustomerId = useRef<number | null>(null);
 
-      if (customersChanged) {
-        console.log("Customers changed in create mode, resetting table states");
+  useEffect(() => {
+    if (!editMode) {
+      const currLength = customers.length;
+      const firstId = customers.length > 0 ? customers[0].id : null;
+
+      const isFreshFetch = currLength > 0 && (
+        (previousFirstCustomerId.current !== null && firstId !== previousFirstCustomerId.current) ||
+        (currLength < previousCustomersLength.current)
+      );
+
+      if (isFreshFetch) {
+        console.log("Fresh customer list detected, resetting table states");
         setRowStates({});
-        setPrefilledCustomerData({}); // Reset pre-filled data in create mode
+        setPrefilledCustomerIds(new Set());
         setColumnSelection({
           Monday: false,
           Tuesday: false,
@@ -204,8 +268,9 @@ export default function Table({
           Saturday: false,
           Sunday: false,
         });
-        previousCustomers.current = customers;
       }
+      previousCustomersLength.current = currLength;
+      previousFirstCustomerId.current = firstId;
     }
   }, [customers, editMode]);
 
@@ -238,7 +303,7 @@ export default function Table({
     });
   };
 
-  // Handle column selection - UPDATED to use displayData (all customers)
+  // Handle column selection - UPDATED to use filteredData
   const handleColumnSelect = (day: keyof typeof columnSelection) => {
     const newColumnState = !columnSelection[day];
 
@@ -252,8 +317,8 @@ export default function Table({
     setRowStates((prev) => {
       const updatedStates = { ...prev };
 
-      // ✅ Use displayData (ALL customers) instead of filteredData
-      displayData.forEach((customer) => {
+      // ✅ Use filteredData instead of data
+      filteredData.forEach((customer) => {
         const currentState = updatedStates[customer.id] || {
           Monday: false,
           Tuesday: false,
@@ -308,26 +373,26 @@ export default function Table({
     });
   };
 
-  // Check if all toggles in a column are selected - UPDATED to use displayData
+  // Check if all toggles in a column are selected - UPDATED to use filteredData
   const isColumnFullySelected = (day: keyof typeof columnSelection) => {
-    if (displayData.length === 0) return false;
+    if (filteredData.length === 0) return false;
 
-    return displayData.every((customer) => {
+    return filteredData.every((customer) => {
       const customerState = rowStates[customer.id];
       return customerState?.[day] === true;
     });
   };
 
-  // Check if some toggles in a column are selected - UPDATED to use displayData
+  // Check if some toggles in a column are selected - UPDATED to use filteredData
   const isColumnPartiallySelected = (day: keyof typeof columnSelection) => {
-    if (displayData.length === 0) return false;
+    if (filteredData.length === 0) return false;
 
-    const hasTrue = displayData.some((customer) => {
+    const hasTrue = filteredData.some((customer) => {
       const customerState = rowStates[customer.id];
       return customerState?.[day] === true;
     });
 
-    const hasFalse = displayData.some((customer) => {
+    const hasFalse = filteredData.some((customer) => {
       const customerState = rowStates[customer.id];
       return customerState?.[day] === false;
     });
@@ -354,33 +419,28 @@ export default function Table({
     return hasTrue && hasFalse;
   };
 
-  // Check if a customer has pre-filled data (for visual indication)
-  const hasPrefilledData = (customerId: number) => {
-    return (
-      prefilledCustomerData[customerId] &&
-      prefilledCustomerData[customerId].length > 0
-    );
-  };
-
   // Show loading when customers are being fetched or internal loading
-  if (loading || internalLoading) {
-    return (
-      <div className="w-full flex flex-col overflow-hidden">
-        <div className="rounded-lg border border-[#E9EAEB] overflow-hidden">
-          <div className="flex items-center justify-center py-12">
-            <Loading />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (loading || internalLoading) {
+  //   return (
+  //     <div className="w-full flex flex-col overflow-hidden">
+  //       <div className="rounded-lg border border-[#E9EAEB] overflow-hidden">
+  //         <div className="flex items-center justify-center py-12">
+  //           <Loading />
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="w-full flex flex-col overflow-hidden">
       <div className="rounded-lg border border-[#E9EAEB] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-max">
-            <thead className="text-[12px] bg-[#FAFAFA] text-[#535862] sticky top-0 z-20">
+        <div 
+          ref={scrollContainerRef}
+          className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-gray-300"
+        >
+          <table className="w-full min-w-max border-collapse">
+            <thead className="text-[12px] bg-[#FAFAFA] text-[#535862] sticky top-0 z-30">
               <tr className="border-b-[1px] border-[#E9EAEB]">
                 <th className="px-4 py-3 font-[500] text-left min-w-[220px] sticky left-0 bg-[#FAFAFA] z-10 border-r border-[#E9EAEB]">
                   <div className="flex items-center gap-2">
@@ -401,10 +461,14 @@ export default function Table({
                       <div className="flex flex-col items-center justify-center gap-2">
                         <span className="text-xs">{day}</span>
                         <div className="flex items-center">
-                          <Toggle
-                            isChecked={isFullySelected}
-                            onChange={() => handleColumnSelect(dayKey)}
-                          />
+                          {!editMode && (
+                            <Toggle
+                              isChecked={isFullySelected}
+                              onChange={() => handleColumnSelect(dayKey)}
+                            // ✅ Disable column toggle if no filtered customers
+                            // disabled={filteredData.length === 0}
+                            />
+                          )}
                         </div>
                       </div>
                     </th>
@@ -414,80 +478,93 @@ export default function Table({
             </thead>
 
             <tbody className="text-[14px] bg-white text-[#535862]">
-              {displayData.map((row) => {
-                const state = rowStates[row.id] || {
-                  Monday: false,
-                  Tuesday: false,
-                  Wednesday: false,
-                  Thursday: false,
-                  Friday: false,
-                  Saturday: false,
-                  Sunday: false,
-                };
+              {(loading || internalLoading) ? (
+                Array.from({ length: 10 }).map((_, i) => <TableRowSkeleton key={`init-${i}`} />)
+              ) : (
+                <>
+                  {filteredData.map((row) => {
+                    const state = rowStates[row.id] || {
+                      Monday: false,
+                      Tuesday: false,
+                      Wednesday: false,
+                      Thursday: false,
+                      Friday: false,
+                      Saturday: false,
+                      Sunday: false,
+                    };
 
-                const isRowSelected = isRowFullySelected(row.id);
-                const isRowPartial = isRowPartiallySelected(row.id);
-                const isPrefilled = hasPrefilledData(row.id);
+                    const isRowSelected = isRowFullySelected(row.id);
 
-                return (
-                  <tr
-                    className={`border-b-[1px] border-[#E9EAEB] hover:bg-gray-50 ${
-                      isPrefilled ? "bg-blue-50" : ""
-                    }`}
-                    key={row.id}
-                  >
-                    <td className="px-4 py-3 text-left font-[500] sticky left-0 bg-white z-10 border-r border-[#E9EAEB] min-w-[220px]">
-                      <div className="flex items-center gap-3">
-                        <Toggle
-                          isChecked={isRowSelected}
-                          onChange={() => handleRowSelect(row.id)}
-                        />
-                        <span
-                          className={`truncate max-w-[160px] ${
-                            isPrefilled ? "font-semibold text-blue-700" : ""
-                          }`}
-                          title={row.name}
-                        >
-                          {row.name}
-                          {isPrefilled && (
-                            <span className="text-xs text-blue-500 ml-1">
-                              (pre-filled)
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    </td>
-
-                    {Object.entries(state).map(([day, isChecked]) => (
-                      <td
-                        key={day}
-                        className={`px-4 py-3 text-center border-l border-[#E9EAEB] min-w-[120px] ${
-                          isPrefilled && isChecked ? "bg-green-50" : ""
-                        }`}
+                    return (
+                      <tr
+                        className="border-b-[1px] border-[#E9EAEB] hover:bg-gray-50"
+                        key={row.id}
                       >
-                        <div className="flex justify-center">
-                          <Toggle
-                            isChecked={isChecked}
-                            onChange={() =>
-                              handleToggle(
-                                row.id,
-                                day as keyof (typeof rowStates)[number]
-                              )
-                            }
-                          />
-                        </div>
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
+                        <td className="px-4 py-3 text-left font-[500] sticky left-0 bg-white z-10 border-r border-[#E9EAEB] min-w-[220px]">
+                          <div className="flex items-center gap-3">
+                            <Toggle
+                              isChecked={isRowSelected}
+                              onChange={() => handleRowSelect(row.id)}
+                            />
+                            <span
+                              className="truncate max-w-[100%]"
+                              title={row.name}
+                            >
+                              {row.name}
+                            </span>
+                          </div>
+                        </td>
+
+                        {Object.entries(state).map(([day, isChecked]) => (
+                          <td
+                            key={day}
+                            className="px-4 py-3 text-center border-l border-[#E9EAEB] min-w-[120px]"
+                          >
+                            <div className="flex justify-center">
+                              <Toggle
+                                isChecked={isChecked}
+                                onChange={() =>
+                                  handleToggle(
+                                    row.id,
+                                    day as keyof (typeof rowStates)[number]
+                                  )
+                                }
+                              />
+                            </div>
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                  {isLoadingMore && (
+                    Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={`more-${i}`} />)
+                  )}
+                </>
+              )}
             </tbody>
           </table>
+
+          {/* Infinite Scroll Observer */}
+          {hasMore && (
+            <div ref={observerRef} className="w-full flex justify-center py-2">
+              <div className="h-1" />
+            </div>
+          )}
         </div>
 
-        {displayData.length === 0 && (
+        {!loading && !internalLoading && filteredData.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            No customers found
+            {editMode ? (
+              <div>
+                <p>No matching customers found for edit</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  The pre-filled customer is not available in the current
+                  customer type selection.
+                </p>
+              </div>
+            ) : (
+              "No customers found"
+            )}
           </div>
         )}
       </div>

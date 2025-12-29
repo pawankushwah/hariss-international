@@ -1,4 +1,4 @@
-import { Params } from "next/dist/server/request/params";
+﻿import { Params } from "next/dist/server/request/params";
 import { API, handleError } from "./allApi";
 
 export const exportServiceTypes = async (params?: Params) => {
@@ -261,7 +261,7 @@ export const chillerRequestGenerateCode = async (params: Params) => {
 
 export const chillerRequestGlobalSearch = async (params: Params) => {
   try {
-    const res = await API.get(`/api/assets/chiller-request/global-search`, {
+    const res = await API.get(`/api/assets/chiller-request/global_search`, {
       params: params,
     });
     return res.data;
@@ -378,5 +378,507 @@ export const deleteChillerRequest = async (uuid: string) => {
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
+  }
+};
+
+
+
+// export const getWarehouseStockDetails = async (id: string) => {
+//   try {
+//     const res = await API.get(`/api/settings/warehouse-stocks/${id}/stock-details`);
+
+//     return res.data;
+//   } catch (error: unknown) {
+//     return handleError(error);
+//   }
+// };
+
+
+export const acfList = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/chiller-request/filter`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const addAcf = async (body: object) => {
+  try {
+    const res = await API.post(`/api/assets/iro/add`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const iroList = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/iro/count`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const iroViewList = async (id: string) => {
+  try {
+    const res = await API.get(`/api/assets/iro/${id}`);
+    console.log(res, "ABCD");
+    return res.data?.count?.headers;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const bulkTransferList = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/bulk-transfer/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const addBulkTransfer = async (body: object) => {
+  try {
+    const res = await API.post(`/api/assets/bulk-transfer/add`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const addAllocate = async (body: object) => {
+  try {
+    const res = await API.post(`/api/assets/bulk-transfer/allocate-assets`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const irList = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/ir/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const callRegisterList = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/call-register/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const addCallRegister = async (body: object): Promise<any> => {
+  try {
+    const res = await API.post(`/api/assets/call-register/add`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const callRegisterGlobalSearch = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/chiller/get-chiller`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const callRegisterByUUID = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/call-register/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const updateCallRegister = async (uuid: string, body: chiller) => {
+  try {
+    const res = await API.put(`/api/assets/call-register/${uuid}`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const getBtrByRegion = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/bulk-transfer/get-BTR`,
+      { params }
+
+    );
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getWarehouseChillers = async (btrId: string, params = {}) => {
+  if (!btrId) throw new Error("BTR ID is required");
+
+  const res = await API.get(
+    `/api/assets/bulk-transfer/gteChillerByBTR/${btrId}`, // ✅ URL FIXED
+    {
+      headers: {
+        id: String(btrId), // ✅ HEADER FIXED
+      },
+      params,
+    }
+  );
+  // console.log(res)
+  return res.data;
+};
+
+
+
+
+
+
+
+
+// export const getStockOfWarehouse = async (id?: string, params?: Params) => {
+//   try {
+//     const res = await API.get(`/api/settings/warehouse-stocks/warehouseStockInfo/${id}`, { params });
+//     return res.data;
+//   } catch (error: unknown) {
+//     return handleError(error);
+//   }
+// };
+
+export const BulkTransferByUUID = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/bulk-transfer/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getModelNumbers = async (params?: any) => {
+  try {
+    const res = await API.get(`/api/assets/bulk-transfer/model-numbers`,
+      { params }
+
+    );
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const getModelStock = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/bulk-transfer/model-stock`,
+      { params }
+
+    );
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+// Installation Report
+export const irReportList = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/ir/get-ir-list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+
+export const addInstallationReport = async (body: object) => {
+  try {
+    const res = await API.post(`/api/assets/ir/add`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const getIROList = async (params?: any) => {
+  try {
+    const res = await API.get(`/api/assets/ir/iro`,
+      { params }
+
+    );
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+
+export const getIROTable = async (iroId: string, warehouseId: string, params = {}) => {
+  if (!iroId) throw new Error("IRO ID is required");
+  if (!warehouseId) throw new Error("Warehouse ID is required");
+
+  try {
+    const url = `/api/assets/iro/${iroId}/${warehouseId}`;
+    const res = await API.get(url, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const getTechicianList = async (params?: any) => {
+  try {
+    const res = await API.get(`/api/assets/ir/salesman`,
+      { params }
+    );
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+
+
+export const irServiceTerrtList = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/assets/service-territory/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+
+export const addServiceTerritory = async (body: object) => {
+  try {
+    const res = await API.post(`/api/assets/service-territory/add`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const serviceTerritoryByUUID = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/service-territory/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const updateServiceTerritory = async (uuid: string, body: object) => {
+  try {
+    const res = await API.put(`/api/assets/service-territory/${uuid}`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const assetsStatusList = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/settings/fridge-status/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+// export const CallRegisterByUUID = async (uuid: string, params?: Params) => {
+//   try {
+//     const res = await API.get(`/api/assets/call-register/${uuid}`, {
+//       params: params,
+//     });
+//     return res.data;
+//   } catch (error: unknown) {
+//     return handleError(error);
+//   }
+// };
+
+// export const updateServiceTerritory = async (uuid: string, body: object) => {
+//   try {
+//     const res = await API.put(`/api/assets/service-territory/${uuid}`, body);
+//     return res.data;
+//   } catch (error: unknown) {
+//     return handleError(error);
+//   }
+// };
+
+
+export const ServiceVisitList = async (params: any) => {
+  try {
+    const res = await API.get(`/api/assets/service-visit/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const serviceVisitByUUID = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/service-visit/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+export const ServiceTerritoryByUUID = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/service-territory/getViewData/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const serviceTerritoryExport = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/service-territory/export`, {
+      params: { uuid, ...params }
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const serviceTerritoryExportAll = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/service-territory/export`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const inventoryPostByStock = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/merchendisher/stockinstore/posts/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const shelfDisplayGlobalSearch = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/merchendisher/shelves/global-search`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const assetsMasterExport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/chiller/export`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const fridgeUpdateCustomerList = async (params: any) => {
+  try {
+    const res = await API.get(`/api/assets/fridge-customer-update/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const fridgeUpdateCustomerByUUID = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/fridge-customer-update/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const updateFridgeUpdateCustomer = async (
+  uuid: string,
+  formData: FormData
+) => {
+  try {
+    const response = await APIFormData.post(
+      `/api/assets/fridge-customer-update/update/${uuid}`,
+      formData
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof (error as { response?: unknown })?.response === "object"
+    ) {
+      throw (error as { response?: { data?: unknown } }).response?.data || error;
+    }
+    throw error;
   }
 };

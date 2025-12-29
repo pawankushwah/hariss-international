@@ -49,12 +49,12 @@ export default function AddEditDiscountType() {
   const codeGeneratedRef = useRef(false);
 
   useEffect(() => {
-    if (params?.id && params.id !== "add") {
+    if (params?.id && params?.id !== "add") {
       setIsEditMode(true);
       setLoading(true);
       (async () => {
         try {
-          const res = await getDiscountTypeById(String(params.id));
+          const res = await getDiscountTypeById(String(params?.id));
           if (res?.data) {
             setInitialValues({
               discount_type_code: res.data.discount_code || "",
@@ -99,7 +99,7 @@ export default function AddEditDiscountType() {
     try {
       let res;
       if (isEditMode && params?.id !== "add") {
-        res = await updateDiscountType(String(params.id), payload);
+        res = await updateDiscountType(String(params?.id), payload);
       } else {
         res = await createDiscountType(payload);
       }
@@ -235,13 +235,15 @@ export default function AddEditDiscountType() {
             </div>
             <div className="flex justify-end gap-4 mt-6 pr-0">
               <button
-                type="reset"
+                // type="reset"
+              onClick={() => router.push("/settings/discountType")}
+type="button"
                 className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Cancel
               </button>
               <SidebarBtn
-                label={isEditMode ? "Update" : "Submit"}
+                label={isEditMode ? (isSubmitting?"Updating...":"Update") :( isSubmitting?"Submitting...":"Submit")}
                 isActive={!isSubmitting}
                 leadingIcon="mdi:check"
                 type="submit"

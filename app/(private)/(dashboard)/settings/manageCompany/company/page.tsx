@@ -1,19 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 
 import Table, {
     listReturnType,
     TableDataType,
-    searchReturnType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import {
-    companyList,
-    companyListGlobalSearch,
-} from "@/app/services/allApi";
+import { companyList } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
 import StatusBtn from "@/app/components/statusBtn2";
@@ -34,12 +29,12 @@ interface Company {
         selling_currency?: string;
         purchase_currency?: string;
     };
-    region?: { id?: number; region_name?: string; region_code?: string };
-    sub_region?: {
-        id?: number;
-        subregion_name?: string;
-        subregion_code?: string;
-    };
+    // region?: { id?: number; region_name?: string; region_code?: string };
+    // sub_region?: {
+    //     id?: number;
+    //     subregion_name?: string;
+    //     subregion_code?: string;
+    // };
     selling_currency?: string;
     purchase_currency?: string;
     toll_free_no?: string;
@@ -50,7 +45,7 @@ interface Company {
     town?: string;
     street?: string;
     landmark?: string;
-    service_type?: string;
+    // service_type?: string;
     status?: string | number;
 }
 
@@ -62,41 +57,12 @@ const dropdownDataList = [
 
 // 🔹 Table columns
 const columns = [
-    { key: "company_code", label: "Company Code"},
-    { key: "company_name", label: "Company Name"},
+    { key: "company_name", label: "Company Name", render: (row: TableDataType) => row.company_code + " - " + row.company_name || "-" },
     { key: "company_type", label: "Company Type"},
-    { key: "email", label: "Email"},
-    { key: "website", label: "Website"},
+    { key: "website", label: "Website", render: (row: TableDataType) => <span className="lowercase">{row.website || "-"}</span>},
+    { key: "email", label: "Email", render: (row: TableDataType) => <span className="lowercase">{row.email || "-"}</span>},
     { key: "toll_free_no", label: "Toll Free No"},
     { key: "primary_contact", label: "Primary Contact"},
-    {
-        key: 'region_name',
-        label: 'Region',
-        render: (data: TableDataType) => {
-                const warehouseObj = typeof data.region === "string"
-                    ? JSON.parse(data.region)
-                    : data.region;
-                return warehouseObj?.region_name || "-";
-            }, filter: {
-        isFilterable: true,
-        render: (data: TableDataType[]) => {
-            return data.map((item, index) => <div key={item.id+index} className="w-full text-left p-2">{item.region_name}</div>);
-        }
-    } },
-    {
-        key: 'subregion_name',
-        label: 'Area',
-        render: (row: TableDataType) => {
-                const warehouseObj = typeof row.sub_region === "string"
-                    ? JSON.parse(row.sub_region)
-                    : row.sub_region;
-                return warehouseObj?.subregion_name || "-";
-            }, filter: {
-        isFilterable: true,
-        render: (data: TableDataType[]) => {
-            return data.map((item, index) => <div key={item.id+index} className="w-full text-left p-2">{item.subregion_name}</div>);
-        }
-    } },
     { key: "address", label: "Address"},
     {
         key: 'country_name',
@@ -124,10 +90,10 @@ const columns = [
     { key: "selling_currency", label: "Selling Currency"},
     { key: "vat", label: "VAT"},
     { key: "module_access", label: "Module Access"},
-    { key: "service_type", label: "Service Type"},
     {
         key: "status",
         label: "Status",
+        isSortable: true,
         render: (row: TableDataType) => (
             <StatusBtn isActive={row.status === "1" ? true : false} />
         )},
@@ -168,40 +134,7 @@ const CompanyPage = () => {
         [showSnackbar, setLoading]
     );
 
-    const searchCompanies = useCallback(
-            async (
-                searchQuery: string,
-                pageSize: number = 5,
-                columnName?: string
-            ): Promise<searchReturnType> => {
-                setLoading(true);
-                let result;
-                if (columnName && columnName !== "") {
-                    result = await companyList({
-                        per_page: pageSize.toString(),
-                        [columnName]: searchQuery
-                    });
-                } else {
-                    result = await companyListGlobalSearch({
-                        query: searchQuery,
-                        per_page: pageSize.toString(),
-                    });
-                }
-                setLoading(false);
-    
-                if (result.error) {
-                    throw new Error(result.data?.message || "Search failed");
-                }
-    
-                return {
-                    data: result.data || [],
-                    currentPage: result?.pagination?.current_page || 1,
-                    pageSize: result?.pagination?.per_page || pageSize,
-                    total: result?.pagination?.last_page || 1,
-                };
-            },
-            [setLoading]
-        );
+    // global search removed - using column filters and list API only
 
 
     return (
@@ -214,11 +147,11 @@ const CompanyPage = () => {
                         
                         api: {
                             list: fetchCompanies,
-                            search: searchCompanies,
                         },
                         header: {
                             title: "Company",
-                            searchBar: true,
+                            // disable global search bar (column filters remain)
+                            searchBar: false,
                             columnFilter: true,
                             actions: [
                                 <SidebarBtn

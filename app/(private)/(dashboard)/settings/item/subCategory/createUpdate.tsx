@@ -26,11 +26,12 @@ export default function CreateUpdate({
     onRefresh: () => void
 }) {
     const { showSnackbar } = useSnackbar();
-    const { itemCategory } = useAllDropdownListData();
+    const { itemCategory, ensureItemCategoryLoaded } = useAllDropdownListData();
     const [options, setOptions] = useState<{ value: string; label: string }[]>([]);
     const [defaultOption, setDefaultOption] = useState<number | undefined>(undefined);
 
     useEffect(() => {
+        ensureItemCategoryLoaded();
         const newOptions = itemCategory.map((category) => {
             return {
                 value: category.id?.toString() || "",
@@ -38,7 +39,7 @@ export default function CreateUpdate({
             };
         });
         setOptions(newOptions);
-        if(updateItemCategoryData) {
+        if (updateItemCategoryData) {
             const index = itemCategory.findIndex(
                 (category) => category.id === updateItemCategoryData?.category_id
             );
@@ -48,7 +49,7 @@ export default function CreateUpdate({
 
     // Code logic
     const [isOpen, setIsOpen] = useState(false);
-    const [codeMode, setCodeMode] = useState<'auto'|'manual'>('auto');
+    const [codeMode, setCodeMode] = useState<'auto' | 'manual'>('auto');
     const [prefix, setPrefix] = useState('');
     const codeGeneratedRef = useRef(false);
     const [code, setCode] = useState("");
@@ -58,7 +59,7 @@ export default function CreateUpdate({
             category_id: updateItemCategoryData?.category_id?.toString() || "",
             sub_category_name: updateItemCategoryData?.sub_category_name || "",
             status: updateItemCategoryData?.status || 0,
-            item_sub_category_code: updateItemCategoryData?.item_sub_category_code || "",
+            sub_category_code: updateItemCategoryData?.sub_category_code || "",
         },
         validationSchema: Yup.object({
             category_id: Yup.number()
@@ -71,7 +72,7 @@ export default function CreateUpdate({
             status: Yup.number()
                 .oneOf([0, 1], "Status must be either Active or Inactive")
                 .required("Status is required"),
-            item_sub_category_code: Yup.string().required("Code is required"),
+            sub_category_code: Yup.string().required("Code is required"),
         }),
         onSubmit: async (values) => {
             let res;
@@ -79,10 +80,11 @@ export default function CreateUpdate({
                 res = await createItemSubCategory(
                     parseInt(values.category_id),
                     values.sub_category_name,
+                    values.sub_category_code,
                     values.status === "1" ? 1 : 0
                 );
                 if (!res.error) {
-                    await saveFinalCode({ reserved_code: values.item_sub_category_code, model_name: "item_sub_categories" });
+                    await saveFinalCode({ reserved_code: values.sub_category_code, model_name: "item_sub_categories" });
                 }
             }
             if (type === "update") {
@@ -90,10 +92,11 @@ export default function CreateUpdate({
                     parseInt(values.category_id),
                     updateItemCategoryData?.id || 0,
                     values.sub_category_name,
+                    values.sub_category_code,
                     values.status === "1" ? 1 : 0
                 );
             }
-            if (res.error) showSnackbar(res.data.message, "error") 
+            if (res.error) showSnackbar(res.data.message, "error")
             else {
                 showSnackbar(res.message ? res.message : "Item Sub Category Created Successfully", "success");
                 onClose();
@@ -110,7 +113,7 @@ export default function CreateUpdate({
                 const res = await genearateCode({ model_name: "item_sub_categories" });
                 if (res?.code) {
                     setCode(res.code);
-                    formik.setFieldValue("item_sub_category_code", res.code);
+                    formik.setFieldValue("sub_category_code", res.code);
                 }
                 if (res?.prefix) {
                     setPrefix(res.prefix);
@@ -136,16 +139,16 @@ export default function CreateUpdate({
             >
 
                 {/* Item Sub Category Code (auto-generated, disabled, with settings icon/popup) */}
-                <div className="flex items-start gap-2 max-w-[406px]">
+                <div>
                     <InputFields
                         label="Item Sub Category Code"
-                        name="item_sub_category_code"
-                        value={formik.values.item_sub_category_code}
+                        name="sub_category_code"
+                        value={formik.values.sub_category_code}
                         onChange={formik.handleChange}
                         disabled={codeMode === 'auto'}
-                        error={formik.touched?.item_sub_category_code && formik.errors?.item_sub_category_code}
+                        error={formik.touched?.sub_category_code && formik.errors?.sub_category_code}
                     />
-                    <IconButton
+                    {/* <IconButton
                         bgClass="white"
                          className="  cursor-pointer text-[#252B37] pt-12"
                         icon="mi:settings"
@@ -160,12 +163,12 @@ export default function CreateUpdate({
                         onSave={(mode, code) => {
                             setCodeMode(mode);
                             if (mode === 'auto' && code) {
-                                formik.setFieldValue('item_sub_category_code', code);
+                                formik.setFieldValue('sub_category_code', code);
                             } else if (mode === 'manual') {
-                                formik.setFieldValue('item_sub_category_code', '');
+                                formik.setFieldValue('sub_category_code', '');
                             }
                         }}
-                    />
+                    /> */}
                 </div>
 
                 <InputDropdown
@@ -195,28 +198,28 @@ export default function CreateUpdate({
                     onChange={formik.handleChange}
                 />
 
-                             <div>
-                 <InputFields
-                   required
-                   label="Status"
-                   name="status"
-                   value={String(formik.values.status)}
-                   options={[
-                     { value: "1", label: "Active" },
-                     { value: "0", label: "Inactive" },
-                   ]}
-                   onChange={(e) => formik.setFieldValue("status", e.target.value)}
-                   type="radio"
-                   error={
-                     formik.touched.status && formik.errors.status
-                       ? formik.errors.status
-                       : false
-                   }
-                 />
-                 {formik.touched.status && formik.errors.status ? (
-                   <span className="text-xs text-red-500">{formik.errors.status}</span>
-                 ) : null}
-               </div>
+                <div>
+                    <InputFields
+                        required
+                        label="Status"
+                        name="status"
+                        value={String(formik.values.status)}
+                        options={[
+                            { value: "1", label: "Active" },
+                            { value: "0", label: "Inactive" },
+                        ]}
+                        onChange={(e) => formik.setFieldValue("status", e.target.value)}
+                        type="radio"
+                        error={
+                            formik.touched.status && formik.errors.status
+                                ? formik.errors.status
+                                : false
+                        }
+                    />
+                    {formik.touched.status && formik.errors.status ? (
+                        <span className="text-xs text-red-500">{formik.errors.status}</span>
+                    ) : null}
+                </div>
 
                 <div className="flex justify-between gap-[8px] mt-[50px]">
                     <div></div>
@@ -226,9 +229,11 @@ export default function CreateUpdate({
                             label="Cancel"
                             labelTw="px-[20px]"
                             onClick={onClose}
+                        //   onClick={() => router.push("/settings/manageCompany/salesman-type")}
+
                         />
-                        <Button type="submit" disabled={!formik.isValid}>
-                            Save
+                        <Button type="submit" disabled={!formik.isValid || formik.isSubmitting}>
+                            {type === "update" ? (formik.isSubmitting ? "Updating..." : "Update") : (formik.isSubmitting ? "Submitting..." : "Submit")}
                         </Button>
                     </div>
                 </div>

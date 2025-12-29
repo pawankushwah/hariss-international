@@ -1,0 +1,319 @@
+"use client";
+
+import Table, { listReturnType, searchReturnType, TableDataType } from "@/app/components/customTable";
+import SidebarBtn from "@/app/components/dashboardSidebarBtn";
+import StatusBtn from "@/app/components/statusBtn2";
+import {
+  companyCustomersGlobalSearch,
+  companyCustomerStatusUpdate,
+  downloadFile,
+  exportCompanyCustomerData,
+  getCompanyCustomers
+} from "@/app/services/allApi";
+import { useLoading } from "@/app/services/loadingContext";
+import { useSnackbar } from "@/app/services/snackbarContext";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+
+interface CustomerItem {
+  id: number;
+  sap_code: string;
+  osa_code: string;
+  business_name: string;
+  company_type: string;
+  language: string;
+  contact_number?: string;
+  business_type: string;
+  town: string;
+  landmark: string;
+  district: string;
+  region_id: number;
+  area_id: number;
+  payment_type: string;
+  creditday: string;
+  tin_no: string;
+  creditlimit: number;
+  totalcreditlimit: number;
+  credit_limit_validity?: string;
+  bank_guarantee_name: string;
+  bank_guarantee_amount: number;
+  bank_guarantee_from: string;
+  bank_guarantee_to: string;
+  distribution_channel_id: string;
+  merchendiser_ids: string;
+  status: string;
+}
+
+export default function CompanyCustomers() {
+  const { can, permissions } = usePagePermissions();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh table when permissions load
+  useEffect(() => {
+    if (permissions.length > 0) {
+      setRefreshKey((prev) => prev + 1);
+    }
+  }, [permissions]);
+
+  const { setLoading } = useLoading();
+  // const [showDeletePopup, setShowDeletePopup] = useState(false);
+  // const [selectedRow, setSelectedRow] = useState<CustomerItem | null>(null);
+  const [threeDotLoading, setThreeDotLoading] = useState({
+    csv: false,
+    xlsx: false,
+  });
+
+  const router = useRouter();
+  const { showSnackbar } = useSnackbar();
+
+  const fetchCompanyCustomers = async (pageNo: number = 1, pageSize: number = 50): Promise<listReturnType> => {
+    // setLoading(true);
+    const res = await getCompanyCustomers({ page: pageNo.toString(), pageSize: pageSize.toString() });
+    // setLoading(false);
+    if (res.error) {
+      showSnackbar(res.data.message || "Failed to fetch Key Customers", "error");
+      throw new Error(res.data.message);
+    }
+    return {
+      data: res.data || [],
+      pageSize: res?.pagination?.per_page || pageSize,
+      total: res?.pagination?.last_page || 1,
+      currentPage: res?.pagination?.current_page || 1,
+    }
+  };
+
+  const search = async (searchQuery: string, pageSize: number, columnName?: string, page: number = 1): Promise<searchReturnType> => {
+    // if (!columnName) throw new Error("Column name is required for search");
+    // setLoading(true);
+    const res = await companyCustomersGlobalSearch({ query: searchQuery, pageSize: pageSize.toString(), page: page.toString() });
+    // setLoading(false);
+    if (res.error) {
+      showSnackbar(res.data.message || "Failed to fetch search results", "error");
+      throw new Error(res.data.message);
+    }
+    return {
+      data: res.data || [],
+      pageSize: res?.pagination?.per_page || pageSize,
+      total: res?.pagination?.last_page || 1,
+      currentPage: res?.pagination?.current_page || 1,
+    }
+  };
+
+  /* ---------- Column Configuration ---------- */
+  const columns = [
+    {
+      key: "osa_code", label: "Customer Code", render: (row: TableDataType) => (
+        <span className="font-semibold text-[#181D27] text-[14px]">
+          {row.osa_code}
+        </span>
+      )
+    },
+    {
+      key: "sap_code", label: "SAP Code", render: (row: TableDataType) => (
+        <span className="font-semibold text-[#181D27] text-[14px]">
+          {row.sap_code}
+        </span>
+      ),
+    },
+    { key: "business_name", label: "Business Name", },
+    { key: "district", label: "District", },
+    { key: "creditlimit", label: "Credit Limit" },
+    { key: "totalcreditlimit", label: "Total Credit Limit" },
+    {
+      key: "payment_type", label: "Payment Type",
+      render: (row: TableDataType) => {
+        const value = (row as unknown as CustomerItem).payment_type;
+        const strValue = value != null ? String(value) : "";
+        if (strValue === "0") return "Cash";
+        if (strValue === "1") return "Credit";
+        if (strValue === "2") return "Bill to Bill";
+        return strValue || "-";
+      },
+    },
+    { key: "language", label: "Language" },
+    {
+      key: "status",
+      label: "Status",
+      isSortable: true,
+      render: (row: TableDataType) => {
+        return <StatusBtn isActive={String(row.status) > "0"} />;
+      },
+      // showByDefault: true,
+    },
+  ];
+
+  const exportFile = async (format: string) => {
+    try {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: true }))
+      const response = await exportCompanyCustomerData({ format });
+      if (response && typeof response === 'object' && response.url) {
+        await downloadFile(response.url);
+        showSnackbar("File downloaded successfully ", "success");
+      } else {
+        showSnackbar("Failed to get download URL", "error");
+        setThreeDotLoading((prev) => ({ ...prev, [format]: false }))
+
+      }
+    } catch (error) {
+      showSnackbar("Failed to download distributor data", "error");
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }))
+
+    }
+  }
+
+  const handleStatusChange = async (ids: (string | number)[] | undefined, status: number) => {
+    if (!ids || ids.length === 0) return;
+    const res = await companyCustomerStatusUpdate({
+      ids: ids,
+      status: Number(status)
+    });
+
+    if (res.error) {
+      showSnackbar(res.data.message || "Failed to update status", "error");
+      throw new Error(res.data.message);
+    }
+    setRefreshKey(refreshKey + 1);
+    showSnackbar("Status updated successfully", "success");
+    return res;
+  }
+
+  return (
+    <>
+      {/* Table */}
+      <div className="flex flex-col h-full">
+        <Table
+          refreshKey={refreshKey}
+          config={{
+            api: {
+              list: fetchCompanyCustomers,
+              search: search,
+            },
+            header: {
+              title: "Key Customer",
+              threeDot: [
+                {
+                  icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
+                  label: "Export CSV",
+                  labelTw: "text-[12px] hidden sm:block",
+                  onClick: () => !threeDotLoading.csv && exportFile("csv"),
+                },
+                {
+                  icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
+                  label: "Export Excel",
+                  labelTw: "text-[12px] hidden sm:block",
+                  onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                },
+              ],
+              searchBar: true,
+              columnFilter: true,
+              actions: can("create") ? [
+                <SidebarBtn
+                  key="add-company-customer"
+                  href="/keyCustomer/add"
+                  leadingIcon="lucide:plus"
+                  label="Add"
+                  labelTw="hidden sm:block"
+                  isActive
+                />,
+              ] : [],
+            },
+            floatingInfoBar: {
+              // showByDefault: true,
+              showSelectedRow: true,
+              buttons: [
+                {
+                  icon: "lucide:radio",
+                  label: "Inactive",
+                  // showOnSelect: true,
+                  showWhen: (data: TableDataType[], selectedRow?: number[]) => {
+                    if (!selectedRow || selectedRow.length === 0) return false;
+                    const status = selectedRow?.map((id) => data[id].status).map(String);
+                    return status?.includes("1") || false;
+                  },
+                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                    const status: string[] = [];
+                    const ids = selectedRow?.map((id) => {
+                      const currentStatus = data[id].status;
+                      if (!status.includes(currentStatus)) {
+                        status.push(currentStatus);
+                      }
+                      return data[id].id;
+                    })
+                    handleStatusChange(ids, Number(0));
+                  },
+                },
+                {
+                  icon: "lucide:radio",
+                  label: "Active",
+                  // showOnSelect: true,
+                  showWhen: (data: TableDataType[], selectedRow?: number[]) => {
+                    if (!selectedRow || selectedRow.length === 0) return false;
+                    const status = selectedRow?.map((id) => data[id].status).map(String);
+                    return status?.includes("0") || false;
+                  },
+                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                    const status: string[] = [];
+                    const ids = selectedRow?.map((id) => {
+                      const currentStatus = data[id].status;
+                      if (!status.includes(currentStatus)) {
+                        status.push(currentStatus);
+                      }
+                      return data[id].id;
+                    })
+                    handleStatusChange(ids, Number(1));
+                  },
+                },
+              ]
+            },
+            localStorageKey: "company-customers-table",
+            footer: { nextPrevBtn: true, pagination: true },
+            columns,
+            rowSelection: true,
+            rowActions: [
+              {
+                icon: "lucide:eye",
+                onClick: (data: TableDataType) => {
+                  router.push(`/keyCustomer/details/${data.uuid}`);
+                },
+              },
+              ...(can("edit") ? [{
+                icon: "lucide:edit-2",
+                onClick: (row: TableDataType) => {
+                  console.log(row)
+                  router.push(
+                    `/keyCustomer/${row.uuid}`
+                  )
+                }
+              }] : []),
+              // {
+              //   icon: "lucide:trash-2",
+              //   onClick: (row: TableDataType) => {
+              //     const fullRow = customers.find(
+              //       (c) => c.id.toString() === row.id
+              //     );
+              //     if (fullRow) {
+              //       setSelectedRow(fullRow);
+              //       setShowDeletePopup(true);
+              //     }
+              //   },
+              // },
+            ],
+            pageSize: 50,
+          }}
+        />
+      </div>
+
+      {/* Delete Popup */}
+      {/* {showDeletePopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <DeleteConfirmPopup
+            title="Company Customer"
+            onClose={() => setShowDeletePopup(false)}
+            onConfirm={handleConfirmDelete}
+          />
+        </div>
+      )} */}
+    </>
+  );
+}

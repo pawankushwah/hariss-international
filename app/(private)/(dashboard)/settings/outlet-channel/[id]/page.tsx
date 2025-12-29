@@ -23,13 +23,13 @@ type OutletChannel = {
   status: string; // "active" | "inactive"
 };
 
-  export default function AddEditOutletChannel() {
+export default function AddEditOutletChannel() {
 
-const { showSnackbar } = useSnackbar();
+  const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const params = useParams();
   const [isOpen, setIsOpen] = useState(false);
-  const [codeMode, setCodeMode] = useState<'auto'|'manual'>('auto');
+  const [codeMode, setCodeMode] = useState<'auto' | 'manual'>('auto');
   const [prefix, setPrefix] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -56,8 +56,8 @@ const { showSnackbar } = useSnackbar();
           status: values.status === "active" ? 1 : 0,
         };
         let res;
-        if (isEditMode && params?.id && params.id !== "add") {
-          res = await updateOutletChannel(String(params.id), payload);
+        if (isEditMode && params?.id && params?.id !== "add") {
+          res = await updateOutletChannel(String(params?.id), payload);
         } else {
           res = await addOutletChannel(payload);
           if (!res?.error) {
@@ -73,9 +73,9 @@ const { showSnackbar } = useSnackbar();
         } else {
           showSnackbar(
             res.message ||
-              (isEditMode
-                ? "Channel Updated Successfully"
-                : "Channel Created Successfully"),
+            (isEditMode
+              ? "Channel Updated Successfully"
+              : "Channel Created Successfully"),
             "success"
           );
           router.push("/settings/outlet-channel");
@@ -90,12 +90,12 @@ const { showSnackbar } = useSnackbar();
 
   // ✅ Load existing data for edit mode and generate code in add mode
   useEffect(() => {
-    if (params?.id && params.id !== "add") {
+    if (params?.id && params?.id !== "add") {
       setIsEditMode(true);
       setLoading(true);
       (async () => {
         try {
-          const res = await getOutletChannelById(String(params.id));
+          const res = await getOutletChannelById(String(params?.id));
           if (res?.data) {
             formik.setValues({
               outlet_channel_code: res.data.outlet_channel_code || "",
@@ -153,7 +153,7 @@ const { showSnackbar } = useSnackbar();
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Outlet Channel Code (pattern-matched UI) */}
-              <div className="flex items-start gap-2 max-w-[406px]">
+              <div>
                 <InputFields
                   label="Outlet Channel Code"
                   name="outlet_channel_code"
@@ -161,31 +161,7 @@ const { showSnackbar } = useSnackbar();
                   onChange={formik.handleChange}
                   disabled={codeMode === 'auto'}
                 />
-                {!isEditMode && (
-                  <>
-                    <IconButton
-                      bgClass="white"
-                       className="  cursor-pointer text-[#252B37] pt-12"
-                      icon="mi:settings"
-                      onClick={() => setIsOpen(true)}
-                    />
-                    <SettingPopUp
-                      isOpen={isOpen}
-                      onClose={() => setIsOpen(false)}
-                      title="Outlet Channel Code"
-                      prefix={prefix}
-                      setPrefix={setPrefix}
-                      onSave={(mode, code) => {
-                        setCodeMode(mode);
-                        if (mode === 'auto' && code) {
-                          formik.setFieldValue('outlet_channel_code', code);
-                        } else if (mode === 'manual') {
-                          formik.setFieldValue('outlet_channel_code', '');
-                        }
-                      }}
-                    />
-                  </>
-                )}
+
               </div>
               {/* Outlet Channel Name */}
               <InputFields
@@ -219,16 +195,18 @@ const { showSnackbar } = useSnackbar();
             <button
               className="px-4 py-2 h-[40px] w-[80px] rounded-md font-semibold border border-gray-300 text-gray-700 hover:bg-gray-100"
               type="button"
-              onClick={() => formik.resetForm()}
+              // onClick={() => formik.resetForm()}
+              onClick={() => router.push("/settings/outlet-channel")}
             >
               Cancel
             </button>
 
             <SidebarBtn
-              label="Submit"
+              label={isEditMode ? (formik.isSubmitting ? "Updating..." : "Update") : (formik.isSubmitting ? "Submitting..." : "Submit")}
               isActive={true}
               leadingIcon="mdi:check"
               type="submit"
+              disabled={formik.isSubmitting}
             />
           </div>
         </form>

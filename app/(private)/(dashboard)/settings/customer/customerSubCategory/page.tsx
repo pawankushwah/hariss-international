@@ -11,6 +11,7 @@ import { customerSubCategoryList, deleteCustomerSubCategory } from "@/app/servic
 import BorderIconButton from "@/app/components/borderIconButton";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import CustomDropdown from "@/app/components/customDropdown";
+import StatusBtn from "@/app/components/statusBtn2";
 
 // ✅ API types
 interface CustomerCategory {
@@ -36,98 +37,31 @@ interface CustomerSubCategory {
 }
 
 export default function CustomerSubCategoryPage() {
-  const [subCategories, setSubCategories] = useState<CustomerSubCategory[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [selectedSubCategory, setSelectedSubCategory] = useState<CustomerSubCategory | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const pageSize = 10;
 
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
 
-  // ✅ Fetch sub-categories
-  useEffect(() => {
-    const fetchSubCategories = async () => {
-      try {
-        const res = await customerSubCategoryList(); // API call
-        const formatted: CustomerSubCategory[] = (res.data || []).map(
-          (s: CustomerSubCategoryAPI) => ({
-            id: s.id,
-            customer_category_name:s.customer_category?.customer_category_name || "N/A",
-            customer_sub_category_code: s.customer_sub_category_code,
-            customer_sub_category_name: s.customer_sub_category_name,
-            status: s.status,
-          })
-        );
-        setSubCategories(formatted);
-      } catch (error) {
-        console.error("Failed to fetch sub-categories ❌", error);
-        showSnackbar("Failed to load customer sub-categories ❌", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSubCategories();
-  }, [showSnackbar]);
-
-  // ✅ Delete handler
-  const handleDelete = async () => {
-    if (!selectedSubCategory?.id) return;
-    try {
-      await deleteCustomerSubCategory(selectedSubCategory.id);
-      showSnackbar("Customer Sub-Category deleted ✅", "success");
-      setSubCategories((prev) =>
-        prev.filter((s) => s.id !== selectedSubCategory.id)
-      );
-    } catch (error) {
-      console.error("Delete failed ❌", error);
-      showSnackbar("Failed to delete sub-category ❌", "error");
-    } finally {
-      setShowDeletePopup(false);
-      setSelectedSubCategory(null);
-    }
-  };
-
-  
-  const tableData: TableDataType[] = subCategories.map((c) => ({
-    id: String(c.id), // Table expects string
-    customer_category_name: c.customer_category_name,
-    customer_sub_category_code: c.customer_sub_category_code,
-    customer_sub_category_name: c.customer_sub_category_name,
-    status: c.status === 1 ? "Active" : "Inactive", // Convert to proper string based on number value
-  }));
-
   const columns = [
-    { key: "customer_sub_category_code", label: "Sub-Category Code",
+    {
+      key: "customer_sub_category_code", label: "Sub-Category Code",
       render: (row: TableDataType) => (
-            <span className="font-semibold text-[#181D27] text-[14px]">
-                {row.customer_sub_category_code}
-            </span>
-        ),
-     },
+        <span className="font-semibold text-[#181D27] text-[14px]">
+          {row.customer_sub_category_code}
+        </span>
+      ),
+    },
     { key: "customer_sub_category_name", label: "Sub-Category Name" },
     { key: "customer_category_name", label: "Category Name" },
-   {
-        key: "status",
-        label: "Status",
-        render: (row: TableDataType) => (
-            <div className="flex items-center">
-                {row.status === "Active" ? (
-                    <span className="text-sm text-[#027A48] bg-[#ECFDF3] font-[500] p-1 px-4 rounded-xl text-[12px]">
-                        Active
-                    </span>
-                ) : (
-                    <span className="text-sm text-red-700 bg-red-200 p-1 px-4 rounded-xl text-[12px]">
-                        In Active
-                    </span>
-                )}
-            </div>
-        ),
-    },
+    {
+      key: "status",
+      label: "Status",
+      render: (row: TableDataType) => <StatusBtn isActive={row.status === "Active"} />,
+    },
   ];
-
-  if (loading) return <Loading />;
 
   return (
     <>
@@ -137,7 +71,7 @@ export default function CustomerSubCategoryPage() {
           Customer Sub-Category
         </h1>
 
-        <div className="flex gap-[12px] relative">
+        {/* <div className="flex gap-[12px] relative">
           <BorderIconButton icon="gala:file-document" label="Export CSV" />
           <BorderIconButton icon="mage:upload" />
 
@@ -168,13 +102,12 @@ export default function CustomerSubCategoryPage() {
               </div>
             }
           />
-        </div>
+        </div> */}
       </div>
 
       {/* Table */}
       <div className="h-[calc(100%-60px)]">
         <Table
-          data={tableData}
           config={{
             header: {
               searchBar: false,
@@ -190,7 +123,7 @@ export default function CustomerSubCategoryPage() {
                 />,
               ],
             },
-            pageSize: 5,
+            pageSize: pageSize,
             localStorageKey: "customer-sub-category-table",
             footer: { nextPrevBtn: true, pagination: true },
             columns,
@@ -205,31 +138,55 @@ export default function CustomerSubCategoryPage() {
                   );
                 },
               },
-              {
-                icon: "lucide:trash-2",
-                onClick: (row: object) => {
-                  const r = row as TableDataType;
-                  const subCategory =
-                    subCategories.find((s) => s.id === Number(r.id)) || null; // ✅ fix: compare number
-                  setSelectedSubCategory(subCategory);
-                  setShowDeletePopup(true);
-                },
-              },
+
             ],
+            api: {
+              list: async (pageNo: number, pageSize: number) => {
+                try {
+                  const res = await customerSubCategoryList({ page: String(pageNo), limit: String(pageSize) });
+                  const formatted: CustomerSubCategory[] = (res.data || []).map(
+                    (s: CustomerSubCategoryAPI) => ({
+                      id: s.id,
+                      customer_category_name: s.customer_category?.customer_category_name || "N/A",
+                      customer_sub_category_code: s.customer_sub_category_code,
+                      customer_sub_category_name: s.customer_sub_category_name,
+                      status: s.status,
+                    })
+                  );
+
+                  const tableData: TableDataType[] = formatted.map((c) => ({
+                    id: String(c.id),
+                    customer_category_name: c.customer_category_name,
+                    customer_sub_category_code: c.customer_sub_category_code,
+                    customer_sub_category_name: c.customer_sub_category_name,
+                    status: c.status === 1 ? "Active" : "Inactive",
+                  }));
+
+                  return {
+                    data: tableData,
+                    currentPage: res.pagination?.page || pageNo,
+                    pageSize: pageSize,
+                    total: res.pagination?.totalPages || 1,
+                    totalRecords: res.pagination?.totalRecords || tableData.length,
+                  };
+                } catch (error) {
+                  console.error("Failed to fetch sub-categories ❌", error);
+                  showSnackbar("Failed to load customer sub-categories ❌", "error");
+                  return {
+                    data: [],
+                    currentPage: 1,
+                    pageSize: pageSize,
+                    total: 0,
+                    totalRecords: 0,
+                  };
+                }
+              },
+            },
           }}
         />
       </div>
 
-      {/* Delete Popup */}
-      {showDeletePopup && selectedSubCategory && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <DeleteConfirmPopup
-            title={`Delete Sub-Category "${selectedSubCategory.customer_sub_category_name}"?`}
-            onClose={() => setShowDeletePopup(false)}
-            onConfirm={handleDelete}
-          />
-        </div>
-      )}
+
     </>
   );
 }

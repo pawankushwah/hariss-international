@@ -6,10 +6,11 @@ import StatusBtn from "@/app/components/statusBtn2";
 import Table, {
     configType,
     listReturnType,
+    searchReturnType,
     TableDataType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { getUserList} from "@/app/services/allApi";
+import { getUserList, userList, userListGlobalSearch} from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
 
@@ -28,11 +29,12 @@ export default function User() {
             },
             showByDefault: true,
         },
-        { key: "email", label: "Email" },
+        { key: "email", label: "Email", render: (row: TableDataType) => <span className="lowercase">{row.email || "-"}</span>, showByDefault: true  },
         { key: "contact_number", label: "Contact No.",showByDefault: true  },
         {
             key: "status",
             label: "Status",
+            isSortable: true,
             render: (row: TableDataType) => {
                 // Treat status 1 or 'active' (case-insensitive) as active
                 const isActive =
@@ -87,16 +89,44 @@ export default function User() {
         setLoading(true);
     }, []);
 
+    const searchUser = useCallback(
+        async (
+          query: string,
+          page: number = 1,
+          columnName?: string,
+          pageSize: number = 50
+        ): Promise<listReturnType> => {
+          try {
+            setLoading(true);
+            const res = await userListGlobalSearch({ query: query, per_page: pageSize.toString() });
+            setLoading(false);
+            
+    
+            return {
+              data: res.data || [],
+              total: res.pagination.last_page || 1,
+              currentPage: res.pagination.current_page || 1,
+              pageSize: res.pagination.per_page || pageSize,
+            };
+          } catch (error) {
+            setLoading(false);
+            console.error(error);
+            throw error;
+          }
+        },
+        []
+      );
+
     return (
         <>
             <div className="flex flex-col h-full">
                 <Table
                     refreshKey={refreshKey}
                     config={{
-                        api: { list: fetchUser },
+                        api: { list: fetchUser, search: searchUser, },
                         header: {
                             title: "Users",
-                            searchBar: false,
+                            searchBar: true,
                             columnFilter: true,
                             actions: [
                                 <SidebarBtn
