@@ -111,7 +111,7 @@ export default function OrderDetailPage() {
           <div className="flex flex-col gap-[10px]">
             <Logo type="full" />
             <span className="text-primary font-normal text-xs">
-              Hariss Trading Co., Dubai - UAE
+              modern bakery Trading Co., Dubai - UAE
             </span>
           </div>
 
@@ -135,7 +135,7 @@ export default function OrderDetailPage() {
             <div className="flex flex-col space-y-[20px] text-primary-bold text-[14px] w-full xl:w-[312px] border-b-[1px] border-b-[#D5D7DA] pb-[20px] xl:pb-0 xl:border-0">
               <span>From (Seller)</span>
               <div className="flex flex-col space-y-[10px]">
-                <span className="font-semibold">Hariss Store</span>
+                <span className="font-semibold">modern bakery Store</span>
                 <span>Business Bay, Dubai - UAE</span>
                 <span>
                   Phone: +971 123456789 <br /> Email: support@hariss.com
