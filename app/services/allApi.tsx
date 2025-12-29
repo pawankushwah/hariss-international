@@ -3914,6 +3914,15 @@ export const addRouteTransfer = async (body: object) => {
   }
 };
 
+export const getRouteTransferList = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/master/route-transfer/history`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 export const outletChannelList = async (params?: Params) => {
   try {
     const res = await API.get(`/api/settings/outlet-channels/get-outlet-based`, { params });

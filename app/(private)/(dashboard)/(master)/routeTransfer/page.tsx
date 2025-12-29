@@ -9,11 +9,14 @@ import {
     regionList, 
     subRegionList, 
     warehouseList, 
-    routeList 
+    routeList,
+    getRouteTransferList
 } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+import Popup from "@/app/components/popUp";
+import { Icon } from "@iconify-icon/react";
 
 export default function StockTransfer() {
     const { can } = usePagePermissions();
@@ -54,6 +57,11 @@ export default function StockTransfer() {
         routes: [] as any[]
     });
 
+    // History State
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [historyData, setHistoryData] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
     // Initial Load - Companies
     useEffect(() => {
         const fetchCompanies = async () => {
@@ -71,6 +79,26 @@ export default function StockTransfer() {
         };
         fetchCompanies();
     }, []);
+
+    // Fetch History
+    const fetchHistory = async () => {
+        setHistoryLoading(true);
+        try {
+            const res = await getRouteTransferList();
+            setHistoryData(Array.isArray(res?.data) ? res.data : []);
+        } catch (err) {
+            console.error("Failed to fetch history", err);
+            // showSnackbar("Failed to load history", "error");
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isHistoryOpen) {
+            fetchHistory();
+        }
+    }, [isHistoryOpen]);
 
     // --- Source Cascading Logic ---
 
@@ -277,6 +305,7 @@ export default function StockTransfer() {
                 // Reset Forms
                 setSource({ company: "", region: "", area: "", warehouse: "", route: "" });
                 setDest({ company: "", region: "", area: "", warehouse: "", route: "" });
+                if(isHistoryOpen) fetchHistory(); // Refresh history if open
             }
         } catch (error) {
             console.error("Route transfer error:", error);
@@ -288,9 +317,18 @@ export default function StockTransfer() {
 
     return (
         <ContainerCard>
-            <h1 className="text-[20px] font-semibold text-[#181D27] uppercase mb-6">
-                Route Transfer
-            </h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-[20px] font-semibold text-[#181D27] uppercase">
+                    Route Transfer
+                </h1>
+                <button 
+                    onClick={() => setIsHistoryOpen(true)}
+                    className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+                    title="View Transfer History"
+                >
+                    <Icon icon="lucide:clock" width="24" height="24" />
+                </button>
+            </div>
 
             {/* TRANSFER FROM SECTION */}
             <div className="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -407,6 +445,55 @@ export default function StockTransfer() {
                 </div>
 
             )}
+
+            {/* HISTORY POPUP */}
+            <Popup isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)}>
+                <div className="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 className="text-lg font-bold text-gray-800">Transfer History</h3>
+                    <button onClick={() => setIsHistoryOpen(false)} className="text-gray-500 hover:text-gray-700">
+                        <Icon icon="lucide:x" width="20" />
+                    </button>
+                </div>
+                
+                <div className="overflow-y-auto max-h-[400px]">
+                    {historyLoading ? (
+                        <div className="text-center py-4 text-gray-500">Loading history...</div>
+                    ) : historyData.length === 0 ? (
+                        <div className="text-center py-4 text-gray-500">No transfer history found.</div>
+                    ) : (
+                        <table className="w-full text-sm text-left text-gray-500">
+                            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-2">Date</th>
+                                    <th className="px-4 py-2">From</th>
+                                    <th className="px-4 py-2">To</th>
+                                    {/* <th className="px-4 py-2">Status</th> */}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {historyData.map((item: any, idx: number) => (
+                                    <tr key={idx} className="bg-white border-b hover:bg-gray-50">
+                                        <td className="px-4 py-2">
+                                            {item.created_at ? new Date(item.created_at).toLocaleDateString() : "-"}
+                                        </td>
+                                        <td className="px-4 py-2 font-medium text-gray-900">
+                                            {item.old_route?.route_name || item.old_route_id || "-"}
+                                        </td>
+                                        <td className="px-4 py-2 font-medium text-gray-900">
+                                            {item.new_route?.route_name || item.new_route_id || "-"}
+                                        </td>
+                                        {/* <td className="px-4 py-2">
+                                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                                Completed
+                                            </span>
+                                        </td> */}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            </Popup>
         </ContainerCard>
     );
 }
