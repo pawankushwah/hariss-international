@@ -15,7 +15,6 @@ import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import {
     pricingHeaderList,
     pricingDetailGlobalSearch,
-    pricingHeaderGlobalSearch
 } from "@/app/services/allApi";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import { useLoading } from "@/app/services/loadingContext";
