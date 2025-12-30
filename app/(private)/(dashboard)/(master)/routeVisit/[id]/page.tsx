@@ -152,7 +152,7 @@ export default function AddEditRouteVisit() {
   const [customerSchedules, setCustomerSchedules] = useState<CustomerSchedules>(
     {}
   );
-  const [globalDays, setGlobalDays] = useState<string[]>([]);
+
   const [headerUuid, setHeaderUuid] = useState<string>("");
 
   const [selectedCustomerType, setSelectedCustomerType] = useState<string>();
@@ -432,12 +432,26 @@ export default function AddEditRouteVisit() {
           hasMore: (Number(pagination.current_page) || current_page) < (Number(pagination.last_page) || 1)
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching customers:", error);
-      if (!isAppend) setCustomers([]);
+      
+      // Handle 404 as "No Data Found"
+      if (error?.response?.status === 404) {
+        if (!isAppend) {
+          setCustomers([]);
+          setCustomerPagination({
+            current_page: 1,
+            last_page: 1,
+            loadingMore: false,
+            hasMore: false
+          });
+        }
+      } else {
+        if (!isAppend) setCustomers([]);
+      }
     } finally {
       setLoading(false);
-      setCustomerPagination(prev => ({ ...prev, loadingMore: false }));
+      setCustomerPagination((prev) => ({ ...prev, loadingMore: false }));
     }
   }, [form.salesman_type, form.merchandiser, form.route, setLoading]);
 
@@ -710,7 +724,6 @@ export default function AddEditRouteVisit() {
       setErrors({});
       setSubmitting(true);
 
-      // ✅ Build payload in correct format
       const payload: Record<string, unknown> = {
         customer_type: Number(form.salesman_type),
         customers: formattedSchedules.map((schedule) => ({
@@ -720,12 +733,11 @@ export default function AddEditRouteVisit() {
           area: form.area.join(","),
           warehouse: form.warehouse.join(","),
           route: form.route.join(","),
-          days: schedule.days.join(","), // ✅ Join days
+          days: schedule.days.join(","),
           from_date: form.from_date,
           to_date: form.to_date,
           status: Number(form.status),
         })),
-        global_days: globalDays.join(","),
       };
 
       // If salesman type is Merchandiser, include selected merchandiser id in payload
@@ -1012,7 +1024,6 @@ export default function AddEditRouteVisit() {
                 hasMore={customerPagination.hasMore}
                 onLoadMore={handleLoadMoreCustomers}
                 isLoadingMore={customerPagination.loadingMore}
-                onGlobalChange={setGlobalDays}
               />
             </div>
           </div>
