@@ -9,6 +9,7 @@ import CustomDropdown from "@/app/components/customDropdown";
 import Table, {
     listReturnType,
     searchReturnType,
+    searchReturnType,
     TableDataType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
@@ -207,6 +208,32 @@ const DiscountPage = () => {
         setShowDeletePopup(false);
         setSelectedRow(null);
     };
+
+        const searchDiscounts = useCallback(
+            async (
+                searchQuery: string,
+                pageSize: number
+            ): Promise<searchReturnType> => {
+                setLoading(true);
+                const result = await discountGlobalSearch({
+                    query: searchQuery,
+                    per_page: pageSize.toString(),
+                });
+                setLoading(false);
+                if (result.error) throw new Error(result.data.message);
+                else {
+                    // Defensive: handle missing pagination or nested pagination
+                    const pagination = result.pagination?.pagination || result.pagination || {};
+                    return {
+                        data: result.data || [],
+                        total: pagination.totalPages || 0,
+                        currentPage: pagination.current_page || 0,
+                        pageSize: pagination.limit || pageSize,
+                    };
+                }
+            },
+            []
+        );
 
     return (
         <>
