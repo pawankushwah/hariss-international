@@ -2552,6 +2552,14 @@ export const getSurveyById = async (uuid: string) => {
     return handleError(error);
   }
 };
+export const getSurveyShowById = async (uuid: string) => {
+  try {
+    const res = await API.get(`/api/merchendisher/survey-header/show/${uuid}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
 
 // export const SurveyListGlobalSearch = async (params?: Params) => {
 //   try{
@@ -3953,6 +3961,29 @@ export const changePassword = async (body?: object) => {
 export const warehouseStockItem = async (id: string, params?: Params) => {
   try {
     const res = await API.get(`/api/settings/warehouse-stocks/warehouseStockInfo/${id}`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const promotionHeaderGlobalSearch = async (params?: Params) => {
+  try {
+    const res = await API.get(`api/master/promotion-headers/global-search`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const discountGlobalSearch = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/master/discount/global-search`, {
+      params: params,
+    });
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
