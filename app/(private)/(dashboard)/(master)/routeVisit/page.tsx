@@ -173,21 +173,25 @@ export default function RouteVisits() {
             },
             header: {
               title: "Route Visit Plan",
-              threeDot: [
-                {
-                  icon: "gala:file-document",
-                  label: "Export CSV",
-                  labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => exportFile("csv"),
-                },
-                {
-                  icon: "gala:file-document",
-                  label: "Export Excel",
-                  labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => exportFile("xls"),
+                exportButton: {
+                show: true,
+                onClick: () => exportFile("xlsx"), 
+              },
+              // threeDot: [
+              //   {
+              //     icon: "gala:file-document",
+              //     label: "Export CSV",
+              //     labelTw: "text-[12px] hidden sm:block",
+              //     onClick: () => exportFile("csv"),
+              //   },
+              //   {
+              //     icon: "gala:file-document",
+              //     label: "Export Excel",
+              //     labelTw: "text-[12px] hidden sm:block",
+              //     onClick: () => exportFile("xls"),
 
-                },
-              ],
+              //   },
+              // ],
               searchBar: true,
               columnFilter: true,
               actions: can("create") ? [
