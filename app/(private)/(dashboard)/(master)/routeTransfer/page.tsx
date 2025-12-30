@@ -3,12 +3,12 @@
 import ContainerCard from "@/app/components/containerCard";
 import InputFields from "@/app/components/inputFields";
 import { useState, useEffect, useMemo } from "react";
-import { 
-    addRouteTransfer, 
-    companyList, 
-    regionList, 
-    subRegionList, 
-    warehouseList, 
+import {
+    addRouteTransfer,
+    companyList,
+    regionList,
+    subRegionList,
+    warehouseList,
     routeList,
     getRouteTransferList
 } from "@/app/services/allApi";
@@ -57,6 +57,19 @@ export default function StockTransfer() {
         routes: [] as any[]
     });
 
+    const [skeletons, setSkeletons] = useState({
+        sourceCompany: false,
+        sourceRegion: false,
+        sourceArea: false,
+        sourceWarehouse: false,
+        sourceRoute: false,
+        destCompany: false,
+        destRegion: false,
+        destArea: false,
+        destWarehouse: false,
+        destRoute: false,
+    });
+
     // History State
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
@@ -66,6 +79,7 @@ export default function StockTransfer() {
     useEffect(() => {
         const fetchCompanies = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, sourceCompany: true, destCompany: true }));
                 const res = await companyList({ dropdown: "true" });
                 const options = (res?.data || []).map((c: any) => ({
                     value: String(c.id),
@@ -75,6 +89,8 @@ export default function StockTransfer() {
                 setDestOptions(prev => ({ ...prev, companies: options }));
             } catch (err) {
                 console.error("Failed to fetch companies", err);
+            } finally {
+                setSkeletons(prev => ({ ...prev, sourceCompany: false, destCompany: false }));
             }
         };
         fetchCompanies();
@@ -111,14 +127,16 @@ export default function StockTransfer() {
         }
         const fetchRegions = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, sourceRegion: true }));
                 const res = await regionList({ company_id: source.company, dropdown: "true" });
-                setSourceOptions(prev => ({ 
-                    ...prev, 
+                setSourceOptions(prev => ({
+                    ...prev,
                     regions: (res?.data || []).map((r: any) => ({ value: String(r.id), label: r.region_name || r.name })),
                     areas: [], warehouses: [], routes: []
                 }));
                 setSource(prev => ({ ...prev, region: "", area: "", warehouse: "", route: "" }));
             } catch (err) { console.error(err); }
+            finally { setSkeletons(prev => ({ ...prev, sourceRegion: false })); }
         };
         fetchRegions();
     }, [source.company]);
@@ -132,14 +150,16 @@ export default function StockTransfer() {
         }
         const fetchAreas = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, sourceArea: true }));
                 const res = await subRegionList({ region_id: source.region, dropdown: "true" });
-                setSourceOptions(prev => ({ 
-                    ...prev, 
+                setSourceOptions(prev => ({
+                    ...prev,
                     areas: (res?.data || []).map((a: any) => ({ value: String(a.id), label: a.area_name || a.name })),
                     warehouses: [], routes: []
                 }));
                 setSource(prev => ({ ...prev, area: "", warehouse: "", route: "" }));
             } catch (err) { console.error(err); }
+            finally { setSkeletons(prev => ({ ...prev, sourceArea: false })); }
         };
         fetchAreas();
     }, [source.region]);
@@ -153,14 +173,16 @@ export default function StockTransfer() {
         }
         const fetchWarehouses = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, sourceWarehouse: true }));
                 const res = await warehouseList({ area_id: source.area, dropdown: "true" });
-                setSourceOptions(prev => ({ 
-                    ...prev, 
+                setSourceOptions(prev => ({
+                    ...prev,
                     warehouses: (res?.data || []).map((w: any) => ({ value: String(w.id), label: w.warehouse_name || w.name })),
                     routes: []
                 }));
                 setSource(prev => ({ ...prev, warehouse: "", route: "" }));
             } catch (err) { console.error(err); }
+            finally { setSkeletons(prev => ({ ...prev, sourceWarehouse: false })); }
         };
         fetchWarehouses();
     }, [source.area]);
@@ -174,12 +196,14 @@ export default function StockTransfer() {
         }
         const fetchRoutes = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, sourceRoute: true }));
                 const res = await routeList({ warehouse_id: source.warehouse, dropdown: "true" });
-                setSourceOptions(prev => ({ 
-                    ...prev, 
+                setSourceOptions(prev => ({
+                    ...prev,
                     routes: (res?.data || []).map((r: any) => ({ value: String(r.id), label: r.route_name || r.name }))
                 }));
             } catch (err) { console.error(err); }
+            finally { setSkeletons(prev => ({ ...prev, sourceRoute: false })); }
         };
         fetchRoutes();
     }, [source.warehouse]);
@@ -196,14 +220,16 @@ export default function StockTransfer() {
         }
         const fetchRegions = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, destRegion: true }));
                 const res = await regionList({ company_id: dest.company, dropdown: "true" });
-                setDestOptions(prev => ({ 
-                    ...prev, 
+                setDestOptions(prev => ({
+                    ...prev,
                     regions: (res?.data || []).map((r: any) => ({ value: String(r.id), label: r.region_name || r.name })),
                     areas: [], warehouses: [], routes: []
                 }));
                 setDest(prev => ({ ...prev, region: "", area: "", warehouse: "", route: "" }));
             } catch (err) { console.error(err); }
+            finally { setSkeletons(prev => ({ ...prev, destRegion: false })); }
         };
         fetchRegions();
     }, [dest.company]);
@@ -217,14 +243,16 @@ export default function StockTransfer() {
         }
         const fetchAreas = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, destArea: true }));
                 const res = await subRegionList({ region_id: dest.region, dropdown: "true" });
-                setDestOptions(prev => ({ 
-                    ...prev, 
+                setDestOptions(prev => ({
+                    ...prev,
                     areas: (res?.data || []).map((a: any) => ({ value: String(a.id), label: a.area_name || a.name })),
                     warehouses: [], routes: []
                 }));
                 setDest(prev => ({ ...prev, area: "", warehouse: "", route: "" }));
             } catch (err) { console.error(err); }
+            finally { setSkeletons(prev => ({ ...prev, destArea: false })); }
         };
         fetchAreas();
     }, [dest.region]);
@@ -238,14 +266,16 @@ export default function StockTransfer() {
         }
         const fetchWarehouses = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, destWarehouse: true }));
                 const res = await warehouseList({ area_id: dest.area, dropdown: "true" });
-                setDestOptions(prev => ({ 
-                    ...prev, 
+                setDestOptions(prev => ({
+                    ...prev,
                     warehouses: (res?.data || []).map((w: any) => ({ value: String(w.id), label: w.warehouse_name || w.name })),
                     routes: []
                 }));
                 setDest(prev => ({ ...prev, warehouse: "", route: "" }));
             } catch (err) { console.error(err); }
+            finally { setSkeletons(prev => ({ ...prev, destWarehouse: false })); }
         };
         fetchWarehouses();
     }, [dest.area]);
@@ -259,12 +289,14 @@ export default function StockTransfer() {
         }
         const fetchRoutes = async () => {
             try {
+                setSkeletons(prev => ({ ...prev, destRoute: true }));
                 const res = await routeList({ warehouse_id: dest.warehouse, dropdown: "true" });
-                setDestOptions(prev => ({ 
-                    ...prev, 
+                setDestOptions(prev => ({
+                    ...prev,
                     routes: (res?.data || []).map((r: any) => ({ value: String(r.id), label: r.route_name || r.name }))
                 }));
             } catch (err) { console.error(err); }
+            finally { setSkeletons(prev => ({ ...prev, destRoute: false })); }
         };
         fetchRoutes();
     }, [dest.warehouse]);
@@ -272,8 +304,8 @@ export default function StockTransfer() {
     // Filter Destination Routes (exclude source route if same hierarchy selected)
     const filteredDestRoutes = useMemo(() => {
         if (source.route && source.route === dest.route) {
-             // In case user selected same route, maybe warn?
-             // But primarily we filter options
+            // In case user selected same route, maybe warn?
+            // But primarily we filter options
         }
         return destOptions.routes.filter(r => r.value !== source.route);
     }, [destOptions.routes, source.route]);
@@ -305,7 +337,7 @@ export default function StockTransfer() {
                 // Reset Forms
                 setSource({ company: "", region: "", area: "", warehouse: "", route: "" });
                 setDest({ company: "", region: "", area: "", warehouse: "", route: "" });
-                if(isHistoryOpen) fetchHistory(); // Refresh history if open
+                if (isHistoryOpen) fetchHistory(); // Refresh history if open
             }
         } catch (error) {
             console.error("Route transfer error:", error);
@@ -321,7 +353,7 @@ export default function StockTransfer() {
                 <h1 className="text-[20px] font-semibold text-[#181D27] uppercase">
                     Route Transfer
                 </h1>
-                <button 
+                <button
                     onClick={() => setIsHistoryOpen(true)}
                     className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
                     title="View Transfer History"
@@ -341,6 +373,7 @@ export default function StockTransfer() {
                         onChange={(e) => setSource({ ...source, company: e.target.value })}
                         searchable
                         placeholder="Select Company"
+                        showSkeleton={skeletons.sourceCompany}
                     />
                     <InputFields
                         label="Region"
@@ -350,6 +383,7 @@ export default function StockTransfer() {
                         disabled={!source.company}
                         searchable
                         placeholder="Select Region"
+                        showSkeleton={skeletons.sourceRegion}
                     />
                     <InputFields
                         label="Area"
@@ -359,6 +393,7 @@ export default function StockTransfer() {
                         disabled={!source.region}
                         searchable
                         placeholder="Select Area"
+                        showSkeleton={skeletons.sourceArea}
                     />
                     <InputFields
                         label="Warehouse"
@@ -368,6 +403,7 @@ export default function StockTransfer() {
                         disabled={!source.area}
                         searchable
                         placeholder="Select Warehouse"
+                        showSkeleton={skeletons.sourceWarehouse}
                     />
                     <InputFields
                         label="Route (Origin)"
@@ -377,6 +413,7 @@ export default function StockTransfer() {
                         disabled={!source.warehouse}
                         searchable
                         placeholder="Select Origin Route"
+                        showSkeleton={skeletons.sourceRoute}
                     />
                 </div>
             </div>
@@ -392,6 +429,7 @@ export default function StockTransfer() {
                         onChange={(e) => setDest({ ...dest, company: e.target.value })}
                         searchable
                         placeholder="Select Company"
+                        showSkeleton={skeletons.destCompany}
                     />
                     <InputFields
                         label="Region"
@@ -401,6 +439,7 @@ export default function StockTransfer() {
                         disabled={!dest.company}
                         searchable
                         placeholder="Select Region"
+                        showSkeleton={skeletons.destRegion}
                     />
                     <InputFields
                         label="Area"
@@ -410,6 +449,7 @@ export default function StockTransfer() {
                         disabled={!dest.region}
                         searchable
                         placeholder="Select Area"
+                        showSkeleton={skeletons.destArea}
                     />
                     <InputFields
                         label="Warehouse"
@@ -419,6 +459,7 @@ export default function StockTransfer() {
                         disabled={!dest.area}
                         searchable
                         placeholder="Select Warehouse"
+                        showSkeleton={skeletons.destWarehouse}
                     />
                     <InputFields
                         label="Route (Destination)"
@@ -428,6 +469,7 @@ export default function StockTransfer() {
                         disabled={!dest.warehouse}
                         searchable
                         placeholder="Select Destination Route"
+                        showSkeleton={skeletons.destRoute}
                     />
                 </div>
             </div>
@@ -454,7 +496,7 @@ export default function StockTransfer() {
                         <Icon icon="lucide:x" width="20" />
                     </button>
                 </div>
-                
+
                 <div className="overflow-y-auto max-h-[400px]">
                     {historyLoading ? (
                         <div className="text-center py-4 text-gray-500">Loading history...</div>
@@ -465,8 +507,11 @@ export default function StockTransfer() {
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
                                     <th className="px-4 py-2">Date</th>
-                                    <th className="px-4 py-2">From</th>
-                                    <th className="px-4 py-2">To</th>
+                                    <th className="px-4 py-2">Route From</th>
+                                    <th className="px-4 py-2">Route To</th>
+                                    {/* <th className="px-4 py-2">Warehouse From</th>
+                                    <th className="px-4 py-2">Warehouse To</th> */}
+
                                     {/* <th className="px-4 py-2">Status</th> */}
                                 </tr>
                             </thead>
@@ -474,14 +519,21 @@ export default function StockTransfer() {
                                 {historyData.map((item: any, idx: number) => (
                                     <tr key={idx} className="bg-white border-b hover:bg-gray-50">
                                         <td className="px-4 py-2">
-                                            {item.created_at ? new Date(item.created_at).toLocaleDateString() : "-"}
+                                            {item.transferred_at ? new Date(item.transferred_at).toLocaleDateString() : "-"}
                                         </td>
                                         <td className="px-4 py-2 font-medium text-gray-900">
-                                            {item.old_route?.route_name || item.old_route_id || "-"}
+                                            {item.old_route?.name || item.old_route_id || "-"}
                                         </td>
                                         <td className="px-4 py-2 font-medium text-gray-900">
-                                            {item.new_route?.route_name || item.new_route_id || "-"}
+                                            {item.new_route?.name || item.new_route_id || "-"}
                                         </td>
+                                        {/* <td className="px-4 py-2 font-medium text-gray-900">
+                                            {item.warehouse.old_warehouses?.name || item.warehouse.old_warehouses.id || "-"}
+                                        </td>
+                                        <td className="px-4 py-2 font-medium text-gray-900">
+                                            {item.warehouse.new_warehouse?.name || item.warehouse?.new_warehouse?.id || "-"}
+
+                                        </td> */}
                                         {/* <td className="px-4 py-2">
                                             <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
                                                 Completed

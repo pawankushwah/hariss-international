@@ -527,6 +527,21 @@ export const getRouteVisitList = async (params: {
     return handleError(error);
   }
 };
+export const getRouteVisitListBasedOnHeader = async (params: {
+  from_date?: string | null;
+  to_date?: string | null;
+  customer_type?: string | null;
+  status?: string | null;
+  page?: number | string;
+  limit?: number | string;
+}) => {
+  try {
+    const res = await API.get("api/master/route-visits/get_list", { params });
+    return res.data;
+  } catch (error) {
+    return handleError(error);
+  }
+};
 
 export const updateRouteVisitDetails = async (uuid: string, body: object) => {
   try {
