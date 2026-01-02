@@ -11,7 +11,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, RefObject, Fragment } from "react";
 import { deliveryByUuid, exportInvoiceWithDetails, exportInvoiceDetails, invoiceByUuid } from "@/app/services/agentTransaction";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import toInternationalNumber from "@/app/(private)/utils/formatNumber";
@@ -21,7 +20,6 @@ import { formatWithPattern } from "@/app/(private)/utils/date";
 import { isValidDate } from "@/app/utils/formatDate";
 import { downloadFile } from "@/app/services/allApi";
 import WorkflowApprovalActions from "@/app/components/workflowApprovalActions";
-// const CURRENCY = localStorage.getItem("country") || "";
 
 interface DeliveryDetail {
   id: number;

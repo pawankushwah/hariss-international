@@ -217,7 +217,6 @@ const SalesReportDashboard = () => {
       }
     });
 
-    console.log(filtersToLoad, currentFilterId);
     if(onDrop && currentFilterId) {
       filtersToLoad.add(currentFilterId);
     }
@@ -261,7 +260,6 @@ const SalesReportDashboard = () => {
 
       const queryString = params?.toString();
       const url = `http://172.16.6.205:8001/api/filters${queryString ? `?${queryString}` : ''}`;
-      console.log('Fetching filters from URL:', url);
       const response = await fetch(url, {
         method: 'GET',
       });

@@ -202,7 +202,6 @@ export default function ServiceVisit() {
             setLoading(true);
 
             const res = await serviceVisitExport({ format: fileType });
-            console.log("Export API Response:", res);
 
             let downloadUrl = "";
 
