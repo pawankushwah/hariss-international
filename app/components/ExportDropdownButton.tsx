@@ -7,15 +7,30 @@ export interface ExportDropdownButtonProps {
     exportReturnFile: (uuid: string, format: string) => void;
     uuid: string;
     className?: string;
+    keyType?: 'excel' | 'default';
 }
 
 export default function ExportDropdownButton({
     threeDotLoading,
     exportReturnFile,
     uuid,
-    className = ""
+    className = "",
+    keyType = 'default',
 }: ExportDropdownButtonProps) {
     const [showDropdown, setShowDropdown] = React.useState(false);
+    if (keyType === 'excel') {
+        return (
+            <div className={`relative ${className}`}>
+                <BorderIconButton
+                    icon={threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document"}
+                    label="Export Excel"
+                    onClick={() => {
+                        if (!threeDotLoading.xlsx) exportReturnFile(uuid, "xlsx");
+                    }}
+                />
+            </div>
+        );
+    }
     return (
         <div className={`relative ${className}`}>
             <BorderIconButton icon="ic:sharp-more-vert" onClick={() => setShowDropdown((prev) => !prev)} />
