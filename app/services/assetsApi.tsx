@@ -1156,3 +1156,12 @@ export const crfExport = async (params?: Params) => {
     return handleError(error);
   }
 };
+
+export const serviceVisitGenearateCode = async (body: object) => {
+  try {
+    const res = await API.post("/api/assets/service-visit/generate-code", body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
