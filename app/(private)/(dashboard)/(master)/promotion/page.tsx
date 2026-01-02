@@ -229,7 +229,7 @@ export default function Pricing() {
                                     href="/promotion/add"
                                     isActive
                                     leadingIcon="lucide:plus"
-                                    label="Add Promotion"
+                                    label="Add"
                                     labelTw="hidden sm:block"
                                 />,
                             ],

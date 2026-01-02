@@ -402,7 +402,6 @@ export default function AddServiceVisitStepper() {
 
     const params = useParams();
     const uuid = params?.id;
-    console.log("UUID from params:", params);
 
     const steps: StepperStep[] = [
         { id: 1, label: "Basic Outlet Information" },

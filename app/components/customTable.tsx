@@ -1135,7 +1135,6 @@ function FilterTableHeader({
     }
 
     async function handleSelect(value: string) {
-        console.log(column)
         const isSingle = filterConfig?.isSingle !== undefined ? filterConfig.isSingle : true;
         if (isSingle) {
             // If already selected, deselect (clear filter)
@@ -1174,7 +1173,6 @@ function FilterTableHeader({
                     if(api?.search) {
                         try {
                             setNestedLoading(true);
-                            console.log(column)
                             const res = api.search(value, defaultPageSize, column, 1);
                             const result = res instanceof Promise ? await res : res;
                             const { data, total, currentPage } = result;

@@ -892,7 +892,6 @@ export const surveyExport = async (params?: Params) => {
 export const getServiceVisitById = async (uuid: string) => {
   try {
     const res = await API.get(`/api/assets/service-visit/${uuid}`);
-    console.log(res);
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

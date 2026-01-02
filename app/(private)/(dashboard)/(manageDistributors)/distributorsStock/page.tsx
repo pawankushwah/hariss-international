@@ -80,7 +80,6 @@ const OverallPerformance: React.FC = () => {
           pageSize: 50,
         },
       });
-      setLoading(false);
       return {
         data: [],
         total: 0,
@@ -122,6 +121,7 @@ const OverallPerformance: React.FC = () => {
                 pageSize: topOrders.pagination.pageSize,
               }}
               config={{
+                showNestedLoading:false,
                 api: {
                   list: async (pageNo, pageSize) => {
                     // Table expects 1-based pageNo

@@ -186,7 +186,6 @@ export default function Page() {
       setLoading(true);
 
       const res = await assetsRequestExport({ format: fileType });
-      console.log("Export API Response:", res);
 
       let downloadUrl = "";
 
