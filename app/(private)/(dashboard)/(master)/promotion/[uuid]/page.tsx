@@ -433,7 +433,6 @@ export default function AddPricing() {
       }
     }
   };
-
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:

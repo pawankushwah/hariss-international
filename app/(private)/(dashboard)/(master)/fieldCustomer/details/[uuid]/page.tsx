@@ -170,11 +170,11 @@ export default function CustomerDetails() {
         },
         {
             key: "salesman_name",
-            label: "Salesman"
+            label: "Sales Team"
         },
         {
             key: "warehouse_name",
-            label: "Warehouse"
+            label: "Distributor"
         },
         {
             key: "route_name",
@@ -217,7 +217,7 @@ export default function CustomerDetails() {
             }
         },
         {
-            key: "salesman_code", label: "Salesman", showByDefault: true, render: (row: TableDataType) => {
+            key: "salesman_code", label: "Sales Team", showByDefault: true, render: (row: TableDataType) => {
                 const code = row.salesman_code || "";
                 const name = row.salesman_name || "";
                 return `${code}${code && name ? " - " : ""}${name}`;
@@ -320,8 +320,8 @@ export default function CustomerDetails() {
 
     const exportReturnFile = async (uuid: string, format: string) => {
         try {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
             const response = await agentCustomerReturnExport({ uuid, format,from_date: params?.start_date, to_date: params?.end_date }); // send proper body object
-
             if (response && typeof response === "object" && response.download_url) {
                 await downloadFile(response.download_url);
                 showSnackbar("File downloaded successfully", "success");
@@ -331,12 +331,14 @@ export default function CustomerDetails() {
         } catch (error) {
             console.error(error);
             showSnackbar("Failed to download data", "error");
+        } finally {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
         }
     };
     const allInvoices = async (uuid: string, format: string) => {
         try {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
             const response = await exportAllInvoices(uuid, { from_date: params?.start_date, to_date: params?.end_date }); // send proper body object
-
             if (response && typeof response === "object" && response.download_url) {
                 await downloadFile(response.download_url);
                 showSnackbar("File downloaded successfully", "success");
@@ -346,13 +348,15 @@ export default function CustomerDetails() {
         } catch (error) {
             console.error(error);
             showSnackbar("Failed to download data", "error");
+        } finally {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
         }
     };
 
     const exportFile = async (uuid: string, format: string) => {
         try {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
             const response = await exportInvoice({ uuid, format }); // send proper body object
-
             if (response && typeof response === "object" && response.download_url) {
                 await downloadFile(response.download_url);
                 showSnackbar("File downloaded successfully", "success");
@@ -362,6 +366,8 @@ export default function CustomerDetails() {
         } catch (error) {
             console.error(error);
             showSnackbar("Failed to download data", "error");
+        } finally {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
         }
     };
 
@@ -435,23 +441,22 @@ export default function CustomerDetails() {
         [setLoading]
     );
 
-     const exportReturn = async (uuid: string,format: string) => {
-                try {
-                    setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
-                    const response = await exportSpecificCustomerReturn({ uuid, format  });
-                    if (response && typeof response === 'object' && response.download_url) {
-                        await downloadFile(response.download_url);
-                        showSnackbar("File downloaded successfully", "success");
-                    } else {
-                        showSnackbar("Failed to get download URL", "error");
-                        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
-                    }
-                } catch (error) {
-                    showSnackbar("Failed to download vehicle data", "error");
-                    setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
-                } finally {
-                }
-            };
+    const exportReturn = async (uuid: string, format: string) => {
+        try {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+            const response = await exportSpecificCustomerReturn({ uuid, format });
+            if (response && typeof response === 'object' && response.download_url) {
+                await downloadFile(response.download_url);
+                showSnackbar("File downloaded successfully", "success");
+            } else {
+                showSnackbar("Failed to get download URL", "error");
+            }
+        } catch (error) {
+            showSnackbar("Failed to download vehicle data", "error");
+        } finally {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+        }
+    };
     
     return (
         <>
@@ -548,9 +553,10 @@ export default function CustomerDetails() {
                                     filterBy: filterBySales
                                 },
                                 header: {
+                                    
                                      actions: [
                                 <ExportDropdownButton
-                                    key="export-dropdown"
+                                    keyType="excel"
                                     threeDotLoading={threeDotLoading}
                                     exportReturnFile={allInvoices}
                                     uuid={uuid}
@@ -623,9 +629,10 @@ export default function CustomerDetails() {
 
 
                                 ],
+                              
                             actions: [
                                 <ExportDropdownButton
-                                    key="export-dropdown"
+                                   keyType="excel"
                                     threeDotLoading={threeDotLoading}
                                     exportReturnFile={exportReturnFile}
                                     uuid={uuid}
@@ -643,7 +650,7 @@ export default function CustomerDetails() {
                                 {
                                     icon: "material-symbols:download",
                                     onClick: (data: TableDataType) => {
-                                        exportReturn(data.uuid, "xlsx"); // or "excel", "csv" etc.
+                                        exportReturn(data.uuid, "csv"); // or "excel", "csv" etc.
                                     },
                                 }
                             ],

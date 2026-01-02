@@ -177,7 +177,6 @@ export default function Survey() {
       setLoading(true);
 
       const res = await surveyExport({ format: fileType });
-      console.log("Export API Response:", res);
 
       let downloadUrl = "";
 
