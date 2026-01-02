@@ -18,9 +18,9 @@ import { useLoading } from "@/app/services/loadingContext";
 import {
   spareCategoryList,
   spareSubCategoryList,
-  addSub,
-  updateSub,
-  subByID,
+  addSpareName,
+  updateSpareName,
+  spareNameByID,
 } from "@/app/services/assetsApi";
 
 import { genearateCode, saveFinalCode } from "@/app/services/allApi";
@@ -83,8 +83,8 @@ export default function AddEditSub() {
         };
 
         const res = isEditMode
-          ? await updateSub(uuid, payload as any)
-          : await addSub(payload as any);
+          ? await updateSpareName(uuid, payload as any)
+          : await addSpareName(payload as any);
 
         if (res?.error) {
           showSnackbar(res?.message || "Failed to save", "error");
@@ -152,7 +152,7 @@ export default function AddEditSub() {
       if (isEditMode) {
         setLocalLoading(true);
         try {
-          const res = await subByID(uuid);
+          const res = await spareNameByID(uuid);
           const d = res?.data;
 
           if (d) {

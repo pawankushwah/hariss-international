@@ -349,6 +349,51 @@ export const addChillerRequest = async (formData: FormData) => {
   }
 };
 
+export const fridgeUpdateCustomerList = async (params: any) => {
+  try {
+    const res = await API.get(`/api/assets/fridge-customer-update/list`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const fridgeUpdateCustomerByUUID = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/fridge-customer-update/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const updateFridgeUpdateCustomer = async (
+  uuid: string,
+  formData: FormData
+) => {
+  try {
+    const response = await APIFormData.post(
+      `/api/assets/fridge-customer-update/update/${uuid}`,
+      formData
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof (error as { response?: unknown })?.response === "object"
+    ) {
+      throw (error as { response?: { data?: unknown } }).response?.data || error;
+    }
+    throw error;
+  }
+};
+
 export const updateChillerRequest = async (
   uuid: string,
   formData: FormData
@@ -769,6 +814,40 @@ export const serviceVisitByUUID = async (uuid: string, params?: Params) => {
     return handleError(error);
   }
 };
+
+export const inventoryPostByStock = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/merchendisher/stockinstore/posts/${uuid}`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const assetsMasterExport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/chiller/export`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const shelfDisplayGlobalSearch = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/merchendisher/shelves/global-search`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
 export const ServiceTerritoryByUUID = async (uuid: string, params?: Params) => {
   try {
     const res = await API.get(`/api/assets/service-territory/getViewData/${uuid}`, {
@@ -820,7 +899,7 @@ export const spareByID = async (uuid: string, params?: Params) => {
   }
 };
 //ADD
-export const addSpare = async (body: spare) => {
+export const addSpare = async (body: object) => {
   try {
     const res = await API.post(`/api/settings/sparecategory/create`, body);
     return res.data;
@@ -830,7 +909,7 @@ export const addSpare = async (body: spare) => {
 };
 //UPDATE
 
-export const updateSpare = async (uuid: string, body: spare) => {
+export const updateSpare = async (uuid: string, body: object) => {
   try {
     const res = await API.put(`/api/settings/sparecategory/update/${uuid}`, body);
     return res.data;
@@ -923,15 +1002,15 @@ export const deletesub = async (id: string) => {
     return handleError(error);
   }
 };
-//spare Menu
-// export const spareMenu = async (body: object) => {
-//   try {
-//     const res = await API.get(`/api/settings/sparecategory/list`, body);
-//      return res.data;
-//   } catch (error: unknown) {
-//     return handleError(error);
-//   }
-// };
+
+export const spareMenu = async (body: object) => {
+  try {
+    const res = await API.get(`/api/assets/spare/list`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
 export const spareNameByID = async (uuid: string, params?: Params) => {
 
   try {
@@ -954,6 +1033,15 @@ export const addSpareName = async (body: spare) => {
 export const updateSpareName = async (uuid: string, body: spare) => {
   try {
     const res = await API.put(`/api/assets/spare/update/${uuid}`, body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const surveyExport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/merchendisher/survey/survey-export`, { params });
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -999,4 +1087,72 @@ type sparesub = {
   sub: string;
   spa: string;
   status: number;
+};
+
+export const getServiceVisitById = async (uuid: string) => {
+  try {
+    const res = await API.get(`/api/assets/service-visit/${uuid}`);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const addServiceVisit = async (formData: FormData) => {
+  try {
+    const response = await APIFormData.post("/api/assets/service-visit/add", formData);
+    return response.data;
+  } catch (error: unknown) {
+    handleError(error);
+  }
+};
+
+export const updateServiceVisit = async (
+  uuid: string,
+  formData: FormData
+) => {
+  try {
+    const response = await APIFormData.post(
+      `/api/assets/chiller-request/${uuid}`,
+      formData
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof (error as { response?: unknown })?.response === "object"
+    ) {
+      throw (error as { response?: { data?: unknown } }).response?.data || error;
+    }
+    throw error;
+  }
+};
+
+export const assetsRequestExport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/chiller-request/export-chiller-request-pdf`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const serviceVisitExport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/service-visit/export`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const crfExport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/assets/chiller-request/crf-export`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
 };

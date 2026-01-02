@@ -1,4 +1,5 @@
 "use client";
+
 import { useCallback, useEffect, useState } from "react";
 
 import { Icon } from "@iconify-icon/react";
@@ -12,14 +13,14 @@ import { useLoading } from "@/app/services/loadingContext";
 //import { deletespare, vendorList } from "@/app/services/assetsApi";
 import Table, { listReturnType, TableDataType } from "@/app/components/customTable";
 import StatusBtn from "@/app/components/statusBtn2";
-import {spareCategoryList,spareSubCategoryList} from "@/app/services/assetsApi";
+import {spareMenu,spareSubCategoryList} from "@/app/services/assetsApi";
 
 const dropdownDataList = [
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
   { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
 ];
 
-export  default function spareList(){
+export default function SpareList() {
    const { setLoading } = useLoading();
      const [showDropdown, setShowDropdown] = useState(false);
      const [showDeletePopup, setShowDeletePopup] = useState(false);
@@ -32,7 +33,7 @@ export  default function spareList(){
      const fetchsapre = useCallback(
      async (pageNo: number = 1, pageSize: number = 10): Promise<listReturnType> => {
            setLoading(true); 
-            const res = await spareCategoryList({
+            const res = await spareMenu({
              page: pageNo.toString(),
              per_page: pageSize.toString(),
            });
