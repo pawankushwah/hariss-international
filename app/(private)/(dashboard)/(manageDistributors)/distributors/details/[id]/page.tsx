@@ -1528,6 +1528,7 @@ export default function ViewPage() {
                             header: {
                                 filterRenderer: (props) => (
                                                                         <FilterComponent
+                                                                        currentDate={true}
                                                                           {...props}
                                                                           onlyFilters={['from_date', 'to_date']}
                                                                         />
@@ -1556,18 +1557,13 @@ export default function ViewPage() {
                             //     // filterBy: filterByListReturn
                             // },
                             header: {
-                                filterByFields: [
-                                    {
-                                        key: "start_date",
-                                        label: "Start Date",
-                                        type: "date"
-                                    },
-                                    {
-                                        key: "end_date",
-                                        label: "End Date",
-                                        type: "date"
-                                    },
-                                ]
+                                filterRenderer: (props) => (
+                                                                        <FilterComponent
+                                                                        currentDate={true}
+                                                                          {...props}
+                                                                          onlyFilters={['from_date', 'to_date']}
+                                                                        />
+                                                                      ),
                             },
                             footer: { nextPrevBtn: true, pagination: true },
                             columns: returnColumns,

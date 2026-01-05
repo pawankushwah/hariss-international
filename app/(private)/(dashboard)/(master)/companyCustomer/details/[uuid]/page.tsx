@@ -296,6 +296,7 @@ export default function ViewPage() {
                     header: {
                         filterRenderer: (props) => (
                             <FilterComponent
+                            currentDate={true}
                               {...props}
                               onlyFilters={['from_date', 'to_date']}
                             />
@@ -333,6 +334,7 @@ export default function ViewPage() {
                     header: {
                        filterRenderer: (props) => (
                            <FilterComponent
+                           currentDate={true}
                              {...props}
                              onlyFilters={['from_date', 'to_date']}
                            />

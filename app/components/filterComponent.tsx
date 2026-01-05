@@ -5,6 +5,7 @@ import { FilterRendererProps } from "./customTable";
 // Extend props to allow specifying which filters to show
 type FilterComponentProps = FilterRendererProps & {
   onlyFilters?: string[]; // e.g. ['warehouse_id', 'company_id']
+  currentDate?: boolean;
 };
 import SidebarBtn from "./dashboardSidebarBtn";
 import InputFields from "./inputFields";
@@ -61,18 +62,25 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
     ensureCompanyLoaded();
     ensureSalesmanLoaded();
   }, [ensureCompanyLoaded, ensureSalesmanLoaded]);
-  const { onlyFilters } = filterProps;
+  const { onlyFilters, currentDate } = filterProps;
 
-  // Set default date for from_date and to_date to today if not already set
+  // Set default date for from_date and to_date to today if currentDate is true
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    if (!filterProps.payload.from_date) {
-      filterProps.setPayload((prev) => ({ ...prev, from_date: today }));
+    if (currentDate) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (!filterProps.payload.from_date) {
+        filterProps.setPayload((prev) => ({ ...prev, from_date: today }));
+      }
+      if (!filterProps.payload.to_date) {
+        filterProps.setPayload((prev) => ({ ...prev, to_date: today }));
+      }
+    } else {
+      // If currentDate is false, clear the dates
+      filterProps.setPayload((prev) => ({ ...prev, from_date: "", to_date: "" }));
     }
-    if (!filterProps.payload.to_date) {
-      filterProps.setPayload((prev) => ({ ...prev, to_date: today }));
-    }
-  }, []);
+    // Only run on mount or when currentDate changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate]);
   const [skeleton, setSkeleton] = useState({
     company: false,
     region: false,
@@ -260,7 +268,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           value={
             typeof payload.from_date === "number"
               ? String(payload.from_date)
-              : (payload.from_date as string | undefined) ?? new Date().toISOString().slice(0, 10)
+              : (payload.from_date as string | undefined) ?? ""
           }
           onChange={(e) => {
             const raw = (e as any)?.target?.value ?? e;
@@ -274,11 +282,11 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           label="End Date"
           name="to_date"
           type="date"
-          min={typeof payload.from_date === "number" ? String(payload.from_date) : (payload.from_date as string | undefined) ?? new Date().toISOString().slice(0, 10)}
+          min={typeof payload.from_date === "number" ? String(payload.from_date) : (payload.from_date as string | undefined) ?? ""}
           value={
             typeof payload.to_date === "number"
               ? String(payload.to_date)
-              : (payload.to_date as string | undefined) ?? new Date().toISOString().slice(0, 10)
+              : (payload.to_date as string | undefined) ?? ""
           }
           disabled={!payload.from_date}
           onChange={(e) => {

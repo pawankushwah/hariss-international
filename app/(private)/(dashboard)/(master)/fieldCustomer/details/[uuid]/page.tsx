@@ -388,7 +388,7 @@ export default function CustomerDetails() {
                         params[k] = String(v);
                     }
                 });
-                result = await getAgentCustomerBySalesId(uuid, { from_date: params?.start_date, to_date: params?.end_date });
+                result = await getAgentCustomerBySalesId(uuid, { from_date: params?.from_date, to_date: params?.to_date });
             } finally {
                 setLoading(false);
             }
@@ -423,7 +423,7 @@ export default function CustomerDetails() {
                         params[k] = String(v);
                     }
                 });
-                result = await getAgentCustomerByReturnId(uuid, { from_date: params?.start_date, to_date: params?.end_date });
+                result = await getAgentCustomerByReturnId(uuid, { from_date: params?.from_date, to_date: params?.to_date });
             } finally {
                 setLoading(false);
             }
@@ -567,6 +567,7 @@ export default function CustomerDetails() {
                             ],
                                      filterRenderer: (props) => (
                                          <FilterComponent
+                                         currentDate={true}
                                            {...props}
                                            onlyFilters={['from_date', 'to_date']}
                                          />
@@ -613,6 +614,7 @@ export default function CustomerDetails() {
                             header: {
                                   filterRenderer: (props) => (
                                       <FilterComponent
+                                      currentDate={true}
                                         {...props}
                                         onlyFilters={['from_date', 'to_date']}
                                       />

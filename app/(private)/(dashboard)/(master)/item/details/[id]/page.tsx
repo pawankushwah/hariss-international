@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useCallback} from "react";
 import ContainerCard from "@/app/components/containerCard";
 import TabBtn from "@/app/components/tabBtn";
 import { useSnackbar } from "@/app/services/snackbarContext";
@@ -11,7 +11,7 @@ import Link from "next/link";
 import KeyValueData from "@/app/components/keyValueData";
 import StatusBtn from "@/app/components/statusBtn2";
 import { useLoading } from "@/app/services/loadingContext";
-import Table, { TableDataType } from "@/app/components/customTable";
+import Table, { TableDataType,listReturnType } from "@/app/components/customTable";
 import toInternationalNumber from "@/app/(private)/utils/formatNumber";
 import Image from "next/image";
 import { tabList } from "./tablelist";
@@ -135,6 +135,78 @@ export default function Page() {
 
     fetchItemDetails();
   }, [id, showSnackbar]);
+
+  const filterBySales = useCallback(
+    async (
+      payload: Record<string, string | number | null>,
+      pageSize: number
+    ): Promise<listReturnType> => {
+      let result;
+      setLoading(true);
+      try {
+     
+        const params: Record<string, string> = { per_page: pageSize.toString() };
+        Object.keys(payload || {}).forEach((k) => {
+          const v = payload[k as keyof typeof payload];
+          if (v !== null && typeof v !== "undefined" && String(v) !== "") {
+            params[k] = String(v);
+          }
+        });
+        result = await itemSales(String(item?.id), { from_date: params?.from_date, to_date: params?.to_date });
+      } finally {
+        setLoading(false);
+      }
+
+      if (result?.error) throw new Error(result.data?.message || "Filter failed");
+      else {
+        const pagination = result.pagination?.pagination || result.pagination || {};
+        return {
+          data: result.data || [],
+          total: pagination.totalPages || result.pagination?.totalPages || 0,
+          totalRecords: pagination.totalRecords || result.pagination?.totalRecords || 0,
+          currentPage: pagination.page || result.pagination?.currentPage || 0,
+          pageSize: pagination.limit || pageSize,
+        };
+      }
+    },
+    [setLoading]
+  );
+  const filterByReturn = useCallback(
+    async (
+      payload: Record<string, string | number | null>,
+      pageSize: number
+    ): Promise<listReturnType> => {
+      let result;
+      setLoading(true);
+      try {
+     
+        const params: Record<string, string> = { per_page: pageSize.toString() };
+        Object.keys(payload || {}).forEach((k) => {
+          const v = payload[k as keyof typeof payload];
+          if (v !== null && typeof v !== "undefined" && String(v) !== "") {
+            params[k] = String(v);
+          }
+        });
+        result = await itemReturn(String(item?.id), { from_date: params?.from_date, to_date: params?.to_date });
+      } finally {
+        setLoading(false);
+      }
+
+      if (result?.error) throw new Error(result.data?.message || "Filter failed");
+      else {
+        const pagination = result.pagination?.pagination || result.pagination || {};
+        return {
+          data: result.data || [],
+          total: pagination.totalPages || result.pagination?.totalPages || 0,
+          totalRecords: pagination.totalRecords || result.pagination?.totalRecords || 0,
+          currentPage: pagination.page || result.pagination?.currentPage || 0,
+          pageSize: pagination.limit || pageSize,
+        };
+      }
+    },
+    [setLoading]
+  );
+
 
   return (
     <>
@@ -309,11 +381,14 @@ export default function Page() {
                       currentPage: res.pagination?.page || 1,
                       pageSize: res.pagination?.pageSize || pageSize,
                     };
-                  }
+
+                  },
+                  filterBy: filterBySales
                 },
                 header: {
                   filterRenderer: (props) => (
                         <FilterComponent
+                        currentDate={true}
                           {...props}
                           onlyFilters={['from_date', 'to_date']}
                         />
@@ -359,11 +434,14 @@ export default function Page() {
                       currentPage: res.pagination?.page || 1,
                       pageSize: res.pagination?.pageSize || pageSize,
                     };
-                  }
+                    
+                  },
+                  filterBy: filterByReturn
                 },
                 header: {
                   filterRenderer: (props) => (
                         <FilterComponent
+                        currentDate={true}
                           {...props}
                           onlyFilters={['from_date', 'to_date']}
                         />

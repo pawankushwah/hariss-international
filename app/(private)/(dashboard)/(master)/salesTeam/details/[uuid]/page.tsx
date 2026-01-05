@@ -26,7 +26,8 @@ import Skeleton from "@mui/material/Skeleton";
 import Drawer from "@mui/material/Drawer";
 import ExportDropdownButton from "@/app/components/ExportDropdownButton";
 // import Attendance from "./attendance/page";
-
+import ImageThumbnail from "@/app/components/ImageThumbnail";
+import Map from "@/app/components/map";
 
 interface Salesman {
   id?: string | number;
@@ -176,7 +177,6 @@ export default function Page() {
     ? params?.uuid[0] || ""
     : (params?.uuid as string) || "";
   const [salesman, setSalesman] = useState<Salesman | null>(null);
-  const [salesmanId, setSalesmanId] = useState<string>();
 
 
   const title = "Sales Team Details";
@@ -251,6 +251,101 @@ export default function Page() {
 
       return(<IconComponentData row={row} />)
     } },
+
+
+  ];
+  const attendenceColumns: configType["columns"] = [
+    { key: "attendance_date", label: "Date", render: (row: TableDataType) => row.attendance_date ? formatDate(row.attendance_date) : "-" },
+    {
+      key: "salesman_type",
+      label: "Sales Team Type",
+      // render: (row: TableDataType) => (row as any).invoice_number || (row as any).invoice_code || "-"
+    },
+   
+   {
+  key: "warehouse_code,warehouse_name",
+  label: "Distributor",
+  // API provides numeric warehouse_id plus nested warehouse object { id, warehouse_code, warehouse_name }
+  render: (row: TableDataType | any) => {
+   return `${row.warehouse_code} - ${row.warehouse_name}` || "-";
+  },
+   },
+   {
+  key: "route_code,route_name",
+  label: "Route",
+  // API provides numeric warehouse_id plus nested warehouse object { id, warehouse_code, warehouse_name }
+  render: (row: TableDataType | any) => {
+   return `${row.route_code} - ${row.route_name}` || "-";
+  },
+   },
+   
+    { key: "time_in", label: "Time In", render: (row: TableDataType) => {
+      if (!row.time_in) return "-";
+      // If value is like '2025-10-25 09:00:00', extract time part
+      const match = String(row.time_in).match(/\b(\d{2}:\d{2}:\d{2})\b/);
+      return match ? match[1] : row.time_in;
+    } },
+    { key: "in_img", label: "Time In Image",render: (row: TableDataType) => {
+                const file = row.in_img;
+                if (!file) return "-";
+                        return (
+                        <ImageThumbnail
+                          src={file as any}
+                          alt={(file as any)?.name || "Time In Image"}
+                          width={56}
+                          height={40}
+                          className="rounded-md"
+                          // baseUrl could be provided here if required in your environment
+                        />
+                      );
+            }, },
+             { key: "attendance_latitude_in,attendance_longitude_in", label: "Attendence In Location",render: (row: TableDataType) => {
+                const file = row.out_img;
+                if (!file) return "-";
+                        return (
+                        <Map
+                        latitude={row.attendance_latitude_in}
+                        longitude={row.attendance_longitude_in}
+                        height={70}
+                        width={125}
+                        onClick={true}
+                        />
+                      );
+            },},
+    { key: "time_out", label: "Time Out", render: (row: TableDataType) => { if (!row.time_out) return "-";
+      // If value is like '2025-10-25 09:00:00', extract time part
+      const match = String(row.time_out).match(/\b(\d{2}:\d{2}:\d{2})\b/);
+      return match ? match[1] : row.time_out;
+    } },
+    { key: "out_img", label: "Time Out Image",render: (row: TableDataType) => {
+                const file = row.out_img;
+                if (!file) return "-";
+                        return (
+                        <ImageThumbnail
+                          src={file as any}
+                          alt={(file as any)?.name || "Time Out Image"}
+                          height={70}
+                        width={125}
+                          className="rounded-md"
+                          // baseUrl could be provided here if required in your environment
+                        />
+                      );
+            },},
+   
+    { key: "attendance_latitude_out,attendance_longitude_out", label: "Attendence Out Location",render: (row: TableDataType) => {
+                const file = row.out_img;
+                if (!file) return "-";
+                        return (
+                        <Map
+                        latitude={row.attendance_latitude_out}
+                        longitude={row.attendance_longitude_out}
+                        height={40}
+                        width={56}
+                        onClick={true}
+                        />
+                      );
+            },},
+   
 
 
   ];
@@ -367,7 +462,7 @@ export default function Page() {
       pageSize: number = 50
     ): Promise<searchReturnType> => {
 
-      const result = await getSalesmanBySalesId(uuid, { from: "", to: "",page:pageNo.toString() });
+      const result = await getSalesmanBySalesId(uuid);
       if (result.error) {
         throw new Error(result.data?.message || "Search failed");
       }
@@ -387,7 +482,7 @@ export default function Page() {
       pageNo: number = 1,
       pageSize: number = 50
     ): Promise<searchReturnType> => {
-      const result = await getOrderOfSalesmen(uuid, { from: "", to: "" });
+      const result = await getOrderOfSalesmen(uuid);
       if (result.error) {
         throw new Error(result.data?.message || "Search failed");
       }
@@ -422,7 +517,6 @@ export default function Page() {
           return;
         }
         setSalesman(res.data);
-        setSalesmanId(res.data.id);
         setGlobalLoading(false);
       } catch (error) {
         showSnackbar("Unable to fetch Sales Team Details", "error");
@@ -465,7 +559,7 @@ export default function Page() {
             params[k] = String(v);
           }
         });
-        result = await getOrderOfSalesmen(uuid, { from: params?.start_date, to: params?.end_date });
+        result = await getOrderOfSalesmen(uuid, { from_date: params?.from_date, to_date: params?.to_date });
       } finally {
         setLoading(false);
       }
@@ -493,6 +587,7 @@ export default function Page() {
       let result;
       setLoading(true);
       try {
+     
         const params: Record<string, string> = { per_page: pageSize.toString() };
         Object.keys(payload || {}).forEach((k) => {
           const v = payload[k as keyof typeof payload];
@@ -500,7 +595,42 @@ export default function Page() {
             params[k] = String(v);
           }
         });
-        result = await getSalesmanBySalesId(uuid, { from: params?.start_date, to: params?.end_date,page:params?.page });
+        result = await getSalesmanBySalesId(uuid, { from_date: params?.from_date, to_date: params?.to_date });
+      } finally {
+        setLoading(false);
+      }
+
+      if (result?.error) throw new Error(result.data?.message || "Filter failed");
+      else {
+        const pagination = result.pagination?.pagination || result.pagination || {};
+        return {
+          data: result.data || [],
+          total: pagination.totalPages || result.pagination?.totalPages || 0,
+          totalRecords: pagination.totalRecords || result.pagination?.totalRecords || 0,
+          currentPage: pagination.page || result.pagination?.currentPage || 0,
+          pageSize: pagination.limit || pageSize,
+        };
+      }
+    },
+    [setLoading]
+  );
+  const filterByAttendence = useCallback(
+    async (
+      payload: Record<string, string | number | null>,
+      pageSize: number
+    ): Promise<listReturnType> => {
+      let result;
+      setLoading(true);
+      try {
+     
+        const params: Record<string, string> = { per_page: pageSize.toString() };
+        Object.keys(payload || {}).forEach((k) => {
+          const v = payload[k as keyof typeof payload];
+          if (v !== null && typeof v !== "undefined" && String(v) !== "") {
+            params[k] = String(v);
+          }
+        });
+        result = await salesmanAttendence({ salesman_uuid:uuid,from_date: params?.from_date, to_date: params?.to_date });
       } finally {
         setLoading(false);
       }
@@ -525,8 +655,7 @@ export default function Page() {
       pageNo: number = 1,
       pageSize: number = 50
     ): Promise<searchReturnType> => {
-      console.log("salesman id is here 529",salesmanId)
-      const result = await salesmanAttendence( {salesman_id:salesmanId ,from_date: "", to_date: "",page:pageNo.toString() });
+      const result = await salesmanAttendence( {salesman_uuid:uuid ,from_date:params?.start_date,  to_date: params?.end_date,page:pageNo.toString() });
       if (result.error) {
         throw new Error(result.data?.message || "Search failed");
       }
@@ -847,12 +976,13 @@ export default function Page() {
                 api: {
                   // search: searchCustomerById,
                   list: salesmanAttendenceById,
-                  filterBy: filterBySalesmen
+                  filterBy: filterByAttendence
                 },
                 header: {
                   searchBar: false,
     filterRenderer: (props) => (
       <FilterComponent
+      currentDate={true}
         {...props}
         onlyFilters={['from_date', 'to_date']}
       />
@@ -881,7 +1011,7 @@ export default function Page() {
                 },
                 showNestedLoading: true,
                 footer: { nextPrevBtn: true, pagination: true },
-                columns: columns,
+                columns: attendenceColumns,
                 table: {
                   height: 500,
                 },
@@ -911,6 +1041,7 @@ export default function Page() {
                   searchBar: false,
     filterRenderer: (props) => (
       <FilterComponent
+      currentDate={true}
         {...props}
         onlyFilters={['from_date', 'to_date']}
       />
@@ -960,15 +1091,16 @@ export default function Page() {
           <div className="flex flex-col h-full">
             <Table
               config={{
-                // api: {
-                //   // search: searchCustomerById,
-                //   list: orderBySalesman,
-                //   filterBy: filterBy
-                // },
+                api: {
+                  // search: searchCustomerById,
+                  list: orderBySalesman,
+                  filterBy: filterBy
+                },
                 header: {
                   searchBar: false,
                     filterRenderer: (props) => (
       <FilterComponent
+      currentDate={true}
         {...props}
         onlyFilters={['from_date', 'to_date']}
       />
