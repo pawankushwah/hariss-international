@@ -126,7 +126,7 @@ export default function StockTransfer() {
         if (Array.isArray(warehouseData)) {
             return warehouseData.length > 0 ? (warehouseData[0].name || "-") : "-";
         }
-        return warehouseData.name || "-";
+        return `${warehouseData.warehouse_code} - ${warehouseData.warehouse_name}` || "-";
     };
 
     // --- Source Cascading Logic ---
@@ -545,19 +545,19 @@ export default function StockTransfer() {
                                     <div className="p-4 border border-red-100 bg-red-50/30 rounded-lg">
                                         <div className="flex items-center gap-2 mb-3 text-red-700 font-bold text-sm uppercase">
                                             <Icon icon="lucide:arrow-up-right" width="18" />
-                                            <span>Source (Origin)</span>
+                                            <span>Route (Origin)</span>
                                         </div>
                                         <div className="space-y-3">
                                             <div>
                                                 <div className="text-[11px] text-gray-500 uppercase">Route</div>
                                                 <div className="font-semibold text-gray-900">
-                                                    {selectedHistoryItem.old_route?.code} - {selectedHistoryItem.old_route?.name || "-"}
+                                                    {selectedHistoryItem.old_route?.route_code} - {selectedHistoryItem.old_route?.route_name || "-"}
                                                 </div>
                                             </div>
                                             <div>
                                                 <div className="text-[11px] text-gray-500 uppercase">Distributor</div>
                                                 <div className="font-medium text-gray-800">
-                                                    {getWarehouseName(selectedHistoryItem.warehouse?.old_warehouses)}
+                                                    {getWarehouseName(selectedHistoryItem?.old_warehouse)}
                                                 </div>
                                             </div>
                                         </div>
@@ -567,19 +567,19 @@ export default function StockTransfer() {
                                     <div className="p-4 border border-green-100 bg-green-50/30 rounded-lg">
                                         <div className="flex items-center gap-2 mb-3 text-green-700 font-bold text-sm uppercase">
                                             <Icon icon="lucide:arrow-down-right" width="18" />
-                                            <span>Destination</span>
+                                            <span>Route (Destination)</span>
                                         </div>
                                         <div className="space-y-3">
                                             <div>
                                                 <div className="text-[11px] text-gray-500 uppercase">Route</div>
                                                 <div className="font-semibold text-gray-900">
-                                                    {selectedHistoryItem.new_route?.code} - {selectedHistoryItem.new_route?.name || "-"}
+                                                    {selectedHistoryItem.new_route?.route_code} - {selectedHistoryItem.new_route?.route_name || "-"}
                                                 </div>
                                             </div>
                                             <div>
                                                 <div className="text-[11px] text-gray-500 uppercase">Distributor</div>
                                                 <div className="font-medium text-gray-800">
-                                                    {getWarehouseName(selectedHistoryItem.warehouse?.new_warehouse)}
+                                                    {getWarehouseName(selectedHistoryItem?.new_warehouse)}
                                                 </div>
                                             </div>
                                         </div>
@@ -597,18 +597,18 @@ export default function StockTransfer() {
                                             <table className="w-full text-xs text-left text-gray-500">
                                                 <thead className="text-gray-700 uppercase bg-gray-50 border-b sticky top-0">
                                                     <tr>
-                                                        <th className="px-4 py-2 font-semibold">Customer Name</th>
                                                         <th className="px-4 py-2 font-semibold">Code</th>
+                                                        <th className="px-4 py-2 font-semibold">Customer Name</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-200">
                                                     {selectedHistoryItem.customers.map((cust: any, cidx: number) => (
                                                         <tr key={cidx} className="bg-white hover:bg-gray-50">
-                                                            <td className="px-4 py-2 font-medium text-gray-900">
-                                                                {cust.customer_name || "-"}
-                                                            </td>
                                                             <td className="px-4 py-2 text-gray-600">
-                                                                {cust.customer_code || "-"}
+                                                                {cust.osa_code || "-"}
+                                                            </td>
+                                                            <td className="px-4 py-2 font-medium text-gray-900">
+                                                                {cust.name || "-"}
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -654,7 +654,7 @@ export default function StockTransfer() {
                                                     <div className="flex-1">
                                                         <div className="text-xs text-gray-500 mb-0.5">From</div>
                                                         <div className="font-semibold text-gray-800 text-sm line-clamp-1">
-                                                            {item.old_route?.name || item.old_route_id || "Unknown"}
+                                                            {item.old_route?.route_name || item.old_route_id || "Unknown"}
                                                         </div>
                                                     </div>
                                                     <div className="text-gray-400">
@@ -663,7 +663,7 @@ export default function StockTransfer() {
                                                     <div className="flex-1 text-right">
                                                         <div className="text-xs text-gray-500 mb-0.5">To</div>
                                                         <div className="font-semibold text-gray-800 text-sm line-clamp-1">
-                                                            {item.new_route?.name || item.new_route_id || "Unknown"}
+                                                            {item.new_route?.route_name || item.new_route_id || "Unknown"}
                                                         </div>
                                                     </div>
                                                 </div>
