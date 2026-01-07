@@ -131,7 +131,7 @@ const columns = [
   { key: "Quantity", label: "Quantity" },
   { key: "Price", label: "Price", render: (value: TableDataType) => <>{toInternationalNumber(value.Price) || '0.00'}</> },
   { key: "Net", label: "Net", render: (value: TableDataType) => <>{toInternationalNumber(value.Net) || '0.00'}</> },
-  { key: "vat", label: "VAT", render: (value: TableDataType) => <>{toInternationalNumber(value.Vat) || '0.00'}</> },
+  { key: "vat", label: "VAT", render: (value: TableDataType) => <>{toInternationalNumber(value.Vat, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</> },
   // { key: "preVat", label: "Pre VAT", render: (value: TableDataType) => <>{toInternationalNumber(Number(value.preVat)) || '0.00'}</> },
   // { key: "discount", label: "Discount", render: (value: TableDataType) => <>{toInternationalNumber(value.discount) || '0.00'}</> },
   // { key: "total_gross", label: "Gross", render: (value: TableDataType) => <>{toInternationalNumber(value.total_gross) || '0.00'}</> },
@@ -177,11 +177,7 @@ export default function OrderDetailPage() {
                 (matchedUom?.name ?? detail?.uom_name ?? detail?.uom ?? '-') as string;
 
               const priceValue =
-                matchedUom?.price ??
-                detail?.item_price ??
-                detail?.itemprice ??
-                detail?.itemvalue ??
-                0;
+                detail?.itemvalue ?? 0;
 
               return {
               id: String(index + 1),

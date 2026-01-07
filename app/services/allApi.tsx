@@ -4215,3 +4215,12 @@ export const allItemInvoiceExport = async (params?: Params) => {
   }
 };
 
+export const applyPromotion = async (payload: object) => {
+  try {
+    const res = await API.post("/api/master/promotion-headers/applicable", payload);
+
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
