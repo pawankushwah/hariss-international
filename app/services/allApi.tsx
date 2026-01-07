@@ -2056,9 +2056,9 @@ export const getSalesmanById = async (uuid: string) => {
   }
 };
 
-export const getSalesmanBySalesId = async (uuid: string, query?: { from_date: string, to_date: string, page?: string }) => {
+export const getSalesmanBySalesId = async (uuid: string, params?:Params) => {
   try {
-    const res = await API.get(`/api/master/salesmen/salespersalesman/${uuid}?from=${query?.from_date}&to=${query?.to_date}&page=${query?.page}`);
+    const res = await API.get(`/api/master/salesmen/salespersalesman/${uuid}`,{params});
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -4159,3 +4159,59 @@ export const salesmanAttendence = async (params?: Params) => {
     return handleError(error);
   }
 };
+
+export const returnByWarehouse = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/returns/getreturnbywarehouse`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const exportReturnByWarehouse = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/returns/exportreturnbasedwarehouse`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const allInvoiceExportInWarehouse = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/invoices/exportinvoicewarehouse`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const itemAllReturnExport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/master/items/item-exportReturn`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const allItemInvoiceExport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/master/items/item-exportInvoice`, {
+      params: params,
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+

@@ -286,22 +286,20 @@ export default function Page() {
       return match ? match[1] : row.time_in;
     } },
     { key: "in_img", label: "Time In Image",render: (row: TableDataType) => {
-                const file = row.in_img;
+                const file = `https://api.coreexl.com/osa_developmentV2/public/storage/${row.in_img}`;
                 if (!file) return "-";
                         return (
                         <ImageThumbnail
                           src={file as any}
                           alt={(file as any)?.name || "Time In Image"}
-                          width={56}
-                          height={40}
+                          height={60}
+                        width={120}
                           className="rounded-md"
                           // baseUrl could be provided here if required in your environment
                         />
                       );
             }, },
              { key: "attendance_latitude_in,attendance_longitude_in", label: "Attendence In Location",render: (row: TableDataType) => {
-                const file = row.out_img;
-                if (!file) return "-";
                         return (
                         <Map
                         latitude={row.attendance_latitude_in}
@@ -318,14 +316,14 @@ export default function Page() {
       return match ? match[1] : row.time_out;
     } },
     { key: "out_img", label: "Time Out Image",render: (row: TableDataType) => {
-                const file = row.out_img;
+                const file = `https://api.coreexl.com/osa_developmentV2/public/storage/${row.out_img}`;
                 if (!file) return "-";
                         return (
                         <ImageThumbnail
                           src={file as any}
                           alt={(file as any)?.name || "Time Out Image"}
-                          height={70}
-                        width={125}
+                          height={60}
+                        width={120}
                           className="rounded-md"
                           // baseUrl could be provided here if required in your environment
                         />
@@ -333,14 +331,12 @@ export default function Page() {
             },},
    
     { key: "attendance_latitude_out,attendance_longitude_out", label: "Attendence Out Location",render: (row: TableDataType) => {
-                const file = row.out_img;
-                if (!file) return "-";
                         return (
                         <Map
                         latitude={row.attendance_latitude_out}
                         longitude={row.attendance_longitude_out}
-                        height={40}
-                        width={56}
+                         height={70}
+                        width={125}
                         onClick={true}
                         />
                       );
