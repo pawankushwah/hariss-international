@@ -175,7 +175,6 @@ export default function DeliveryAddEditPage() {
     uom_id: Yup.string().required("Please select a UOM"),
     Quantity: Yup.number()
       .typeError("Quantity must be a number")
-      .min(1, "Quantity must be at least 1")
       .required("Quantity is required"),
   });
 
@@ -1315,7 +1314,7 @@ export default function DeliveryAddEditPage() {
                                 // integerOnly={true}
                                 placeholder="Enter Qty"
                                 value={row.Quantity}
-                                disabled={!row.uom_id || !values.order_code}
+                                disabled={!row.uom_id || !values.order_code || row.Quantity == 0}
                                 onChange={(e) => {
                                   const raw = (e.target as HTMLInputElement)
                                     .value;
@@ -1371,16 +1370,14 @@ export default function DeliveryAddEditPage() {
                           if (
                             !price ||
                             price === "" ||
-                            price === "0" ||
-                            price === "-"
+                           
+                            price === "0.00"
                           ) {
                             return (
                               <span
-                                className="
-                                  text-gray-400
-                                "
+                                
                               >
-                                -
+                                0.00
                               </span>
                             );
                           }

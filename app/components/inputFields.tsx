@@ -1186,7 +1186,7 @@ export default function InputFields({
                       }`}
                   >
                     {!value
-                      ? `Select ${label}`
+                      ? label ? `Select ${label}` : 'Select option'
                       : options?.find((opt) => opt.value === value)?.label}
                   </span>
                 )}
