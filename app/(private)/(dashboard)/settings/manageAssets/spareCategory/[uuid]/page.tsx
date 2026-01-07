@@ -74,7 +74,7 @@ export default function AddEditSpare() {
         }
 
         showSnackbar(
-          isEditMode ? "Spare updated successfully" : "Spare added successfully",
+          isEditMode ? "Spare Category updated successfully" : "Spare Category added successfully",
           "success"
         );
 
@@ -144,7 +144,7 @@ export default function AddEditSpare() {
           <Icon icon="lucide:arrow-left" width={24} />
         </div>
         <h1 className="text-xl font-semibold">
-          {isEditMode ? "Update Spare" : "Add Spare"}
+          {isEditMode ? "Update Spare Category" : "Add Spare Category"}
         </h1>
       </div>
 
@@ -154,7 +154,7 @@ export default function AddEditSpare() {
         ) : (
           <form onSubmit={formik.handleSubmit}>
             <ContainerCard>
-              <h2 className="text-lg font-semibold mb-6">Spare Details</h2>
+              <h2 className="text-lg font-semibold mb-6">Spare Category Details</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputFields

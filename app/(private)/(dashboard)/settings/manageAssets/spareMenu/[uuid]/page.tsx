@@ -298,7 +298,7 @@ useEffect(() => {
           <Icon icon="lucide:arrow-left" width={24} />
         </div>
         <h1 className="text-xl font-semibold">
-          {isEditMode ? "Update Sub" : "Add Sub"}
+          {isEditMode ? "Update Spare Menu" : "Add Spare Menu"}
         </h1>
       </div>
 

@@ -1078,20 +1078,35 @@ export default function DeliveryAddEditPage() {
                             const computedVat =
                               d.vat != null ? Number(d.vat) : 0;
                             const preVat = computedTotal - computedVat;
+                            // Ensure item_uoms is always an array
+                            const uomsArr = Array.isArray(d.item_uoms)
+                              ? d.item_uoms
+                              : d.item_uoms
+                                ? [d.item_uoms]
+                                : [];
+                            // Find the selected UOM option by uom_id
+                            const selectedUomId = d.uom_id ? String(d.uom_id) : "";
+                            const UOMOptions = uomsArr.map((uom: any) => ({
+                              label: uom.name ?? "",
+                              value: uom.id !== undefined ? String(uom.id) : (uom.uom_id !== undefined ? String(uom.uom_id) : ""),
+                              price: String(uom.price ?? ""),
+                            }));
+                            // If the selected UOM is not in the options, add it
+                            if (selectedUomId && !UOMOptions.some(opt => opt.value === selectedUomId) && d.uom_name) {
+                              UOMOptions.push({
+                                label: d.uom_name,
+                                value: selectedUomId,
+                                price: d.item_price != null ? String(d.item_price) : "",
+                              });
+                            }
                             return {
                               item_id: String(d.item_id ?? ""),
                               item_name: d.item_name ?? "",
                               item_label: `${d.erp_code ?? ""}${
                                 d.erp_code ? " - " : ""
                               }${d.item_name ?? ""}`,
-                              UOM: d.item_uoms
-                                ? d.item_uoms.map((uom: any) => ({
-                                    label: uom.name ?? "",
-                                    value: String(uom.id),
-                                    price: String(uom.price ?? ""),
-                                  }))
-                                : [],
-                              uom_id: d.uom_id ? String(d.uom_id) : "",
+                              UOM: UOMOptions,
+                              uom_id: selectedUomId,
                               Quantity: String(d.quantity ?? "1"),
                               Price:
                                 d.item_price != null
