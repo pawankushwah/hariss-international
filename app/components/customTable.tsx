@@ -175,6 +175,11 @@ export type configType = {
                 ) => Promise<listReturnType> | listReturnType
             ) => React.ReactNode;
         };
+        filterStatus?: {
+            enabled: boolean;
+            onFilter: (status: boolean) => Promise<void>;
+            currentFilter?: boolean | null;
+        };
     }[];
 };
 
@@ -235,11 +240,12 @@ interface TableProps {
     // Accept either array or object with pagination
     data?: TableDataType[] | TableDataWithPagination;
     config: configType;
+    directFilterRenderer?: React.ReactNode;
 }
 
 const defaultPageSize = 50;
 
-export default function Table({ refreshKey = 0, data, config }: TableProps) {
+export default function Table({ refreshKey = 0, data, config, directFilterRenderer }: TableProps) {
     return (
         <ContextProvider>
             <TableContainer
@@ -250,6 +256,7 @@ export default function Table({ refreshKey = 0, data, config }: TableProps) {
                     dragableColumn: true,
                     ...config
                 }}
+                directFilterRenderer={directFilterRenderer}
             />
         </ContextProvider>
     );
@@ -278,7 +285,7 @@ function ContextProvider({ children }: { children: React.ReactNode }) {
     );
 }
 
-function TableContainer({ refreshKey, data, config }: TableProps) {
+function TableContainer({ refreshKey, data, config, directFilterRenderer }: TableProps) {
     // Ref to track last API call params
     const lastApiCallRef = useRef<{ pageNo: number; pageSize: number } | null>(null);
     const { setSelectedColumns } = useContext(ColumnFilterConfig);
@@ -500,7 +507,7 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
                                 </div>
                             )}
                             <div className="flex flex-col bg-white w-full border-[1px] border-[#E9EAEB] rounded-[8px] overflow-hidden">
-                                <TableHeader />
+                                <TableHeader directFilterRenderer={directFilterRenderer} />
                                 <TableBody orderedColumns={orderedColumns} setColumnOrder={setColumnOrder} />
                                 <TableFooter />
                             </div>
@@ -508,7 +515,7 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
                     );
                 }
 
-function TableHeader() {
+function TableHeader({ directFilterRenderer }: { directFilterRenderer?: React.ReactNode }) {
     const { config } = useContext(Config);
     const { tableDetails, setTableDetails, setNestedLoading, setSearchState, searchState, initialTableData } = useContext(TableDetails);
     const [searchBarValue, setSearchBarValue] = useState("");
@@ -570,7 +577,11 @@ function TableHeader() {
                             )}
 
                             {/* header filter panel button (shows configurable fields or custom renderer) */}
-                            {(config.header?.filterByFields?.length || config.header?.filterRenderer) && (
+                            {directFilterRenderer ? (
+                                <div className="ml-2">
+                                    {directFilterRenderer}
+                                </div>
+                            ) : (config.header?.filterByFields?.length || config.header?.filterRenderer) && (
                                 <div className="ml-2">
                                     <FilterBy />
                                 </div>
@@ -923,6 +934,32 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
                                                             )
                                                         }
                                                     />
+                                                )}
+                                                {col.filterStatus?.enabled && (
+                                                    <div className="flex flex-col gap-0 ml-1">
+                                                        <Icon
+                                                            icon="ep:arrow-up"
+                                                            width={12}
+                                                            height={12}
+                                                            className={`cursor-pointer transition-colors ${
+                                                                col.filterStatus.currentFilter === true
+                                                                    ? "text-blue-600"
+                                                                    : "text-gray-400 hover:text-gray-600"
+                                                            }`}
+                                                            onClick={() => col.filterStatus?.onFilter(true)}
+                                                        />
+                                                        <Icon
+                                                            icon="ep:arrow-down"
+                                                            width={12}
+                                                            height={12}
+                                                            className={`cursor-pointer transition-colors ${
+                                                                col.filterStatus.currentFilter === false
+                                                                    ? "text-blue-600"
+                                                                    : "text-gray-400 hover:text-gray-600"
+                                                            }`}
+                                                            onClick={() => col.filterStatus?.onFilter(false)}
+                                                        />
+                                                    </div>
                                                 )}
                                             </div>
                                         </th>
