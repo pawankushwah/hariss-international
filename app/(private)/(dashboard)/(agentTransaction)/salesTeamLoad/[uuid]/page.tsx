@@ -647,7 +647,13 @@ export default function AddEditSalesmanLoad() {
             value={form.salesman}
             disabled={form.salesman_type === "6" ? !form.warehouse : !form.route || form.salesman_type === "2" ? !form.warehouse : false}
             searchable={true}
-            options={form.salesman_type === "6" ? projectSalesmanOptions : salesmanOptions || form.salesman_type === "2" ? salesmanWarehouseRouteOptions : salesmanOptions || salesmanOptions}
+            options={
+              form.salesman_type === "6"
+                ? projectSalesmanOptions
+                : form.salesman_type === "2"
+                ? salesmanWarehouseRouteOptions
+                : salesmanOptions
+            }
             error={errors.salesman}
             showSkeleton={skeleton.salesman}
             onChange={(e) => handleChange("salesman", e.target.value)}

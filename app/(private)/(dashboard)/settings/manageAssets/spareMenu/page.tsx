@@ -68,7 +68,7 @@ export default function SpareList() {
                         list: fetchsapre
                       },
                       header: {
-                                    title: "Spare",
+                                    title: "Spare Menu",
                                     searchBar: false,
                                     columnFilter: true,
                                     actions: [

@@ -146,7 +146,7 @@ export default function CompanyCustomers() {
     {
       key: "status",
       label: "Status",
-      isSortable: true,
+      // isSortable: true,
       render: (row: TableDataType) => {
         return <StatusBtn isActive={String(row.status) > "0"} />;
       },
@@ -166,6 +166,7 @@ export default function CompanyCustomers() {
         setThreeDotLoading((prev) => ({ ...prev, [format]: false }))
 
       }
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }))
     } catch (error) {
       showSnackbar("Failed to download distributor data", "error");
       setThreeDotLoading((prev) => ({ ...prev, [format]: false }))
