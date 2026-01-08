@@ -353,7 +353,8 @@ export default function AddPricing() {
   const [selectedCustomerDetails, setSelectedCustomerDetails] = useState<{ label: string; value: string }[]>([]);
   const [selectedItemCategoryDetails, setSelectedItemCategoryDetails] = useState<{ label: string; value: string }[]>([]);
 
-  // Removed duplicate keyValue declaration
+  // No duplicate keyValue declaration
+
   useEffect(() => {
     async function loadCompanies() {
       const companies = await companyList();
@@ -417,9 +418,6 @@ export default function AddPricing() {
   useEffect(() => {
     if (!keyValue["Region"] || keyValue["Region"].length === 0) {
       setAreaOptions([]);
-      // setWarehouseOptions([]);
-      // setRouteOptions([]);
-      // setKeyValue((kv) => ({ ...kv, Area: [], Warehouse: [], Route: [] }));
       return;
     }
     async function fetchAreas() {
@@ -428,14 +426,12 @@ export default function AddPricing() {
     }
     fetchAreas();
   }, [keyValue["Region"]]);
-  console.log(selectedWarehouseDetails, "selectedWarehouseDetails")
+
 
   // When area changes, fetch warehouses and reset children
   useEffect(() => {
     if (!keyValue["Area"] || keyValue["Area"].length === 0) {
       setWarehouseOptions([]);
-      // setRouteOptions([]);
-      // setKeyValue((kv) => ({ ...kv, Warehouse: [], Route: [] }));
       return;
     }
     let active = true;
@@ -450,7 +446,7 @@ export default function AddPricing() {
         currentAreaIds.every(id => selectedAreaDetails.some(d => d.value === id));
 
       if (isOriginalParent) {
-        const missing = selectedWarehouseDetails.filter(d => !options.some(o => o.value === d.value));
+        const missing = selectedWarehouseDetails.filter(d => !options.some((o: any) => o.value === d.value));
         options = [...options, ...missing];
       }
 
@@ -470,7 +466,6 @@ export default function AddPricing() {
   useEffect(() => {
     if (!keyValue["Warehouse"] || keyValue["Warehouse"].length === 0) {
       setRouteOptions([]);
-      // setKeyValue((kv) => ({ ...kv, Route: [] }));
       return;
     }
     let active = true;
@@ -485,7 +480,7 @@ export default function AddPricing() {
         currentWarehouseIds.every(id => selectedWarehouseDetails.some(d => d.value === id));
 
       if (isOriginalParent) {
-        const missing = selectedRouteDetails.filter(d => !options.some(o => o.value === d.value));
+        const missing = selectedRouteDetails.filter(d => !options.some((o: any) => o.value === d.value));
         options = [...options, ...missing];
       }
 
@@ -668,7 +663,7 @@ export default function AddPricing() {
               })));
             }
             const warehouseData = (res as any).warehouse;
-            console.log(warehouseData, "warehouseData");
+
             if (Array.isArray(warehouseData) && warehouseData.length > 0 && typeof warehouseData[0] === 'object') {
               setSelectedWarehouseDetails(warehouseData.map((w: any) => ({
                 label: `${w.warehouse_code || w.code || ""} - ${w.warehouse_name || w.name || ""}`,
