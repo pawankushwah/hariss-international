@@ -1633,7 +1633,7 @@ function PaginationBtn({
 }) {
     return (
         <div
-            className={`min-w-[40px] h-[40px] rounded-[8px] p-[12px] flex items-center justify-center cursor-pointer ${isActive
+            className={`min-w-[40px] h-[40px] rounded-[8px] p-[12px] flex items-center justify-center ${label === '...' ? '' : 'cursor-pointer'} ${isActive
                 ? "bg-[#FFF0F2] text-[#EA0A2A]"
                 : "bg-tranparent text-[#717680]"
                 }`}
