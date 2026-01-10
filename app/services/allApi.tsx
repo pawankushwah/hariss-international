@@ -4264,3 +4264,16 @@ export const distributorStockOverview = async (id: string, params?: Params) => {
     return handleError(error);
   }
 };
+
+
+
+export const dummyImport = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/master/route-visits/dummy-csv`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
