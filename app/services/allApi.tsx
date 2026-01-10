@@ -4264,3 +4264,12 @@ export const allRoleList = async (params?: Params) => {
     return handleError(error);
   }
 };
+
+export const distributorStockOverview = async (id: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/settings/warehouse-stocks/${id}/stock-helth`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
