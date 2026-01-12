@@ -271,9 +271,9 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
         options={[
           { value: "yesterday", label: "Yesterday" },
           { value: "today", label: "Today" },
-          { value: "last_3_days", label: "Last 3 Days" },
-          { value: "last_7_days", label: "Last 7 Days" },
-          { value: "last_month", label: "Last Month" },
+          { value: "3days", label: "Last 3 Days" },
+          { value: "7days", label: "Last 7 Days" },
+          { value: "lastmonth", label: "Last Month" },
         ]}
         value={
           Array.isArray(payload.day_filter)
