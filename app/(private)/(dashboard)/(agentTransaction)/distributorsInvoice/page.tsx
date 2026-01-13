@@ -22,7 +22,7 @@ import ApprovalStatus from "@/app/components/approvalStatus";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import Drawer from "@mui/material/Drawer";
 import { OrderDetailPage } from "./OrderDetailComponent";
-import { Params } from "next/dist/server/request/params";
+import { downloadPDFGlobal } from "@/app/services/allApi";
 // import StatusBtn from "@/app/components/statusBtn2";
 // import ApprovalStatus from "@/app/components/approvalStatus";
 
@@ -188,7 +188,9 @@ export default function CustomerInvoicePage() {
             setLoading(true);
             const response = await exportOrderInvoice({ uuid: uuid, format: "pdf" });
             if (response && typeof response === 'object' && response.download_url) {
-                await downloadFile(response.download_url);
+                 const fileName = `invoice-${uuid}.pdf`;
+                await downloadPDFGlobal(response.download_url, fileName);
+                // await downloadFile(response.download_url);
                 showSnackbar("File downloaded successfully ", "success");
             } else {
                 showSnackbar("Failed to get download URL", "error");

@@ -101,7 +101,7 @@ export default function SpareList() {
                                                 },
                                   
                                               ],
-                                              rowSelection: true,
+                                              // rowSelection: true,
                                              rowActions: [
                                           
               {

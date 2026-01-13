@@ -545,7 +545,7 @@ export const addCallRegister = async (body: object): Promise<any> => {
 
 export const callRegisterGlobalSearch = async (params: Params) => {
   try {
-    const res = await API.get(`/api/assets/chiller/get-chiller`, {
+    const res = await API.get(`/api/assets/call-register/global_search`, {
       params: params,
     });
     return res.data;
@@ -1161,6 +1161,52 @@ export const crfExport = async (params?: Params) => {
 export const serviceVisitGenearateCode = async (body: object) => {
   try {
     const res = await API.post("/api/assets/service-visit/generate-code", body);
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const exportCallRegister = async (params: Params) => {
+  try {
+    const res = await API.get("/api/assets/call-register/export", {params});
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+
+export const exportFridgeCustomer = async (params: Params) => {
+  try {
+    const res = await API.get("/api/assets/fridge-customer-update/export", {params});
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const FridgeCustomerGlobalSearch = async (params: Params) => {
+  try {
+    const res = await API.get("/api/assets/fridge-customer-update/global_search", {params});
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const serialNumberData = async (params: Params) => {
+  try {
+    const res = await API.get("/api/assets/call-register/chiller-data", {params});
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getCurrentCustomer = async (params: Params) => {
+  try {
+    const res = await API.get("/api/assets/call-register/current-customer", {params});
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

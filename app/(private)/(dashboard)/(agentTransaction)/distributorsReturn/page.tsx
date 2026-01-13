@@ -22,7 +22,7 @@ import { useAllDropdownListData } from "@/app/components/contexts/allDropdownLis
 import FilterComponent from "@/app/components/filterComponent";
 import ApprovalStatus from "@/app/components/approvalStatus";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
-
+import { downloadPDFGlobal } from "@/app/services/allApi";
 const dropdownDataList = [
     // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
     // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
@@ -101,6 +101,7 @@ export default function CustomerInvoicePage() {
     const { setLoading } = useLoading();
     const router = useRouter();
     const [isExporting, setIsExporting] = useState(false);
+    const [returnCode, setReturnCode] = useState("");
     const [filters, setFilters] = useState({
         fromDate: new Date().toISOString().split("T")[0],
         toDate: new Date().toISOString().split("T")[0],
@@ -145,7 +146,7 @@ export default function CustomerInvoicePage() {
                 // page: page.toString(),
                 // per_page: pageSize.toString(),
             );
-
+            setReturnCode(result.data.osa_code);
             return {
                 data: Array.isArray(result.data) ? result.data : [],
                 total: result?.pagination?.totalPages || 1,
@@ -257,7 +258,9 @@ export default function CustomerInvoicePage() {
             setLoading(true);
             const response = await exportReturneWithDetails({ uuid: uuid, format: "pdf" });
             if (response && typeof response === 'object' && response.download_url) {
-                await downloadFile(response.download_url);
+                const fileName = `return-${returnCode}.pdf`;
+                await downloadPDFGlobal(response.download_url, fileName);
+                // await downloadFile(response.download_url);
                 showSnackbar("File downloaded successfully ", "success");
             } else {
                 showSnackbar("Failed to get download URL", "error");

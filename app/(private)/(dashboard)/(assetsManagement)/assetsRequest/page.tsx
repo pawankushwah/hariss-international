@@ -325,7 +325,7 @@ export default function Page() {
                 ),
               },
             ],
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               {
                 icon: "lucide:eye",

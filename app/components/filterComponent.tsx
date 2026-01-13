@@ -256,6 +256,10 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
 
   // Helper to check if a filter should be shown
   const showFilter = (key: string) => {
+    // Only show day_filter if onlyFilters is provided and includes it
+    if (key === 'day_filter') {
+      return Array.isArray(onlyFilters) && onlyFilters.includes('day_filter');
+    }
     if (!onlyFilters) return true;
     return onlyFilters.includes(key);
   };
@@ -263,6 +267,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
   return (
     <div className="grid grid-cols-2 gap-4">
       {/* Day Filter Dropdown */}
+       {showFilter("day_filter") && (
       <InputFields
         label="Day Filter"
         name="day_filter"
@@ -288,6 +293,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           setPayload((prev) => ({ ...prev, day_filter: raw }));
         }}
       />
+       )}
       {/* Start Date */}
       {showFilter("from_date") && (
         <InputFields

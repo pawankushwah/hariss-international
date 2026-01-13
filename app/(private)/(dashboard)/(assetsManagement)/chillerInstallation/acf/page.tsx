@@ -486,7 +486,7 @@ export default function CustomerInvoicePage() {
                     },
                     footer: { nextPrevBtn: true, pagination: true },
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
                     floatingInfoBar: {
                         showByDefault: true,
                         showSelectedRow: true,

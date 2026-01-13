@@ -306,7 +306,7 @@ export default function ServiceTerritoryListPage() {
 
                     columns: getColumns(regionOptions || [], areaOptions || [], warehouseAllOptions || []),
 
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
                         {
                             icon: "lucide:eye",

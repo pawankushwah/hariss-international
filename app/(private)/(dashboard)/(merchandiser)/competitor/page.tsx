@@ -239,7 +239,7 @@ export default function Competitor() {
               { key: "notes", label: "Notes" },
             ],
 
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               {
                 icon: "lucide:eye",

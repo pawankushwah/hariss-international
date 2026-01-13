@@ -232,7 +232,7 @@ export default function StockInStore() {
           },
           footer: { nextPrevBtn: true, pagination: true },
           columns,
-          rowSelection: true,
+          // rowSelection: true,
           rowActions: [
             {
               icon: "lucide:eye",
