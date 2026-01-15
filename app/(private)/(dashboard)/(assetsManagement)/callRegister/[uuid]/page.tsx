@@ -28,7 +28,7 @@ const validationSchema = Yup.object({
     chiller_serial_number: Yup.string().required("Chiller Serial Number is required"),
     assets_category: Yup.string().required("Assets Category is required"),
     model_number: Yup.string().required("Model Number is required"),
-    brand: Yup.string().required("Branding is required"),
+    branding: Yup.string().required("Branding is required"),
     outlet_name: Yup.string().required("Outlet Name is required"),
     owner_name: Yup.string().required("Owner Name is required"),
     street: Yup.string().required("Street is required"),
@@ -63,7 +63,7 @@ const stepSchemas = [
         chiller_serial_number: Yup.string().required("Chiller Serial Number is required"),
         assets_category: Yup.string().required("Assets Category is required"),
         model_number: Yup.string().required("Model Number is required"),
-        brand: Yup.string().required("Branding is required"),
+        branding: Yup.string().required("Branding is required"),
     }),
     Yup.object().shape({
         outlet_name: Yup.string().required("Outlet Name is required"),
@@ -102,7 +102,7 @@ interface CallRegister {
     chiller_serial_number: string;
     assets_category: string;
     model_number: string;
-    brand: string;
+    branding: string;
     outlet_name: string;
     owner_name: string;
     street: string;
@@ -181,7 +181,7 @@ export default function AddOrEditChiller() {
         assets_category: "",
         model_number: "",
         chiller_code: "",
-        brand: "",
+        branding: "",
         outlet_code: "",
         outlet_name: "",
         owner_name: "",
@@ -271,7 +271,7 @@ export default function AddOrEditChiller() {
                     assets_category: d.assets_category || "",
                     model_number: d.model_number || "",
                     chiller_code: d.chiller_code || "",
-                    brand: d.brand || "",
+                    branding: d.branding || "",
                     outlet_code: d.outlet_code || "",
                     outlet_name: d.outlet_name || "",
                     owner_name: d.owner_name || "",
@@ -420,7 +420,7 @@ export default function AddOrEditChiller() {
             assets_category: values.assets_category,
             model_number: values.model_number,
             chiller_code: values.chiller_code,
-            brand: values.brand,
+            branding: values.branding,
 
             outlet_code: values.outlet_code,
             outlet_name: values.outlet_name,
@@ -564,11 +564,11 @@ export default function AddOrEditChiller() {
                             <InputFields
                                 required
                                 label="Branding"
-                                name="brand"
-                                value={values.brand}
+                                name="branding"
+                                value={values.branding}
                                 options={brandingOptions}
-                                onChange={(e) => setFieldValue("brand", e.target.value)}
-                                error={touched.brand && errors.brand}
+                                onChange={(e) => setFieldValue("branding", e.target.value)}
+                                error={touched.branding && errors.branding}
                             />
                         </div>
                     </ContainerCard>
