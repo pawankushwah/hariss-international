@@ -5,6 +5,7 @@ import { Icon } from "@iconify-icon/react";
 import CustomDropdown from "./customDropdown";
 import BorderIconButton from "./borderIconButton";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import UploadPopup from "./UploadPopup";
 import FilterDropdown from "./filterDropdown";
 import InputFields from "./inputFields";
 import SidebarBtn from "./dashboardSidebarBtn";
@@ -89,6 +90,15 @@ export type configType = {
             threeDotLoading?: { csv: boolean; xlsx: boolean ; xls?: boolean; xslx?:boolean}; 
             show: boolean;
             onClick: (api: (params?: Record<string, any>) => Promise<any>, data?: TableDataType[]) => void;
+        };
+        /**
+         * Optional upload prop. If provided, shows upload icon next to exportButton.
+         * dummyApi: function for dummy upload
+         * api: function for real upload
+         */
+        upload?: {
+            dummyApi: (...args: any[]) => Promise<any>;
+            api: (...args: any[]) => Promise<any>;
         };
         threeDot?: {
             label: string;
@@ -430,6 +440,14 @@ function TableContainer({ refreshKey, data, config, directFilterRenderer }: Tabl
                         }
                     }, [selectedRow, config.onRowSelectionChange]);
 
+                    const [showUploadPopup, setShowUploadPopup] = useState(false);
+                    // Listen for open-upload-popup event
+                    useEffect(() => {
+                        const handler = () => setShowUploadPopup(true);
+                        window.addEventListener('open-upload-popup', handler);
+                        return () => window.removeEventListener('open-upload-popup', handler);
+                    }, []);
+
                     const orderedColumns = (columnOrder || []).map((i) => config.columns[i]).filter(Boolean);
 
                     return (
@@ -447,22 +465,30 @@ function TableContainer({ refreshKey, data, config, directFilterRenderer }: Tabl
                                             config.header?.wholeTableActions?.map(
                                                 (action) => action
                                             )}
-                                            {config.header?.exportButton &&
-                                        <div className="flex gap-[12px] relative">
-                                            <BorderIconButton
-                                                icon={(config.header?.exportButton?.threeDotLoading?.xlsx || config.header?.exportButton?.threeDotLoading?.xslx || config.header?.exportButton?.threeDotLoading?.xls) ? "eos-icons:three-dots-loading" : "gala:file-document"}
-                                                label="Export Excel"
-                                                onClick={async () => {
-                                                    if (config.header?.exportButton?.threeDotLoading?.xlsx || config.header?.exportButton?.threeDotLoading?.xslx || config.header?.exportButton?.threeDotLoading?.xls) return;
-                                                    if (!config.header?.exportButton?.onClick) return;
-                                                    config.header.exportButton.onClick(config.api?.list as any, displayedData);
-                                                }}
-                                            />
-                                        </div>
-                                            }
+                                            {config.header?.exportButton && (
+                                                <div className="flex gap-[12px] relative items-center">
+                                                    <BorderIconButton
+                                                        icon={(config.header?.exportButton?.threeDotLoading?.xlsx || config.header?.exportButton?.threeDotLoading?.xslx || config.header?.exportButton?.threeDotLoading?.xls) ? "eos-icons:three-dots-loading" : "gala:file-document"}
+                                                        label="Export Excel"
+                                                        onClick={async () => {
+                                                            if (config.header?.exportButton?.threeDotLoading?.xlsx || config.header?.exportButton?.threeDotLoading?.xslx || config.header?.exportButton?.threeDotLoading?.xls) return;
+                                                            if (!config.header?.exportButton?.onClick) return;
+                                                            config.header.exportButton.onClick(config.api?.list as any, displayedData);
+                                                        }}
+                                                    />
+                                                    {/* Upload icon next to exportButton if upload prop is provided */}
+                                                    {config.header?.upload && (
+                                                        <BorderIconButton
+                                                            icon="material-symbols:upload-rounded"
+                                                            // label="Upload"
+                                                            onClick={() => setShowUploadPopup(true)}
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
                                         {/* If you want to add threeDot dropdown, do it in the correct place in header */}
                                       {config.header?.threeDot && (() => {
-                                            
+                            
                                             const visibleOptions = config.header.threeDot.filter(option => {
                                                 const shouldShow = option.showOnSelect ? selectedRow.length > 0 : option.showWhen ? option.showWhen(displayedData, selectedRow) : true;
                                                 return shouldShow;
@@ -512,6 +538,15 @@ function TableContainer({ refreshKey, data, config, directFilterRenderer }: Tabl
                                 <TableBody orderedColumns={orderedColumns} setColumnOrder={setColumnOrder} />
                                 <TableFooter />
                             </div>
+                            {/* Upload Popup */}
+                            {config.header?.upload && (
+                                <UploadPopup
+                                    open={showUploadPopup}
+                                    onClose={() => setShowUploadPopup(false)}
+                                    dummyApi={config.header.upload.dummyApi}
+                                    api={config.header.upload.api}
+                                />
+                            )}
                         </>
                     );
                 }
@@ -1242,39 +1277,18 @@ function FilterTableHeader({
             }
             setShowFilterDropdown(false);
         } else {
-            setSelectedValues((prev) => {
-                let updated: string[];
-                if (prev.includes(value)) {
-                    updated = prev.filter((v) => v !== value);
-                } else {
-                    updated = [...prev, value];
-                }
-                // persist multi-select in global filter state
-                try {
-                    setFilterState(prevState => ({ applied: updated.length > 0, payload: { ...(prevState?.payload || {}), [column]: updated } }));
-                } catch (err) { }
-                if (filterConfig?.onSelect) filterConfig.onSelect(String(updated));
-                // Call search API for multi-select
-                if(api?.list) {
-                    try {
-                        setNestedLoading(true);
-                        const res = api.list(1,defaultPageSize); // assuming API accepts comma-separated values for multi-select
-                        Promise.resolve(res).then(async (result) => {
-                            const resolvedResult = result instanceof Promise ? await result : result;
-                            const { data, total, currentPage } = resolvedResult;
-                            setTableDetails({
-                                ...tableDetails,
-                                data,
-                                currentPage: currentPage - 1,
-                                total,
-                                pageSize: defaultPageSize,
-                            });
-                            setNestedLoading(false);
-                        });
-                    } catch (err) { setNestedLoading(false); /* ignore */ }
-                }
-                return updated;
-            });
+            let updated: string[];
+            if (selectedValues.includes(value)) {
+                updated = selectedValues.filter((v) => v !== value);
+            } else {
+                updated = [...selectedValues, value];
+            }
+            // persist multi-select in global filter state
+            try {
+                setFilterState(prevState => ({ applied: updated.length > 0, payload: { ...(prevState?.payload || {}), [column]: updated } }));
+            } catch (err) { }
+            if (filterConfig?.onSelect) filterConfig.onSelect(String(updated));
+            setSelectedValues(updated);
         }
     }
 // function handleSelect(value: string) {

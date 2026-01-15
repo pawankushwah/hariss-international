@@ -4286,3 +4286,17 @@ export const dummyImport = async (params?: Params) => {
 };
 
 
+export const routeVisitCustomerImport = async (formData: FormData) => {
+  try {
+    const res = await API.post(`/api/master/route-visits/bulk-import`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+

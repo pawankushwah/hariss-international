@@ -283,7 +283,7 @@ export default function Complaint() {
                 },
               },
             ],
-            rowSelection: true,
+            // rowSelection: true,
             // rowActions: [
             //   {
             //     icon: "lucide:eye",

@@ -1581,7 +1581,6 @@ export default function ViewPage() {
                                                     warehouse_id: warehouseId,
                                                     date_filter: filterValue,
                                                 });
-                                                console.log("Filter API response:", res);
                                                 // Accept either `stocks` or `data` array from the API; fallback to empty array
                                                 const apiStocks = Array.isArray(res?.stocks)
                                                     ? res!.stocks

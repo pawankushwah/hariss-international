@@ -116,7 +116,7 @@ interface DropdownDataContextType {
   menuOptions: { value: string; label: string }[];
   vendorOptions: { value: string; label: string }[];
   salesmanOptions: { value: string; label: string }[];
-  agentCustomerOptions: { value: string; label: string; contact_no?: string }[];
+  agentCustomerOptions: { value: string; value1?: string; label: string; contact_no?: string }[];
   // added to match provider values for "all" lists
   allCompanyOptions: { value: string; label: string }[];
   allAgentCustomerOptions: { value: string; label: string; contact_no?: string }[];
@@ -137,7 +137,7 @@ interface DropdownDataContextType {
   userOptions: { value: string; label: string }[];
   spareCategoryOptions: { value: string; label: string }[];
   spareSubCategoryOptions: { value: string; label: string }[];
-  chillerOptions: { value: string; label: string }[];
+  chillerOptions: { value: string; value1?:string; label: string }[];
   permissions: permissionsList[];
   refreshDropdowns: () => Promise<void>;
   refreshDropdown: (name: string, params?: any) => Promise<void>;
@@ -1486,6 +1486,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
 
   const chillerOptions = (Array.isArray(chillerListState) ? chillerListState : []).map((c: ChillerItem) => ({
     value: String(c.id ?? ''),
+    value1: String(c.serial_number),
     label: c.serial_number ? `${c.serial_number}` : (c.serial_number ?? '')
   }))
 
@@ -1554,6 +1555,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
 
   const agentCustomerOptions = (Array.isArray(agentCustomer) ? agentCustomer : []).map((c: AgentCustomerList) => ({
     value: String(c.id ?? ''),
+    value1: String(c.osa_code ?? ''),
     label: c.osa_code && c.name ? `${c.osa_code} - ${c.name}` : (c.name ?? ''),
     contact_no: c.contact_no ?? ''
   }));

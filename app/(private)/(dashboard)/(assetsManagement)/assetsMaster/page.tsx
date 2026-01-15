@@ -160,7 +160,7 @@ export default function ShelfDisplay() {
   }, [])
 
   return (
-    <>
+   <>
       {/* Table */}
       <div className="flex flex-col h-full">
         <Table
@@ -273,7 +273,7 @@ export default function ShelfDisplay() {
                     : "-",
               },
             ],
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               {
                 icon: "lucide:eye",

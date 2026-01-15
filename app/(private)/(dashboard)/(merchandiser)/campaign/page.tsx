@@ -189,7 +189,7 @@ export default function CampaignPage() {
               searchBar: true,
             },
             footer: { nextPrevBtn: true, pagination: true },
-            rowSelection: true,
+            // rowSelection: true,
             pageSize: 50,
             table: {
               height: "400px"

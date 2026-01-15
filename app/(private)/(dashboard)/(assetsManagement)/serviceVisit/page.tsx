@@ -295,7 +295,7 @@ export default function ServiceVisit() {
                     },
 
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
 
                     rowActions: [
                         {

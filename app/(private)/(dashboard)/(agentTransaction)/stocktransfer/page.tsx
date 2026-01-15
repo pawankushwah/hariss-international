@@ -229,7 +229,7 @@ export default function StockTransferPage() {
                     localStorageKey: "stock-transfer-table",
                     footer: { pagination: true, nextPrevBtn: true },
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
                         {
                             icon: "lucide:eye",

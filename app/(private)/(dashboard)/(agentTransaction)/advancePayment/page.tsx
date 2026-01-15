@@ -285,7 +285,7 @@ export default function PaymentListPage() {
             localStorageKey: "payment-table",
             footer: { nextPrevBtn: true, pagination: true },
             columns,
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               // {
               //   icon: "lucide:edit-2",

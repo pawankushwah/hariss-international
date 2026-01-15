@@ -163,7 +163,7 @@ export default function AddEditVehicleWithStepper() {
     chassisNumber: "",
     description: "",
     vehicleType: "",
-    ownerType: "",
+    ownerType: "distributor",
     warehouseId: "",
     odoMeter: "",
     capacity: "",
@@ -244,7 +244,7 @@ export default function AddEditVehicleWithStepper() {
               chassisNumber: vehicle.vehicle_chesis_no || "",
               description: vehicle.description || "",
               vehicleType: vehicle.vehicle_type || "",
-              ownerType: vehicle.owner_type || "",
+              ownerType: vehicle.owner_type === 'agent' ? 'distributor' : vehicle.owner_type || "",
               warehouseId: vehicle.warehouse?.id?.toString() || "",
               odoMeter: vehicle.opening_odometer || "",
               capacity: vehicle.capacity || "",
@@ -537,13 +537,13 @@ export default function AddEditVehicleWithStepper() {
                   name="ownerType"
                   error={touched.ownerType && errors.ownerType}
                   options={[
-                    { value: "Company", label: "Company" },
-                    { value: "Distributor", label: "Distributor" },
+                    { value: "company", label: "Company" },
+                    { value: "distributor", label: "Distributor" },
                   ]}
                 />
               </div>
 
-              {form.ownerType !== "Company" && (
+              {form.ownerType !== "company" && (
                 <div>
                   <InputFields
                     label="Distributor"
