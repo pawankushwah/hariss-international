@@ -28,13 +28,6 @@ const validationSchema = Yup.object({
     assets_category: Yup.string().required("Assets Category is required"),
     model_number: Yup.string().required("Model Number is required"),
     branding: Yup.string().required("Branding is required"),
-    outlet_name: Yup.string().required("Outlet Name is required"),
-    owner_name: Yup.string().required("Owner Name is required"),
-    street: Yup.string().required("Street is required"),
-    landmark: Yup.string().required("Landmark is required"),
-    town: Yup.string().required("Town is required"),
-    district: Yup.string().required("District is required"),
-    contact_no1: Yup.string().required("Contact No1 is required"),
     current_outlet_name: Yup.string().required("Current Outlet Name is required"),
     current_owner_name: Yup.string().required("Current Owner Name is required"),
     current_warehouse: Yup.string().required("Current Warehouse is required"),
@@ -140,6 +133,8 @@ export default function AddOrEditChiller() {
     const {
         agentCustomerOptions,
         chillerOptions,
+        brandingOptions,
+        ensureBrandingLoaded,
         ensureChillerLoaded,
         ensureAgentCustomerLoaded,
     } = useAllDropdownListData();
@@ -204,6 +199,7 @@ export default function AddOrEditChiller() {
     useEffect(() => {
         ensureChillerLoaded();
         ensureAgentCustomerLoaded();
+        ensureBrandingLoaded();
     }, []);
 
     useEffect(() => {
@@ -282,17 +278,11 @@ export default function AddOrEditChiller() {
                     nature_of_call: d.nature_of_call || "",
                     follow_up_action: d.follow_up_action || "",
                 });
-
-            } else {
-                if (chiller.ticket_type) {
-                    const res = await genearateCode({ model_name: chiller.ticket_type });
-                    setChiller((prev) => ({ ...prev, osa_code: res?.code || "" }));
-                }
             }
         }
 
         fetchData();
-    }, [chiller.ticket_type]); // 👈 IMPORTANT DEPENDENCY
+    }, [isEditMode, chillerId]);
 
     // Define stepFields to match each step's fields for validation
     const stepFields = [
@@ -315,43 +305,59 @@ export default function AddOrEditChiller() {
         serial: string,
         setFieldValue: FormikHelpers<CallRegister>["setFieldValue"]
     ) => {
-
-
         try {
             setSkeleton(true);
             const res = await serialNumberData({ serial_number: serial });
-            setAssignCusId(res?.data?.customer.id);
-            setAssetNoId(res?.data?.assets_category.id);
-            setModelNoId(res?.data?.model_number.id);
-            setBrandId(res?.data?.brand.id);
-            const d = Array.isArray(res?.data) ? res.data[0] : res.data;
+
+            const d = res?.data;
             if (!d) {
                 showSnackbar("No data found for this serial number", "warning");
                 return;
             }
 
-            // STEP 1: Asset Number, Model Number, Branding
-            // setFieldValue("chiller_serial_number", d.chiller_serial_number || serial);
-            setFieldValue("assets_category", `${d.assets_category?.osa_code || ''} - ${d.assets_category?.name || ''}`);
-            setFieldValue("model_number", `${d.model_number?.code || ''} - ${d.model_number?.name || ''}`);
-            setFieldValue("brand", `${d.brand?.osa_code || ''} - ${d.brand?.name || ''}`);
+            // ✅ DO NOT touch chiller_serial_number here
 
-            // STEP 2: All values
-            setFieldValue("outlet_name", `${d.customer?.osa_code || ''} - ${d.customer?.name || ''}`);
-            setFieldValue("owner_name", d.customer?.owner_name || "");
-            setFieldValue("street", d.customer?.street || "");
-            setFieldValue("landmark", d.customer?.landmark || "");
-            setFieldValue("town", d.customer?.town || "");
-            setFieldValue("district", d.customer?.district || "");
-            setFieldValue("contact_no1", d.customer?.contact_no || "");
-            setFieldValue("contact_no2", d.customer?.contact_no2 || "");
-            setSkeleton(false);
+            // ✅ Store IDs in state
+            setAssignCusId(res?.data?.customer?.id);
+            if (d.assets_category?.id) setAssetNoId(String(d.assets_category.id));
+            if (d.model_number?.id) setModelNoId(String(d.model_number.id));
+            if (d.brand?.id) setBrandId(String(d.brand.id));
 
-        } catch (err) {
-            console.error(err);
+            // ✅ Select fields → store IDs
+            setFieldValue("branding", String(d.brand?.id));
+
+            // ✅ Text fields
+            setFieldValue(
+                "assets_category",
+                `${d.assets_category?.osa_code} - ${d.assets_category?.name}`
+            );
+            setFieldValue(
+                "model_number",
+                `${d.model_number?.code} - ${d.model_number?.name}`
+            );
+
+            if (d.customer) {
+                setFieldValue(
+                    "outlet_name",
+                    `${d.customer?.osa_code} - ${d.customer?.name}`
+                );
+                setFieldValue("owner_name", d.customer?.owner_name || "");
+                setFieldValue("street", d.customer?.street || "");
+                setFieldValue("landmark", d.customer?.landmark || "");
+                setFieldValue("town", d.customer?.town || "");
+                setFieldValue("district", d.customer?.district || "");
+                setFieldValue("contact_no1", d.customer?.contact_no || "");
+                setFieldValue("contact_no2", d.customer?.contact_no2 || "");
+            }
+
+        } catch {
             showSnackbar("Failed to fetch serial number details", "error");
+        } finally {
+            setSkeleton(false);
         }
     };
+
+
     const fetchCurrentCustomer = async (
         search: string,
         setFieldValue: FormikHelpers<CallRegister>["setFieldValue"]
@@ -434,6 +440,7 @@ export default function AddOrEditChiller() {
             model_number: String(modelNoId),
             chiller_code: values.chiller_code,
             branding: values.branding,
+            assigned_customer_id: String(assignCusId),
 
             outlet_code: values.outlet_code,
             outlet_name: values.outlet_name,
@@ -516,10 +523,18 @@ export default function AddOrEditChiller() {
                                     { value: "TR", label: "TR" }
                                 ]}
                                 value={values.ticket_type}
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                     const type = e.target.value;
                                     setFieldValue("ticket_type", type);
                                     setChiller((prev) => ({ ...prev, ticket_type: type }));
+
+                                    // Generate code for new additions only
+                                    if (!isEditMode && type) {
+                                        const res = await genearateCode({ model_name: type });
+                                        const generatedCode = res?.code || "";
+                                        setFieldValue("osa_code", generatedCode);
+                                        setChiller((prev) => ({ ...prev, osa_code: generatedCode }));
+                                    }
                                 }}
                                 error={touched.ticket_type && errors.ticket_type}
                             />
@@ -552,15 +567,24 @@ export default function AddOrEditChiller() {
                                 value={values.chiller_serial_number}
                                 options={chillerOptions}
                                 onChange={(e) => {
-                                    setFieldValue("chiller_serial_number", e.target.value);
-                                    const selectedOption = chillerOptions.find(opt => opt.value === e.target.value);
-                                    const valueToSend = selectedOption?.value1 || selectedOption?.label;
-                                    if (valueToSend) {
-                                        fetchSerialNumber(valueToSend, setFieldValue);
+                                    const selectedValue = e.target.value;
+
+                                    // ✅ store ONLY option.value
+                                    setFieldValue("chiller_serial_number", selectedValue);
+
+                                    const selectedOption = chillerOptions.find(
+                                        (opt) => opt.value === selectedValue
+                                    );
+
+                                    // ✅ use value1 ONLY for API
+                                    if (selectedOption?.value1) {
+                                        fetchSerialNumber(selectedOption.value1, setFieldValue);
                                     }
                                 }}
                                 error={touched.chiller_serial_number && errors.chiller_serial_number}
                             />
+
+
 
 
 
@@ -698,14 +722,6 @@ export default function AddOrEditChiller() {
                     <ContainerCard>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                            {/* <InputFields
-                                // required
-                                label="Outlet Code"
-                                name="current_outlet_code"
-                                value={values.current_outlet_code}
-                                onChange={(e) => setFieldValue("current_outlet_code", e.target.value)}
-                            // error={touched.branding && errors.branding}
-                            /> */}
 
                             <InputFields
                                 required
@@ -728,7 +744,6 @@ export default function AddOrEditChiller() {
 
                             <InputFields
                                 required
-                                showSkeleton={skeleton}
                                 label="Owner Name"
                                 name="current_owner_name"
                                 value={values.current_owner_name}
@@ -821,13 +836,11 @@ export default function AddOrEditChiller() {
                             />
 
                             <InputFields
-                                required
                                 showSkeleton={skeleton}
                                 label="Contact No2"
                                 name="current_contact_no2"
                                 value={values.current_contact_no2}
                                 onChange={(e) => setFieldValue("current_contact_no2", e.target.value)}
-                                error={touched.current_contact_no2 && errors.current_contact_no2}
                             />
 
                             <InputFields
