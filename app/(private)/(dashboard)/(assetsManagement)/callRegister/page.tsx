@@ -157,8 +157,8 @@ export default function CallRegister() {
                             { key: "technician_name", label: "Technician Name" },
                             // { key: "chiller_code", label: "Chiller Code", showByDefault: true },
                             { key: "asset_number", label: "Asset Number" },
-                            { key: "model_number", label: "Model Number" },
-                            { key: "branding", label: "Branding" },
+                            { key: "model_number", label: "Model Number", render: (row: TableDataType) => row.model_number?.name },
+                            { key: "branding", label: "Branding", render: (row: TableDataType) => row.branding?.name },
                             { key: "nature_of_call", label: "Nature of Call" },
 
                             // Assigned Outlet
