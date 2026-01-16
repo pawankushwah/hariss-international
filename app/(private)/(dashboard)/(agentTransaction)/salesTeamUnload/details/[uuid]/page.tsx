@@ -29,7 +29,9 @@ interface CustomerItem {
   sync_date: string;
   sync_time: string;
   unload_from: string;
-  salesman_type: string | null;
+  salesman_type: {
+    name: string;
+  };
   latitude: string;
   longtitude: string;
   load_date: string;
@@ -191,8 +193,8 @@ export default function ViewPage() {
                       : "-",
                   },
                   {
-                    key: "Salesman Type",
-                    value: customer?.salesman_type || "-",
+                    key: "Sales Team Type",
+                    value: customer?.salesman_type?.name || "-",
                   },
                   {
                     key: "Salesman",

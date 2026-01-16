@@ -1604,9 +1604,9 @@ setCheckout(2)
   return (
     <>
       <div className="flex items-center gap-2 mb-4">
-        <Link href="/promotion">
+        {/* <Link href="/promotion">
           <Icon icon="lucide:arrow-left" width={22} />
-        </Link>
+        </Link> */}
         <h1 className="text-xl font-semibold">
           Promotion Setup
         </h1>
@@ -1619,7 +1619,9 @@ setCheckout(2)
         }))}
         currentStep={currentStep}
         onStepClick={() => {}}
-        onBack={prevStep}
+        close={true}
+        closeFunction={() => setOpenPromotion(false)}
+        onBack={() => prevStep()}
         onNext={handleNext}
         onSubmit={handleSubmit}
         showSubmitButton={isLastStep}

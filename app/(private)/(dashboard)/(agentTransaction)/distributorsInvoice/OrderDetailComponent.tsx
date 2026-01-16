@@ -154,7 +154,7 @@ export function OrderDetailPage({ uuid, onClose }: { uuid: string; onClose?: () 
               itemName: String(detail.item_name ?? "-"),
               UOM: String(detail.uom_name ?? detail.uom ?? "-"),
               Quantity: String(detail.quantity ?? 0),
-              Price: String(detail.uom_type === "secondary" ? detail.itemprice : detail.item_price),
+              Price: String(detail.itemvalue),
               Excise: String(detail.excise ?? "0"),
               Discount: String(detail.discount ?? "0"),
               Net: String(detail.net_total ?? "0"),

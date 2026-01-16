@@ -21,7 +21,7 @@ import {
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import { Icon } from "@iconify-icon/react/dist/iconify.mjs";
 import axios from "axios";
-
+import { useLoading } from "@/app/services/loadingContext";
 import { warehouseList } from "@/app/services/allApi";
 import {
   addChillerRequest,
@@ -72,30 +72,17 @@ const validationSchema = Yup.object({
     .required("Outlet Name is required")
     .max(100, "Outlet Name cannot exceed 100 characters"),
   contact_number: Yup.string()
-    .matches(/^\d{9}$/, "Contact Number must be exactly 10 digits")
     .required("Contact Number is required"),
   landmark: Yup.string()
     .trim()
     .max(255, "Landmark cannot exceed 255 characters"),
-  existing_coolers: Yup.string()
-    .trim()
-    .max(100, "Existing coolers cannot exceed 100 characters"),
-  outlet_weekly_sale_volume_current: Yup.string()
-    .trim()
-    .max(100, "Outlet weekly sale volume cannot exceed 100 characters"),
-  outlet_weekly_sale_volume: Yup.string()
-    .trim()
-    .max(100, "Outlet weekly sale volume cannot exceed 100 characters"),
-  display_location: Yup.string()
-    .trim()
-    .max(100, "Display location cannot exceed 100 characters"),
-  chiller_size_requested: Yup.string()
-    .trim()
-    .max(100, "Chiller size requested cannot exceed 100 characters"),
-  chiller_safty_grill: Yup.string()
-    .trim()
-    .max(100, "Chiller safety grill cannot exceed 100 characters"),
-  warehouse_id: Yup.number()
+  existing_coolers: Yup.string(),
+  outlet_weekly_sale_volume_current: Yup.string(),
+  outlet_weekly_sale_volume: Yup.string(),
+  display_location: Yup.string(),
+  chiller_size_requested: Yup.string(),
+  chiller_safty_grill: Yup.string(),
+  warehouse_id: Yup.string()
     .required("Warehouse is required")
     .typeError("Warehouse must be a number"),
   customer_id: Yup.number()
@@ -133,15 +120,6 @@ const stepSchemas = [
 
   // Step 2: Location and Personnel
   Yup.object().shape({
-    existing_coolers: validationSchema.fields.existing_coolers,
-    stock_share_with_competitor: validationSchema.fields.stock_share_with_competitor,
-    outlet_weekly_sale_volume_current:
-      validationSchema.fields.outlet_weekly_sale_volume_current,
-    outlet_weekly_sale_volume:
-      validationSchema.fields.outlet_weekly_sale_volume,
-    display_location: validationSchema.fields.display_location,
-    chiller_size_requested: validationSchema.fields.chiller_size_requested,
-    chiller_safty_grill: validationSchema.fields.chiller_safty_grill,
   }),
 
   // Step 3: Chiller Details
@@ -163,13 +141,12 @@ const stepSchemas = [
 
 type Chiller = {
   osa_code: string;
-  warehouse_id: number;
-  customer_id: number;
+  warehouse_id: string;
+  customer_id:  string;
   owner_name: string;
   contact_number: string;
-  town: string;
   landmark: string;
-  district: string;
+  address: string;
   location: string;
   outlet_id: string;
   specify_if_other_type: string;
@@ -309,7 +286,7 @@ export default function AddCompanyWithStepper() {
     isStepCompleted,
     isLastStep,
   } = useStepperForm(steps.length);
-
+  
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
 
@@ -340,7 +317,7 @@ export default function AddCompanyWithStepper() {
 
   const fetchExistingData = async (uuid: string) => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       const res = await getChillerRequestById(uuid);
 
       if (res.status === "success" && res.data) {
@@ -349,19 +326,18 @@ export default function AddCompanyWithStepper() {
         // Transform the API response to match our Chiller type
         const transformedData: Chiller = {
           osa_code: data.osa_code || "",
-          warehouse_id: data.warehouse?.id || 0,
-          customer_id: data.customer?.id.toString() || 0,
+          warehouse_id: String(data.warehouse?.id),
+          customer_id: String(data.customer?.id),
           owner_name: data.owner_name || "",
           contact_number: data.contact_number || "",
-          town: data.town || "",
           landmark: data.landmark || "",
-          district: data.district || "",
+          address: data.address || "",
           location: data.location || "",
           outlet_id: data.outlet?.id.toString() || 0,
           specify_if_other_type: data.specify_if_other_type || "",
           existing_coolers: data.existing_coolers || "",
           stock_share_with_competitor: data.stock_share_with_competitor || "",
-          outlet_weekly_sale_volume_current: data.outlet_weekly_sale_volume_current || "",
+          outlet_weekly_sale_volume_current: data.outlet_weekly_sale_volume || "",
           outlet_weekly_sale_volume: data.outlet_weekly_sale_volume || "",
           display_location: data.display_location || "",
           chiller_size_requested: data.chiller_size_requested || "",
@@ -422,7 +398,7 @@ export default function AddCompanyWithStepper() {
       console.error("Error fetching existing data:", error);
       showSnackbar("Failed to fetch assets request data", "error");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -634,13 +610,12 @@ export default function AddCompanyWithStepper() {
 
   const initialValues: Chiller = {
     osa_code: "",
-    warehouse_id: 0,
-    customer_id: 0,
+    warehouse_id: "",
+    customer_id: "",
     owner_name: "",
     contact_number: "",
-    town: "",
     landmark: "",
-    district: "",
+    address: "",
     location: "",
     outlet_id: "",
     specify_if_other_type: "",
@@ -703,17 +678,22 @@ export default function AddCompanyWithStepper() {
   const handleSubmit = async (values: Chiller) => {
     try {
       setIsSubmitting(true);
-      await validationSchema.validate(values, { abortEarly: false });
+      // Convert existing_coolers to string if it's an array
+      const submitValues = { ...values };
+      if (Array.isArray(submitValues.existing_coolers)) {
+        submitValues.existing_coolers = submitValues.existing_coolers.join(",");
+      }
+      await validationSchema.validate(submitValues, { abortEarly: false });
 
       // Create FormData for file upload
       const formData = new FormData();
 
       // Append all non-file fields
-      Object.keys(values).forEach((key) => {
-        const value = values[key as keyof Chiller];
+      Object.keys(submitValues).forEach((key) => {
+        const value = submitValues[key as keyof Chiller];
 
         // Skip file fields for now (they will be appended separately)
-        if (value instanceof File) {
+        if (fileFields.some(f => f.fieldName === key)) {
           return;
         }
 
@@ -722,16 +702,13 @@ export default function AddCompanyWithStepper() {
         }
       });
 
-      // Append file fields
+      // Always append file fields as binary if present
       fileFields.forEach((fileField) => {
-        const fileValue = values[fileField.fieldName];
+        const fileValue = submitValues[fileField.fieldName];
         if (fileValue instanceof File) {
           formData.append(fileField.fieldName, fileValue);
-        } else if (typeof fileValue === "string" && fileValue) {
-          // For existing files in edit mode, you might want to handle them differently
-          // If it's a string (existing file path), you can append it as is or skip
-          // formData.append(fileField.fieldName, fileValue);
         }
+        // If not a File (binary), do not append string path
       });
 
       let res;
@@ -773,13 +750,7 @@ export default function AddCompanyWithStepper() {
     errors: FormikErrors<Chiller>,
     touched: FormikTouched<Chiller>
   ) => {
-    if (loading) {
-      return (
-        <div className="w-full h-full flex items-center justify-center">
-          <Loading />
-        </div>
-      );
-    }
+   
 
     switch (currentStep) {
       case 1:
@@ -788,6 +759,7 @@ export default function AddCompanyWithStepper() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <InputFields
+                disabled
                   label="OSA Code"
                   name="osa_code"
                   value={values.osa_code}
@@ -853,6 +825,7 @@ export default function AddCompanyWithStepper() {
               </div>
               <div>
                 <InputFields
+                type="contact2"
                   required
                   label="Contact Number"
                   name="contact_number"
@@ -868,20 +841,7 @@ export default function AddCompanyWithStepper() {
                   className="text-sm text-red-600 mb-1"
                 />
               </div>
-              <div>
-                <InputFields
-                  label="Town"
-                  name="town"
-                  value={values.town}
-                  onChange={(e) => setFieldValue("town", e.target.value)}
-                // error={touched.landmark && errors.landmark}
-                />
-                <ErrorMessage
-                  name="town"
-                  component="div"
-                  className="text-sm text-red-600 mb-1"
-                />
-              </div>
+              
               <div>
                 <InputFields
                   label="Landmark"
@@ -898,14 +858,14 @@ export default function AddCompanyWithStepper() {
               </div>
               <div>
                 <InputFields
-                  label="District"
-                  name="district"
-                  value={values.district}
-                  onChange={(e) => setFieldValue("district", e.target.value)}
+                  label="Address"
+                  name="address"
+                  value={values.address}
+                  onChange={(e) => setFieldValue("address", e.target.value)}
                 // error={touched.landmark && errors.landmark}
                 />
                 <ErrorMessage
-                  name="district"
+                  name="address"
                   component="div"
                   className="text-sm text-red-600 mb-1"
                 />
@@ -990,6 +950,8 @@ export default function AddCompanyWithStepper() {
               </div>
               <div>
                 <InputFields
+                type="number"
+                integerOnly
                   label="Stock Share With Competitor In %"
                   name="stock_share_with_competitor"
                   value={values.stock_share_with_competitor}
@@ -1007,6 +969,8 @@ export default function AddCompanyWithStepper() {
 
               <div>
                 <InputFields
+                type="number"
+                integerOnly
                   label="Outlet Weekly Sale Volume Current"
                   name="outlet_weekly_sale_volume_current"
                   value={values.outlet_weekly_sale_volume_current}
@@ -1027,6 +991,8 @@ export default function AddCompanyWithStepper() {
 
               <div>
                 <InputFields
+                type="number"
+                integerOnly
                   label="Outlet Weekly Sale Volume"
                   name="outlet_weekly_sale_volume"
                   value={values.outlet_weekly_sale_volume}
@@ -1064,6 +1030,8 @@ export default function AddCompanyWithStepper() {
 
               <div>
                 <InputFields
+                type="number"
+                integerOnly
                   label="Chiller Size Requested"
                   name="chiller_size_requested"
                   value={values.chiller_size_requested}
@@ -1081,6 +1049,8 @@ export default function AddCompanyWithStepper() {
 
               <div>
                 <InputFields
+                type="number"
+                integerOnly
                   label="Chiller Safety Grill"
                   name="chiller_safty_grill"
                   value={values.chiller_safty_grill}
@@ -1277,7 +1247,13 @@ export default function AddCompanyWithStepper() {
         return null;
     }
   };
-
+ if (loading) {
+      return (
+        <div className="w-full h-full flex items-center justify-center">
+          <Loading />
+        </div>
+      );
+    }
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
