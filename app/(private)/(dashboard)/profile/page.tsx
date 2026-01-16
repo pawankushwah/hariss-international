@@ -12,6 +12,7 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import { useRouter } from "next/navigation";
 import ResetPasswordSidebar from "@/app/components/ResetPasswordSidebar";
 import * as Yup from "yup";
+import { formatWithPattern } from "@/app/utils/formatDate";
 
 const ValidationSchema = Yup.object({
   firstName: Yup.string()
@@ -335,7 +336,11 @@ export default function ProfilePage() {
                 <>
                   <span className="text-gray-600">Date of Birth</span>
                   <span className="text-gray-600">:</span>
-                  <span className="font-medium">{profile.dob}</span>
+                  <span className="font-medium">{formatWithPattern(
+                            new Date(profile.dob),
+                            "DD MMM YYYY",
+                            "en-GB",
+                          ).toLowerCase()}</span>
                 </>
               ) : null}
 

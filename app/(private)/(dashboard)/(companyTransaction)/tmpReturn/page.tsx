@@ -202,7 +202,7 @@ export default function CustomerInvoicePage() {
                 },
               ],
             },
-            rowSelection: false,
+            // rowSelection: false,
             footer: { nextPrevBtn: true, pagination: true },
             columns,
             rowActions: [

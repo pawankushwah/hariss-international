@@ -19,7 +19,7 @@ import toInternationalNumber from "@/app/(private)/utils/formatNumber";
 import FilterComponent from "@/app/components/filterComponent";
 import ApprovalStatus from "@/app/components/approvalStatus";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
-
+import { downloadPDFGlobal } from "@/app/services/allApi";
 // const dropdownDataList = [
 //     // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
 //     // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
@@ -283,7 +283,9 @@ export default function CustomerInvoicePage() {
             setLoading(true);
             const response = await agentDeliveryExport({ uuid: uuid, format: "pdf" });
             if (response && typeof response === 'object' && response.download_url) {
-                await downloadFile(response.download_url);
+                 const fileName = `delivery-${uuid}.pdf`;
+                await downloadPDFGlobal(response.download_url, fileName);
+                // await downloadFile(response.download_url);
                 showSnackbar("File downloaded successfully ", "success");
             } else {
                 showSnackbar("Failed to get download URL", "error");

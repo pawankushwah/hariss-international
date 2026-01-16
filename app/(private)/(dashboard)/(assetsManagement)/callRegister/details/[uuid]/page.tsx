@@ -11,9 +11,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import TabBtn from "@/app/components/tabBtn";
+import { formatWithPattern } from "@/app/utils/formatDate";
 
 const title = "View Call Register";
-const backBtnUrl = "/assetsManagement/callRegister";
+const backBtnUrl = "/callRegister";
 
 export const tabs = [
     { name: "Overview" },
@@ -97,7 +98,7 @@ export default function ViewPage() {
                             <KeyValueData
                                 data={[
                                     { key: "Ticket Type", value: data?.ticket_type },
-                                    { key: "Ticket Date", value: data?.ticket_date },
+                                    { key: "Ticket Date", value: formatWithPattern(new Date(data?.ticket_date as string), "DD MMM YYYY", "en-GB")?.toLowerCase() },
                                     { key: "Chiller Serial Number", value: data?.chiller_serial_number },
                                     { key: "Asset Number", value: data?.asset_number || "-" },
                                     { key: "Model Number", value: data?.model_number },
@@ -139,15 +140,15 @@ export default function ViewPage() {
                             <ContainerCard className="w-full">
                                 <KeyValueData
                                     data={[
-                                        { key: "Outlet Code", value: data?.outlet_code || "-" },
-                                        { key: "Outlet Name", value: data?.outlet_name || "-" },
-                                        { key: "Owner Name", value: data?.owner_name || "-" },
-                                        { key: "Road/Street", value: data?.road_street || "-" },
-                                        { key: "District", value: data?.district || "-" },
-                                        { key: "Town", value: data?.town || "-" },
-                                        { key: "Landmark", value: data?.landmark || "-" },
-                                        { key: "Contact Number 1", value: data?.contact_no1 || "-" },
-                                        { key: "Contact Number 2", value: data?.contact_no2 || "-" },
+                                        { key: "Outlet Code", value: data?.assigned_customer?.code || "-" },
+                                        { key: "Outlet Name", value: data?.assigned_customer?.name || "-" },
+                                        { key: "Owner Name", value: data?.assigned_customer?.owner_name || "-" },
+                                        { key: "Road/Street", value: data?.assigned_customer?.road_street || "-" },
+                                        { key: "District", value: data?.assigned_customer?.district || "-" },
+                                        { key: "Town", value: data?.assigned_customer?.town || "-" },
+                                        { key: "Landmark", value: data?.assigned_customer?.landmark || "-" },
+                                        { key: "Contact Number 1", value: data?.assigned_customer?.contact_no_1 || "-" },
+                                        { key: "Contact Number 2", value: data?.assigned_customer?.contact_no_2 || "-"},
                                     ]}
                                 />
                             </ContainerCard>
@@ -162,8 +163,8 @@ export default function ViewPage() {
                             <ContainerCard className="w-full">
                                 <KeyValueData
                                     data={[
-                                        { key: "Outlet Code", value: data?.current_outlet_code || "-" },
-                                        { key: "Outlet Name", value: data?.current_outlet_name || "-" },
+                                        { key: "Outlet Code", value: data?.current_customer?.code || "-" },
+                                        { key: "Outlet Name", value: data?.current_customer?.name || "-" },
                                         { key: "Owner Name", value: data?.current_owner_name || "-" },
                                         { key: "Road/Street", value: data?.current_road_street || "-" },
                                         { key: "District", value: data?.current_district || "-" },

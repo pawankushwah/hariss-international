@@ -259,7 +259,7 @@ export default function BulkTransferListPage() {
 
                     columns,
 
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
                         {
                             icon: "lucide:eye",

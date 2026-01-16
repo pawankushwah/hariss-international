@@ -253,7 +253,7 @@ export default function ShelfDisplay() {
                 render: (row: TableDataType) => formatDate(row.valid_to),
               },
             ],
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               {
                 icon: "lucide:eye",

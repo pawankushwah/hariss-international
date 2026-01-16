@@ -550,7 +550,7 @@ export default function Page() {
   const [activeTab, setActiveTab] = useState("overview");
   const tabList = [
     { key: "overview", label: "Overview" },
-    { key: "attendence", label: "Attendence" },
+    { key: "attendence", label: "Attendance" },
     { key: "sales", label: "Sales" },
     // { key: "order", label: "Purchase Order" },
   ];

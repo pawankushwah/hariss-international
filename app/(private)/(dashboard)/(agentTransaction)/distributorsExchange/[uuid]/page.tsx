@@ -415,7 +415,6 @@ export default function ExchangeAddEditPage() {
           value: String(item.id),
           label: `${item.erp_code || item.item_code || ''} - ${item.name || ''} (Stock: ${item.warehouse_stock})`
         }));
-        console.log("Fetched warehouse items:", options);
         setItemsOptions(options);
         setSkeleton(prev => ({ ...prev, item: false }));
         

@@ -206,7 +206,7 @@ export default function SalesTeamReconciliationPage() {
                     localStorageKey: "sales-team-reconciliation-table",
                     footer: { pagination: true, nextPrevBtn: true },
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
                         {
                             icon: "lucide:eye",
