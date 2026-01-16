@@ -15,7 +15,7 @@ export default function ImagePreviewModal({
   images,
   isOpen,
   onClose,
-  startIndex = 0,
+  startIndex = 1,
 }: ImagePreviewModalProps) {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
 
@@ -62,7 +62,7 @@ export default function ImagePreviewModal({
             <motion.img
               key={currentIndex}
               src={
-                images[currentIndex].startsWith("http") || images[currentIndex].startsWith("blob:")
+                images[currentIndex].startsWith("https") || images[currentIndex].startsWith("blob:")
                   ? images[currentIndex]
                   : `/uploads/${images[currentIndex]}`
               }

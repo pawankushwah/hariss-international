@@ -12,45 +12,6 @@ import StatusBtn from "@/app/components/statusBtn2";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
-type WarehouseRow = TableDataType & {
-  id?: string;
-  uuid?: string;
-  code?: string;
-  warehouseName?: string;
-  tin_no?: string;
-  ownerName?: string;
-  owner_email?: string;
-  ownerContact?: string;
-  warehouse_type?: string;
-  business_type?: string;
-  warehouse_manager?: string;
-  warehouse_manager_contact?: string;
-  district?: string;
-  street?: string;
-  branch_id?: string;
-  town_village?: string;
-  region?: { code?: string; name?: string; region_name?: string; }
-  location?: { code?: string; name?: string; location_code?: string; location_name?: string; }
-  company?: { company_code?: string; company_name?: string };
-  city?: string;
-  landmark?: string;
-  latitude?: string;
-  longitude?: string;
-  threshold_radius?: string;
-  device_no?: string;
-  is_branch?: string;
-  p12_file?: string;
-  is_efris?: string;
-  agreed_stock_capital?: string;
-  deposite_amount?: string;
-  phoneNumber?: string;
-  address?: string;
-  status?: string | boolean | number;
-  company_customer_id?: { customer_name: string };
-  region_id?: { region_name: string };
-  area?: { code?: string; area_code?: string; area_name?: string; name: string };
-};
-
 
 
 export default function Warehouse() {
@@ -58,7 +19,7 @@ export default function Warehouse() {
   const { can, permissions } = usePagePermissions("/distributors");
   const { setLoading } = useLoading();
   const [refreshKey, setRefreshKey] = useState(0);
-
+  const [searchFilter, setSearchFilter] = useState("");
   useEffect(() => {
     ensureRegionLoaded();
     ensureAreaLoaded();
@@ -306,6 +267,7 @@ export default function Warehouse() {
           per_page: pageSize.toString(),
           page: page.toString(),
         });
+        setSearchFilter(query);
         //  setLoading(false);
         return {
           data: listRes.data || [],
@@ -326,7 +288,7 @@ export default function Warehouse() {
   const exportFile = async (format: string) => {
     try {
       setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
-      const response = await exportWarehouseData({ format });
+      const response = await exportWarehouseData({ format, search: searchFilter,filters:{ area_id: areaId, region_id: regionId, status: currentStatusFilter === null ? undefined : (currentStatusFilter ? "1" : "0") }});
       if (response && typeof response === 'object' && response.download_url) {
         await downloadFile(response.download_url);
         showSnackbar("File downloaded successfully ", "success");

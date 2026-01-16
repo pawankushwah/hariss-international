@@ -61,7 +61,8 @@ export default function ViewPage() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imagesToShow, setImagesToShow] = useState<string[]>([]);
   const [startIndex, setStartIndex] = useState(0);
-
+  // const url = process.env.NEXT_PUBLIC_API_URL;
+  const url = "https://api.coreexl.com/osa_developmentV2/public/";
   useEffect(() => {
     const fetchChillerDetails = async () => {
       setLoading(true);
@@ -93,19 +94,19 @@ export default function ViewPage() {
   };
 
   const allImageFiles = [
-    chillerRequest?.national_id_file,
-    chillerRequest?.password_photo_file,
-    chillerRequest?.outlet_stamp_file,
-    chillerRequest?.trading_licence_file,
-    chillerRequest?.lc_letter_file,
-    chillerRequest?.outlet_address_proof_file,
-    chillerRequest?.sign__customer_file,
+    `${url}/${chillerRequest?.national_id_file}`,
+    `${url}/${chillerRequest?.password_photo_file}`,
+    `${url}/${chillerRequest?.outlet_stamp_file}`,
+    `${url}/${chillerRequest?.trading_licence_file}`,
+    `${url}/${chillerRequest?.lc_letter_file}`,
+    `${url}/${chillerRequest?.outlet_address_proof_file}`,
+    `${url}/${chillerRequest?.sign__customer_file}`,
   ].filter(Boolean) as string[];
 
   const getFileView = (file?: string | null) =>
     file ? (
       <button
-        className="text-blue-600 underline hover:text-blue-800 transition"
+        className="text-blue-600 underline hover:text-blue-800 transition cursor-pointer"
         onClick={() =>
           openImageModal(allImageFiles, allImageFiles.indexOf(file!))
         }
