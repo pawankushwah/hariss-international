@@ -234,6 +234,12 @@ export default function AddEditServiceTerritory() {
                 </h1>
             </div>
 
+            <WorkflowApprovalActions
+                requestStepId={data?.request_step_id}
+                redirectPath={backBtnUrl}
+                model="Service_Territory"
+            />
+
             <div className="bg-white rounded-xl shadow p-6">
                 {localLoading ? (
                     <Loading />
