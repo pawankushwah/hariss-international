@@ -1230,6 +1230,20 @@ export default function InvoiceddEditPage() {
                                     // Fetch items for the selected warehouse
                                     fetchWarehouseItems(option.value);
                                     handleDeliverySearch(option.value);
+                                     setItemData([{item_id: "",
+        itemName: "",
+        itemLabel: "",
+        UOM: "",
+        uom_id: "",
+        Quantity: "1",
+        isPrmotion:false,
+        Price: "",
+        Excise: "",
+        Discount: "",
+        Net: "",
+        Vat: "",
+        Total: "",
+        is_promotional: false,}]);
                                 }}
                                 onClear={() => {
                                     setForm(prev => ({
@@ -1238,7 +1252,10 @@ export default function InvoiceddEditPage() {
                                         warehouse_name: "",
                                         customer: "",
                                         customer_name: "",
-                                    }));
+                                        
+                                    }
+                                ));
+                               
                                     // Clear items when warehouse is cleared
                                     setItemsOptions([]);
                                     setItemsWithUOM({});
@@ -1249,6 +1266,7 @@ export default function InvoiceddEditPage() {
 
                             <InputFields
                                 required
+                                width="300px"
                                 label="Delivery"
                                 name="customer"
                                 placeholder="Search delivery..."
@@ -1443,6 +1461,20 @@ export default function InvoiceddEditPage() {
                                     }
                                     // Fetch items for the selected warehouse
                                     fetchWarehouseItems(option.value);
+                                    setItemData([{item_id: "",
+        itemName: "",
+        itemLabel: "",
+        UOM: "",
+        uom_id: "",
+        Quantity: "1",
+        isPrmotion:false,
+        Price: "",
+        Excise: "",
+        Discount: "",
+        Net: "",
+        Vat: "",
+        Total: "",
+        is_promotional: false}]);
                                 }}
                                 onClear={() => {
                                     setForm(prev => ({
@@ -1455,6 +1487,7 @@ export default function InvoiceddEditPage() {
                                         customer_name: "",
                                     }));
                                     // Clear items when warehouse is cleared
+                                   
                                     setItemsOptions([]);
                                     setItemsWithUOM({});
                                     setWarehouseStocks({});

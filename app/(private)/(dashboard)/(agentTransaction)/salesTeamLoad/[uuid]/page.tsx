@@ -839,9 +839,7 @@ const handleQtyBlur = (index: number, field: 'pcs_qty' | 'cse_qty') => {
           }
           error={errorMsg}
         />
-        {/* {errorMsg && (
-          <div style={{ color: 'red', fontSize: 12 }}>{errorMsg}</div>
-        )} */}
+        
       </div>
     );
   },
