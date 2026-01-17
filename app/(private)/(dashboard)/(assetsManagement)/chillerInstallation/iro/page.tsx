@@ -11,6 +11,7 @@ import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { formatDate } from "../../../(master)/salesTeam/details/[uuid]/page";
 
 interface ChillerRequest {
     id: number;
@@ -111,9 +112,7 @@ const columns = [
     {
         key: "created_at",
         label: "Created Date",
-        render: (data: any) => (
-            <p>{new Date(data.created_at).toLocaleDateString() || "-"}</p>
-        )
+        render: (data: any) => formatDate(data.created_at)
     },
     {
         key: "status",
@@ -206,7 +205,7 @@ export default function CustomerInvoicePage() {
                     data: [],
                     total: 0,
                     currentPage: 1,
-                    pageSize: 0,
+                    pageSize: 50,
                 };
 
             } finally {
