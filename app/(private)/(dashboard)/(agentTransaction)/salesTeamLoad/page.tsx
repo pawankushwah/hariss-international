@@ -18,6 +18,8 @@ import { downloadFile } from "@/app/services/allApi";
 import ApprovalStatus from "@/app/components/approvalStatus";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import FilterComponent from "@/app/components/filterComponent";
+import { formatWithPattern } from "@/app/utils/formatDate";
+import { formatDate } from "../../(master)/salesTeam/details/[uuid]/page";
 
 interface SalesmanLoadRow {
   osa_code?: string;
@@ -56,6 +58,11 @@ export default function SalemanLoad() {
 
 
   const columns: configType["columns"] = [
+    {
+      key:"created_at",
+      label:"Load Date",
+      render: (row: TableDataType) => formatDate(row?.created_at || "-")
+    },
     {
       key: "warehouse",
       label: "Distributor",
@@ -96,14 +103,14 @@ export default function SalemanLoad() {
       key: "project_type",
       label: "Sales Team Role",
       render: (row: TableDataType) => {
-       return `${(row as SalesmanLoadRow).project_type?.name ?? ""}`;
+       return `${(row as SalesmanLoadRow).project_type?.name ?? "-"}`;
       },
     },
-    {
-        key: "approval_status",
-        label: "Approval Status",
-        render: (row: TableDataType) => <ApprovalStatus status={row.approval_status || "-"} />,
-    },
+    // {
+    //     key: "approval_status",
+    //     label: "Approval Status",
+    //     render: (row: TableDataType) => <ApprovalStatus status={row.approval_status || "-"} />,
+    // },
     {
       key: "status",
       label: "Status",
