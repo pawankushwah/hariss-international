@@ -902,7 +902,8 @@ export default function InvoiceddEditPage() {
             warehouse_id: Number(form.warehouse),
             customer_id: customerId,
             delivery_id: deliveryId,
-            customer_type: form.customerType ? Number(form.customerType) : undefined,
+            // customer_type: form.customerType ? Number(form.customerType) : undefined,
+            customer_type: 1,
             route_id: routeId,
             salesman_id: salesmanId,
             invoice_date: form.invoice_date,
@@ -1145,6 +1146,7 @@ export default function InvoiceddEditPage() {
         if (String(form.invoice_type) === "0") {
             return [form.warehouse, form.customer, form.invoice_type, form.invoice_date].every(Boolean);
         }
+        return [form.route, form.warehouse, form.customer, form.invoice_type, form.invoice_date].every(Boolean);
         return [form.route, form.warehouse, form.customer, form.invoice_type, form.invoice_date].every(Boolean);
     })();
 
@@ -1427,6 +1429,7 @@ export default function InvoiceddEditPage() {
                     {form.invoice_type === "1" && (
                         <>
                             {/* <InputFields
+                            {/* <InputFields
                                 required
                                 label="Customer Type"
                                 name="customerType"
@@ -1439,6 +1442,7 @@ export default function InvoiceddEditPage() {
                                 onChange={handleChange}
                                 error={errors.customerType}
                             /> */}
+                            
                             <AutoSuggestion
                                 required
                                 label="Distributor"
