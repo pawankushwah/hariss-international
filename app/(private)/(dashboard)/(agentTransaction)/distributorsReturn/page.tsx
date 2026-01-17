@@ -35,7 +35,7 @@ const dropdownDataList = [
 const columns = [
     { key: "osa_code", label: "Code", showByDefault: true },
     { key: "order_code", label: "Order Code", showByDefault: true },
-    { key: "delivery_code", label: "Delivery Code", showByDefault: true },
+    // { key: "delivery_code", label: "Delivery Code", showByDefault: true },
     {
         key: "warehouse_code", label: "Distributor", showByDefault: true, render: (row: TableDataType) => {
             const code = row.warehouse_code || "";

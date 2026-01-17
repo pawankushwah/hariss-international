@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState, useEffect } from "react";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import FilterComponent from "@/app/components/filterComponent";
-
+import { formatWithPattern } from "@/app/utils/formatDate";
 export default function SalesmanUnloadPage() {
   const { can, permissions } = usePagePermissions();
   const { setLoading } = useLoading();
@@ -168,7 +168,14 @@ const [threeDotLoading, setThreeDotLoading] = useState({
 
   // ✅ Table Columns
   const columns: configType["columns"] = [
-    { key: "unload_date", label: "Unload Date" },
+    { key: "unload_date", label: "Unload Date",render: (row: TableDataType) => {
+      return formatWithPattern(
+                new Date(row.unload_date),
+                "DD MMM YYYY",
+                "en-GB",
+              );
+            }
+    },
     { key: "unload_time", label: "Unload Time"},
     { key: "laod_date", label: "Load Date",showByDefault: false  },
     {
@@ -238,9 +245,9 @@ const [threeDotLoading, setThreeDotLoading] = useState({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="gap-3 mb-4">
-        <h1 className="text-bold-700 text-lg font-semibold">Salesman Unload</h1>
-      </div>
+      {/* <div className="gap-3 mb-4">
+        <h1 className="text-bold-700 text-lg font-semibold">Sales Team Unload</h1>
+      </div> */}
 
       {/* 📋 Table Section with Dynamic Filters */}
       <Table
@@ -248,6 +255,7 @@ const [threeDotLoading, setThreeDotLoading] = useState({
         config={{
           api: { list: fetchSalesmanUnloadHeader, filterBy },
           header: {
+            title: "Sales Team Unload",
             searchBar: false,
             columnFilter: true,
             threeDot: [

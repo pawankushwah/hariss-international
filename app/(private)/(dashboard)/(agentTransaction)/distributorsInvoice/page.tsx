@@ -144,10 +144,17 @@ export default function CustomerInvoicePage() {
 
     const exportFile = async (format: 'csv' | 'xlsx' = 'csv') => {
         try {
-            // setLoading(true);
-            // Pass selected format to the export API
             setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
-            const response = await exportInvoice({ format });
+            // Build params using same logic as filterBy
+            const params: Record<string, string> = {};
+            Object.keys(filters || {}).forEach((k) => {
+                const v = filters[k as keyof typeof filters];
+                if (v !== null && typeof v !== "undefined" && String(v) !== "") {
+                    params[k] = String(v);
+                }
+            });
+            params["format"] = format;
+            const response = await exportInvoice(params);
             const url = response?.url || response?.data?.url;
             if (url) {
                 await downloadFile(url);
@@ -166,21 +173,33 @@ export default function CustomerInvoicePage() {
     };
 
       const exportCollapseFile = async (format: "csv" | "xlsx" = "csv") => {
-        try {
-          setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
-          const response = await invoiceExportCollapse({ format });
-          if (response && typeof response === "object" && response.download_url) {
-            await downloadFile(response.download_url);
-            showSnackbar("File downloaded successfully ", "success");
-          } else {
-            showSnackbar("Failed to get download URL", "error");
-          }
-          setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
-        } catch (error) {
-          showSnackbar("Failed to download warehouse data", "error");
-          setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
-        } finally {
-        }
+                try {
+                        setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+                        // Build params using same logic as filterBy
+                        const params: Record<string, string> = {};
+                        Object.keys(filters || {}).forEach((k) => {
+                            let apiKey = k;
+                            if (k === "fromDate") apiKey = "from_date";
+                            if (k === "toDate") apiKey = "to_date";
+                            const v = filters[k as keyof typeof filters];
+                            if (v !== null && typeof v !== "undefined" && String(v) !== "") {
+                                params[apiKey] = String(v);
+                            }
+                        });
+                        params["format"] = format;
+                        const response = await invoiceExportCollapse(params);
+                        if (response && typeof response === "object" && response.download_url) {
+                                await downloadFile(response.download_url);
+                                showSnackbar("File downloaded successfully ", "success");
+                        } else {
+                                showSnackbar("Failed to get download URL", "error");
+                        }
+                        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+                } catch (error) {
+                        showSnackbar("Failed to download warehouse data", "error");
+                        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+                } finally {
+                }
       };
 
     const downloadPdf = async (uuid: string) => {

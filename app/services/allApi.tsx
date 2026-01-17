@@ -200,8 +200,6 @@ export async function downloadPDFGlobal(
 }
 
 
-
-
 export const login = async (credentials: {
   email?: string;
   username?: string;

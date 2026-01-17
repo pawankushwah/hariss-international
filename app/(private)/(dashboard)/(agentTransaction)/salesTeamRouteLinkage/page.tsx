@@ -22,6 +22,7 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
 import { linkageList } from "@/app/services/agentTransaction";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+import { formatWithPattern } from "@/app/utils/formatDate";
 
 const columns = [
   {
@@ -110,6 +111,16 @@ const columns = [
   {
     key: "requested_date",
     label: "Visit Date",
+    render: (row: TableDataType) => {
+      if (row.requested_date) {
+       return formatWithPattern(
+          new Date(row.requested_date),
+          "DD MMM YYYY",
+          "en-GB",
+        );
+      }
+      return "-";
+    },
     showByDefault: true,
   },
   {

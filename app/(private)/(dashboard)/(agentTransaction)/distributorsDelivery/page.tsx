@@ -188,7 +188,7 @@ export default function CustomerInvoicePage() {
     // Fetch for table (list)
     const fetchDelivery = useCallback(async (
         page: number = 1,
-        pageSize: number = 10
+        pageSize: number = 50
     ): Promise<listReturnType> => {
         const params = { page: page.toString(), per_page: pageSize.toString() };
         const result = await fetchDeliveryData(params);
@@ -359,7 +359,7 @@ export default function CustomerInvoicePage() {
                         //         ),
                         // },
                     ],
-                    pageSize: 10,
+                    pageSize: 50,
                 }}
             />
         </div>

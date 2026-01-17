@@ -90,11 +90,57 @@ export default function SalemanLoad() {
     return Object.entries(params).sort().map(([k, v]) => `${k}:${v}`).join("|");
   };
 
+  // Memoize initial API result so it only loads once per mount/refreshKey
+  const [initialCapsData, setInitialCapsData] = useState<listReturnType | null>(null);
+  const [initialCapsParams, setInitialCapsParams] = useState<{ page: number, pageSize: number }>({ page: 1, pageSize: 50 });
+
+  useEffect(() => {
+    // Only fetch once per refreshKey
+    const fetchInitial = async () => {
+      const params = { page: initialCapsParams.page.toString(), per_page: initialCapsParams.pageSize.toString() };
+      const cacheKey = getCacheKey(params);
+      if (capsCollectionCache.current[cacheKey]) {
+        const listRes = capsCollectionCache.current[cacheKey];
+        setInitialCapsData({
+          data: Array.isArray(listRes.data) ? listRes.data : [],
+          total: listRes?.pagination?.totalPages || 1,
+          currentPage: listRes?.pagination?.page || 1,
+          pageSize: listRes?.pagination?.limit || initialCapsParams.pageSize,
+        });
+        return;
+      }
+      try {
+        setLoading(true);
+        const listRes = await capsCollectionList(params);
+        capsCollectionCache.current[cacheKey] = listRes;
+        setInitialCapsData({
+          data: Array.isArray(listRes.data) ? listRes.data : [],
+          total: listRes?.pagination?.totalPages || 1,
+          currentPage: listRes?.pagination?.page || 1,
+          pageSize: listRes?.pagination?.limit || initialCapsParams.pageSize,
+        });
+      } catch {
+        setInitialCapsData({
+          data: [],
+          total: 1,
+          currentPage: 1,
+          pageSize: 5,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitial();
+  }, [refreshKey, setLoading]);
+
+  // Table expects a function, so wrap the memoized result
   const fetchSalesmanLoadHeader = useCallback(
-    async (
-      page: number = 1,
-      pageSize: number = 50
-    ): Promise<listReturnType> => {
+    async (page: number = 1, pageSize: number = 50): Promise<listReturnType> => {
+      // Only return memoized data if params match
+      if (page === initialCapsParams.page && pageSize === initialCapsParams.pageSize && initialCapsData) {
+        return initialCapsData;
+      }
+      // Otherwise, fetch and cache as before
       const params = { page: page.toString(), per_page: pageSize.toString() };
       const cacheKey = getCacheKey(params);
       if (capsCollectionCache.current[cacheKey]) {
@@ -110,7 +156,6 @@ export default function SalemanLoad() {
         setLoading(true);
         const listRes = await capsCollectionList(params);
         capsCollectionCache.current[cacheKey] = listRes;
-        setLoading(false);
         return {
           data: Array.isArray(listRes.data) ? listRes.data : [],
           total: listRes?.pagination?.totalPages || 1,
@@ -118,15 +163,16 @@ export default function SalemanLoad() {
           pageSize: listRes?.pagination?.limit || pageSize,
         };
       } catch (error: unknown) {
-        setLoading(false);
         return {
           data: [],
           total: 1,
           currentPage: 1,
           pageSize: 5,
         };
+      } finally {
+        setLoading(false);
       }
-    }, [setLoading]);
+    }, [initialCapsData, initialCapsParams, setLoading]);
 
   const exportListFile = async (format: string) => {
     try {

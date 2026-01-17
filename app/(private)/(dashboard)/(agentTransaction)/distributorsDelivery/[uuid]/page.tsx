@@ -437,7 +437,7 @@ export default function DeliveryAddEditPage() {
           return {
             ...uom,
             price,
-            id: uom.id || `${stockItem.item_id}_${uom.uom_type}`,
+            id: uom.uom_id || `${stockItem.item_id}_${uom.uom_type}`,
             item_id: stockItem.item_id
           };
         }) : [];
@@ -571,7 +571,7 @@ export default function DeliveryAddEditPage() {
             }
             return {
               label: uom.name,
-              value: uom.id.toString(),
+              value: uom.uom_id.toString(),
               price: String(price),
               uom_type: uom.uom_type,
             };
@@ -893,7 +893,8 @@ export default function DeliveryAddEditPage() {
     const res = await agentOrderList({
       warehouse_id: values.warehouse,
       delivery_date: values.delivery_date,
-      query: search || "",
+      query: search,
+      dropdown:"true",
       no_delivery: "true",
       per_page: "10",
     });
@@ -1218,7 +1219,7 @@ export default function DeliveryAddEditPage() {
                             const selectedUomId = d.uom_id ? String(d.uom_id) : "";
                             const UOMOptions = uomsArr.map((uom: any) => ({
                               label: uom.name ?? "",
-                              value: uom.id !== undefined ? String(uom.id) : (uom.uom_id !== undefined ? String(uom.uom_id) : ""),
+                              value: uom.uom_id !== undefined ? String(uom.uom_id) : (uom.uom_id !== undefined ? String(uom.uom_id) : ""),
                               price: String(uom.price ?? ""),
                             }));
                             // If the selected UOM is not in the options, add it
@@ -1401,6 +1402,7 @@ export default function DeliveryAddEditPage() {
                           const idx = Number(row.idx);
                           const err = itemErrors[idx]?.uom_id;
                           const options = JSON.parse(row.UOM ?? "[]");
+                           console.log("UOM changed:", options);
                           return (
                             <div>
                               <InputFields
@@ -1415,6 +1417,7 @@ export default function DeliveryAddEditPage() {
                                 }
                                 showSkeleton={Boolean(itemLoading[idx]?.uom)}
                                 onChange={(e) => {
+                                 
                                   // Just recalculate with new UOM ID
                                   // The recalculateItem function will handle price update
                                   recalculateItem(
@@ -1448,7 +1451,7 @@ export default function DeliveryAddEditPage() {
                                 // integerOnly={true}
                                 placeholder="Enter Qty"
                                 value={row.Quantity}
-                                disabled={currentItem?.is_promotional === true ||  !row.uom_id || !values.order_code}
+                                disabled={currentItem?.is_promotional === true ||  !row.uom_id || !values.order_code || currentItem?.isPrmotion == true}
                                 onChange={(e) => {
                                   const raw = (e.target as HTMLInputElement)
                                     .value;
