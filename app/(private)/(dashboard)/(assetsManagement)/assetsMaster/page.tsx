@@ -25,6 +25,8 @@ export default function ShelfDisplay() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [threeDotLoading, setThreeDotLoading] = useState<{ pdf: boolean; xlsx: boolean; csv: boolean }>({ pdf: false, xlsx: false, csv: false });
+
 
   // Refresh table when permissions load
   useEffect(() => {
@@ -66,21 +68,17 @@ export default function ShelfDisplay() {
       try {
         setLoading(true);
 
-        // 🔒 Guard clause
-        if (!columnName) {
-          return {
-            data: [],
-            currentPage: 0,
-            pageSize,
-            total: 0,
-          };
-        }
-
-        const res = await chillerList({
+        const payload: any = {
           query,
           per_page: pageSize.toString(),
-          [columnName]: query,
-        });
+        };
+
+        // 👇 only add column filter if it exists
+        if (columnName) {
+          payload[columnName] = query;
+        }
+
+        const res = await chillerList(payload);
 
         if (res?.error) {
           showSnackbar(
@@ -97,26 +95,26 @@ export default function ShelfDisplay() {
           total: res?.pagination?.totalPages || 0,
         };
       } finally {
-        // ✅ always runs (success or error)
         setLoading(false);
       }
     },
     []
   );
 
+
   const handleExport = async (fileType: "csv" | "xlsx") => {
     try {
-      setLoading(true);
+      // setLoading(true);
+      setThreeDotLoading((prev) => ({ ...prev, [fileType]: true }));
 
       const res = await assetsMasterExport({ format: fileType });
-      console.log("Export API Response:", res);
 
       let downloadUrl = "";
 
-      if (res?.url && res.url.startsWith("blob:")) {
-        downloadUrl = res.url;
-      } else if (res?.url && res.url.startsWith("http")) {
-        downloadUrl = res.url;
+      if (res?.download_url && res.download_url.startsWith("blob:")) {
+        downloadUrl = res.download_url;
+      } else if (res?.download_url && res.download_url.startsWith("http")) {
+        downloadUrl = res.download_url;
       } else if (typeof res === "string" && res.includes(",")) {
         const blob = new Blob([res], {
           type:
@@ -146,7 +144,8 @@ export default function ShelfDisplay() {
       console.error("Export error:", error);
       showSnackbar("Failed to export Assets Master data", "error");
     } finally {
-      setLoading(false);
+      // setLoading(false);
+      setThreeDotLoading((prev) => ({ ...prev, [fileType]: false }));
       setShowExportDropdown(false);
     }
   };
@@ -171,21 +170,21 @@ export default function ShelfDisplay() {
               title: "Assets Master",
               threeDot: [
                 {
-                  icon: "gala:file-document",
+                  icon: threeDotLoading.csv || threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                   label: "Export CSV",
                   onClick: (data: TableDataType[], selectedRow?: number[]) => {
                     handleExport("csv");
                   },
                 },
                 {
-                  icon: "gala:file-document",
+                  icon: threeDotLoading.csv || threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                   label: "Export Excel",
                   onClick: (data: TableDataType[], selectedRow?: number[]) => {
                     handleExport("xlsx");
                   },
                 },
               ],
-              searchBar: true,
+              searchBar: false,
               columnFilter: true,
               actions: can("create") ? [
                 <SidebarBtn
@@ -270,7 +269,7 @@ export default function ShelfDisplay() {
                     : "-",
               },
             ],
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               {
                 icon: "lucide:eye",

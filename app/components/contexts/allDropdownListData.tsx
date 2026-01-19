@@ -44,7 +44,7 @@ import {
   getUserList,
 
 } from '@/app/services/allApi';
-import { vendorList, chillerList } from '@/app/services/assetsApi';
+import { vendorList, chillerList, spareCategoryList, spareSubCategoryList, spareCategory } from '@/app/services/assetsApi';
 import { shelvesList } from '@/app/services/merchandiserApi';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
@@ -56,6 +56,7 @@ interface DropdownDataContextType {
   routeList: RouteItem[];
   warehouseList: WarehouseItem[];
   warehouseAllList: WarehouseAll[];
+  routeTypeAllList: RouteTypeAll[];
   routeType: RouteTypeItem[];
   areaList: AreaItem[];
   companyCustomers: CustomerItem[];
@@ -83,6 +84,8 @@ interface DropdownDataContextType {
   BrandList: Brand[];
   brandingList: Branding[];
   userList: UserItem[];
+  spareCategoryList: SpareCategory[];
+  spareSubCategoryList: SpareSubCategory[];
   chillerList: ChillerItem[];
   // mapped dropdown options
   companyOptions: { value: string; label: string }[];
@@ -94,6 +97,7 @@ interface DropdownDataContextType {
   routeOptions: { value: string; label: string }[];
   warehouseOptions: { value: string; label: string }[];
   warehouseAllOptions: { value: string; label: string }[];
+  routeTypeAllOptions: { value: string; label: string }[];
   routeTypeOptions: { value: string; label: string }[];
   areaOptions: { value: string; label: string, region_id: number; }[];
   companyCustomersOptions: { value: string; label: string }[];
@@ -112,7 +116,7 @@ interface DropdownDataContextType {
   menuOptions: { value: string; label: string }[];
   vendorOptions: { value: string; label: string }[];
   salesmanOptions: { value: string; label: string }[];
-  agentCustomerOptions: { value: string; label: string; contact_no?: string }[];
+  agentCustomerOptions: { value: string; value1?: string; label: string; contact_no?: string }[];
   // added to match provider values for "all" lists
   allCompanyOptions: { value: string; label: string }[];
   allAgentCustomerOptions: { value: string; label: string; contact_no?: string }[];
@@ -131,7 +135,9 @@ interface DropdownDataContextType {
   allCompanyTypeOptions: { value: string; label: string }[];
   brandingOptions: { value: string; label: string }[];
   userOptions: { value: string; label: string }[];
-  chillerOptions: { value: string; label: string }[];
+  spareCategoryOptions: { value: string; label: string }[];
+  spareSubCategoryOptions: { value: string; label: string }[];
+  chillerOptions: { value: string; value1?: string; label: string }[];
   permissions: permissionsList[];
   refreshDropdowns: () => Promise<void>;
   refreshDropdown: (name: string, params?: any) => Promise<void>;
@@ -162,6 +168,7 @@ interface DropdownDataContextType {
   ensureWarehouseLoaded: () => void;
   ensureWarehouseAllLoaded: () => void;
   ensureRouteTypeLoaded: () => void;
+  ensureAllRouteTypeLoaded: () => void;
   ensureAreaLoaded: () => void;
   ensureCompanyCustomersLoaded: () => void;
   ensureCompanyCustomersTypeLoaded: () => void;
@@ -197,6 +204,8 @@ interface DropdownDataContextType {
   ensureBrandLoaded: () => void;
   ensureBrandingLoaded: () => void;
   ensureUserLoaded: () => void;
+  ensureSpareCategoryLoaded: () => void;
+  ensureSpareSubCategoryLoaded: () => void;
   ensureAllCompanyCustomersLoaded: () => void;
   ensureAllCustomerTypesLoaded: () => void;
   ensureAllCompanyTypesLoaded: () => void;
@@ -263,12 +272,28 @@ interface WarehouseAll {
   warehouse_code?: string;
   warehouse_name?: string;
 }
+interface RouteTypeAll {
+  id?: number | string;
+  route_type_code?: string;
+  route_type_name?: string;
+}
 
 interface RouteTypeItem {
   id?: number | string;
   route_type_code?: string;
   route_type_name?: string;
 }
+interface SpareCategory {
+  id?: number | string;
+  osa_code?: string;
+  spare_category_name?: string;
+}
+interface SpareSubCategory {
+  id?: number | string;
+  osa_code?: string;
+  spare_category_name?: string;
+}
+
 
 interface AreaItem {
   id?: number | string;
@@ -393,6 +418,8 @@ interface SalesmanList {
   status: number
 }
 
+
+
 interface AssetsModel {
   id: number;
   name: string;
@@ -474,6 +501,7 @@ interface UserItem {
 }
 
 const AllDropdownListDataContext = createContext<DropdownDataContextType | undefined>(undefined);
+
 
 export const useAllDropdownListData = () => {
   const context = useContext(AllDropdownListDataContext);
@@ -618,6 +646,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
   const [routeListBySalesman, setRouteListBySalesman] = useState<RouteItem[]>([]);
   const [warehouseListData, setWarehouseListData] = useState<WarehouseItem[]>([]);
   const [warehouseAllList, setWarehouseAllList] = useState<WarehouseAll[]>([]);
+  const [routeTypeAllList, setRouteTypeAllList] = useState<RouteTypeAll[]>([]);
   const [routeTypeData, setRouteTypeData] = useState<RouteTypeItem[]>([]);
   const [areaListData, setAreaListData] = useState<AreaItem[]>([]);
   const [companyCustomersData, setCompanyCustomersData] = useState<CustomerItem[]>([]);
@@ -660,6 +689,8 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
   const [brandList, setBrandList] = useState<Brand[]>([]);
   const [brandingListState, setBrandingList] = useState<Branding[]>([]);
   const [userListState, setUserList] = useState<UserItem[]>([]);
+  const [spareCategoryList, setSpareCategoryList] = useState<SpareCategory[]>([]);
+  const [spareSubCategoryList, setSpareSubCategoryList] = useState<SpareSubCategory[]>([]);
   const [chillerListState, setChillerList] = useState<ChillerItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -758,13 +789,25 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
   const ensureWarehouseAllLoaded = useCallback(() => {
     // if (fetchedRef.current.has('warehouseAll') || fetchingRef.current.has('warehouseAll')) return;
     // fetchingRef.current.add('warehouseAll');
-    warehouseList().then(res => {
+    warehouseList({ allData: "true" }).then(res => {
       setWarehouseAllList(normalizeResponse(res) as WarehouseAll[]);
       fetchedRef.current.add('warehouseAll');
       fetchingRef.current.delete('warehouseAll');
     }).catch(() => {
       setWarehouseAllList([]);
       fetchingRef.current.delete('warehouseAll');
+    });
+  }, [normalizeResponse]);
+  const ensureAllRouteTypeLoaded = useCallback(() => {
+    // if (fetchedRef.current.has('warehouseAll') || fetchingRef.current.has('warehouseAll')) return;
+    // fetchingRef.current.add('warehouseAll');
+    routeType({ allData: "true" }).then(res => {
+      setRouteTypeAllList(normalizeResponse(res) as RouteTypeAll[]);
+      fetchedRef.current.add('routeTypeAll');
+      fetchingRef.current.delete('routeTypeAll');
+    }).catch(() => {
+      setRouteTypeAllList([]);
+      fetchingRef.current.delete('routeTypeAll');
     });
   }, [normalizeResponse]);
 
@@ -948,7 +991,50 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
       fetchingRef.current.delete('item');
     });
   }, [normalizeResponse]);
-  console.log("item", item)
+
+  const ensureSpareCategoryLoaded = useCallback(() => {
+    // if (fetchedRef.current.has('spareCategory') || fetchingRef.current.has('spareCategory')) return;
+    // fetchingRef.current.add('spareCategory');
+    spareCategory({}).then(res => {
+      setSpareCategoryList(normalizeResponse(res) as SpareCategory[]);
+      fetchedRef.current.add('spareCategory');
+      fetchingRef.current.delete('spareCategory');
+    }).catch(() => {
+      setSpareCategoryList([]);
+      fetchingRef.current.delete('spareCategory');
+    });
+  }, [normalizeResponse]);
+
+  const ensureSpareSubCategoryLoaded = useCallback(() => {
+    // already fetched or in progress → do nothing
+    if (
+      fetchedRef.current.has("spareSubCategory") ||
+      fetchingRef.current.has("spareSubCategory")
+    ) {
+      return;
+    }
+
+    // mark as fetching
+    fetchingRef.current.add("spareSubCategory");
+
+    spareCategory({})
+      .then((res: any) => {
+        setSpareSubCategoryList(
+          normalizeResponse(res) as SpareSubCategory[]
+        );
+        fetchedRef.current.add("spareSubCategory");
+      })
+      .catch(() => {
+        setSpareSubCategoryList([]);
+      })
+      .finally(() => {
+        fetchingRef.current.delete("spareSubCategory");
+      });
+  }, [normalizeResponse]);
+
+
+  // if (fetchedRef.current.has('spareSubCategory') || fetchingRef.current.has('spareSubCategory')) return;
+  // fetchingRef.current.add('spareSubCategory');
 
   const ensureDiscountTypeLoaded = useCallback(() => {
     // if (fetchedRef.current.has('discountType') || fetchingRef.current.has('discountType')) return;
@@ -966,7 +1052,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
   const ensureMenuListLoaded = useCallback(() => {
     // if (fetchedRef.current.has('menuList') || fetchingRef.current.has('menuList')) return;
     // fetchingRef.current.add('menuList');
-    getMenuList({ dropdown: 'true' }).then(res => {
+    getMenuList().then(res => {
       setMenuList(normalizeResponse(res) as MenuList[]);
       fetchedRef.current.add('menuList');
       fetchingRef.current.delete('menuList');
@@ -1211,7 +1297,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
   const ensureChillerLoaded = useCallback(() => {
     // if (fetchedRef.current.has('chiller') || fetchingRef.current.has('chiller')) return;
     // fetchingRef.current.add('chiller');
-    chillerList().then(res => {
+    chillerList({ dropdown: 'true' }).then(res => {
       setChillerList(Array.isArray(res?.data) ? res.data : []);
       fetchedRef.current.add('chiller');
       fetchingRef.current.delete('chiller');
@@ -1267,6 +1353,10 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
   const warehouseAllOptions = (Array.isArray(warehouseAllList) ? warehouseAllList : []).map((c: WarehouseItem) => ({
     value: String(c.id ?? ''),
     label: c.warehouse_code && c.warehouse_name ? `${c.warehouse_code} - ${c.warehouse_name}` : (c.warehouse_name ?? '')
+  }));
+  const routeTypeAllOptions = (Array.isArray(routeTypeAllList) ? routeTypeAllList : []).map((c: RouteTypeAll) => ({
+    value: String(c.id ?? ''),
+    label: c.route_type_code && c.route_type_name ? `${c.route_type_code} - ${c.route_type_name}` : (c.route_type_name ?? '')
   }));
 
   const routeTypeOptions = (Array.isArray(routeTypeData) ? routeTypeData : []).map((c: RouteTypeItem) => ({
@@ -1364,6 +1454,16 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
     label: c.name ? `${c.name}` : (c.name ?? '')
   }))
 
+  const spareCategoryOptions = (Array.isArray(spareCategoryList) ? spareCategoryList : []).map((c: SpareCategory) => ({
+    value: String(c.id ?? ''),
+    label: c.spare_category_name ? `${c.spare_category_name}` : (c.spare_category_name ?? '')
+  }))
+  const spareSubCategoryOptions = (Array.isArray(spareSubCategoryList) ? spareSubCategoryList : []).map((c: SpareCategory) => ({
+    value: String(c.id ?? ''),
+    label: c.spare_category_name ? `${c.spare_category_name}` : (c.spare_category_name ?? '')
+  }))
+
+
   const assetsModelOptions = (Array.isArray(assetsModel) ? assetsModel : []).map((c: AssetsModel) => ({
     value: String(c.id ?? ''),
     label: c.name ? `${c.name}` : (c.name ?? '')
@@ -1384,9 +1484,10 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
     label: c.osa_code && c.name ? `${c.name}` : (c.name ?? '')
   }))
 
-  const chillerOptions = (Array.isArray(chillerListState) ? chillerListState : []).map((c: ChillerItem) => ({
-    value: String(c.id ?? ''),
-    label: c.serial_number ? `${c.serial_number}` : (c.serial_number ?? '')
+  const chillerOptions = (Array.isArray(chillerListState) ? chillerListState : []).map((c: any) => ({
+    value: c,
+    value1: c,
+    label: c
   }))
 
   const itemOptions = (Array.isArray(item) ? item : []).map((c: Item) => (
@@ -1408,7 +1509,6 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         }))
         : [],
     }));
-  console.log("itemOptions", itemOptions)
 
 
 
@@ -1455,6 +1555,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
 
   const agentCustomerOptions = (Array.isArray(agentCustomer) ? agentCustomer : []).map((c: AgentCustomerList) => ({
     value: String(c.id ?? ''),
+    value1: String(c.osa_code ?? ''),
     label: c.osa_code && c.name ? `${c.osa_code} - ${c.name}` : (c.name ?? ''),
     contact_no: c.contact_no ?? ''
   }));
@@ -2113,6 +2214,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         routeList: routeListData,
         warehouseList: warehouseListData,
         warehouseAllList: warehouseAllList,
+        routeTypeAllList: routeTypeAllList,
         routeType: routeTypeData,
         areaList: areaListData,
         companyCustomers: companyCustomersData,
@@ -2139,6 +2241,8 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         assetsModelList: assetsModel,
         BrandList: brandList,
         brandingList: brandingListState,
+        spareCategoryList: spareCategoryList,
+        spareSubCategoryList: spareSubCategoryList,
         userList: userListState,
         chillerList: chillerListState,
         fetchItemSubCategoryOptions,
@@ -2155,6 +2259,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         routeOptions,
         warehouseOptions,
         warehouseAllOptions,
+        routeTypeAllOptions,
         routeTypeOptions,
         areaOptions,
         companyCustomersOptions,
@@ -2206,6 +2311,8 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         allCompanyTypeOptions,
         brandingOptions,
         userOptions,
+        spareCategoryOptions,
+        spareSubCategoryOptions,
         chillerOptions,
         loading,
         ensureCompanyLoaded,
@@ -2215,6 +2322,7 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         ensureRouteLoaded,
         ensureWarehouseLoaded,
         ensureWarehouseAllLoaded,
+        ensureAllRouteTypeLoaded,
         ensureRouteTypeLoaded,
         ensureAreaLoaded,
         ensureCompanyCustomersLoaded,
@@ -2254,6 +2362,8 @@ export const AllDropdownListDataProvider = ({ children }: { children: ReactNode 
         ensureUserLoaded,
         ensureAllAgentCustomersLoaded,
         ensureAllCompanyOptionsLoaded,
+        ensureSpareCategoryLoaded,
+        ensureSpareSubCategoryLoaded,
         ensureChillerLoaded,
       }}
     >

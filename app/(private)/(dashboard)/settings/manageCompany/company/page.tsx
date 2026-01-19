@@ -117,7 +117,6 @@ const CompanyPage = () => {
                 page: pageNo.toString(),
                 per_page: pageSize.toString(),
             });
-            console.log(result);
             setLoading(false);
             if (result.error) {
                 showSnackbar(result.data.message, "error");
@@ -170,7 +169,7 @@ const CompanyPage = () => {
                         },
                         footer: { nextPrevBtn: true, pagination: true },
                         columns,
-                        rowSelection: true,
+                        // rowSelection: true,
                         rowActions: [
                             {
                                 icon: "lucide:eye",

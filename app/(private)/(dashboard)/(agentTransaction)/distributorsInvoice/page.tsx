@@ -10,7 +10,7 @@ import Table, {
 } from "@/app/components/customTable";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
-import { invoiceList, exportInvoice, invoiceStatusUpdate, exportOrderInvoice } from "@/app/services/agentTransaction";
+import { invoiceList, exportInvoice, invoiceStatusUpdate, exportOrderInvoice ,invoiceExportCollapse} from "@/app/services/agentTransaction";
 import { downloadFile } from "@/app/services/allApi";
 import StatusBtn from "@/app/components/statusBtn2";
 import toInternationalNumber, { FormatNumberOptions } from "@/app/(private)/utils/formatNumber";
@@ -20,12 +20,30 @@ import { formatWithPattern } from "@/app/(private)/utils/date";
 import FilterComponent from "@/app/components/filterComponent";
 import ApprovalStatus from "@/app/components/approvalStatus";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+import Drawer from "@mui/material/Drawer";
+import { OrderDetailPage } from "./OrderDetailComponent";
+import { downloadPDFGlobal } from "@/app/services/allApi";
+// import StatusBtn from "@/app/components/statusBtn2";
 // import ApprovalStatus from "@/app/components/approvalStatus";
 
 
 
 // 🔹 Table Columns
-const columns = [
+
+
+export default function CustomerInvoicePage() {
+    const [selectedRow, setSelectedRow] = useState<TableDataType | null>(null);
+    const [showDrawer, setShowDrawer] = useState(false);
+    const { can, permissions } = usePagePermissions();
+    const { showSnackbar } = useSnackbar();
+    const { setLoading } = useLoading();
+    const router = useRouter();
+    const [threeDotLoading, setThreeDotLoading] = useState({
+        csv: false,
+        xlsx: false,
+    });
+    const { companyOptions, warehouseAllOptions, regionOptions, areaOptions, routeOptions, salesmanOptions, ensureAreaLoaded, ensureCompanyLoaded, ensureRegionLoaded, ensureRouteLoaded, ensureSalesmanLoaded, ensureWarehouseAllLoaded } = useAllDropdownListData();
+    const columns = [
     {
         key: "invoice_date",
         label: "Date",
@@ -40,8 +58,16 @@ const columns = [
         label: "Time",
         showByDefault: true,
     },
-    { key: "invoice_code", label: "Invoice Code", showByDefault: true },
-    { key: "order_code", label: "Order Code", showByDefault: false },
+    { 
+            key: "invoice_code", 
+            label: "Invoice Code", 
+            showByDefault: true, 
+            render: (row: TableDataType) => <div className="cursor-pointer hover:text-red-500" onClick={() => {
+                setSelectedRow(row);
+                setShowDrawer(true);
+            }}>{row.invoice_code || "-"}</div> 
+        },
+    // { key: "order_code", label: "Order Code", showByDefault: false },
     { key: "delivery_code", label: "Delivery Code", showByDefault: true },
     {
         key: "customer_code", label: "Customer", showByDefault: true, render: (row: TableDataType) => {
@@ -91,18 +117,6 @@ const columns = [
         render: (row: TableDataType) => <ApprovalStatus status={row.approval_status || "-"} />,
     },
 ];
-
-export default function CustomerInvoicePage() {
-    const { can, permissions } = usePagePermissions();
-    const { showSnackbar } = useSnackbar();
-    const { setLoading } = useLoading();
-    const router = useRouter();
-    const [threeDotLoading, setThreeDotLoading] = useState({
-        csv: false,
-        xlsx: false,
-    });
-    const { companyOptions, warehouseAllOptions, regionOptions, areaOptions, routeOptions, salesmanOptions, ensureAreaLoaded, ensureCompanyLoaded, ensureRegionLoaded, ensureRouteLoaded, ensureSalesmanLoaded, ensureWarehouseAllLoaded } = useAllDropdownListData();
-
     // Load dropdown data
     useEffect(() => {
         ensureAreaLoaded();
@@ -130,10 +144,17 @@ export default function CustomerInvoicePage() {
 
     const exportFile = async (format: 'csv' | 'xlsx' = 'csv') => {
         try {
-            // setLoading(true);
-            // Pass selected format to the export API
             setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
-            const response = await exportInvoice({ format });
+            // Build params using same logic as filterBy
+            const params: Record<string, string> = {};
+            Object.keys(filters || {}).forEach((k) => {
+                const v = filters[k as keyof typeof filters];
+                if (v !== null && typeof v !== "undefined" && String(v) !== "") {
+                    params[k] = String(v);
+                }
+            });
+            params["format"] = format;
+            const response = await exportInvoice(params);
             const url = response?.url || response?.data?.url;
             if (url) {
                 await downloadFile(url);
@@ -151,12 +172,44 @@ export default function CustomerInvoicePage() {
         }
     };
 
+      const exportCollapseFile = async (format: "csv" | "xlsx" = "csv") => {
+                try {
+                        setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+                        // Build params using same logic as filterBy
+                        const params: Record<string, string> = {};
+                        Object.keys(filters || {}).forEach((k) => {
+                            let apiKey = k;
+                            if (k === "fromDate") apiKey = "from_date";
+                            if (k === "toDate") apiKey = "to_date";
+                            const v = filters[k as keyof typeof filters];
+                            if (v !== null && typeof v !== "undefined" && String(v) !== "") {
+                                params[apiKey] = String(v);
+                            }
+                        });
+                        params["format"] = format;
+                        const response = await invoiceExportCollapse(params);
+                        if (response && typeof response === "object" && response.download_url) {
+                                await downloadFile(response.download_url);
+                                showSnackbar("File downloaded successfully ", "success");
+                        } else {
+                                showSnackbar("Failed to get download URL", "error");
+                        }
+                        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+                } catch (error) {
+                        showSnackbar("Failed to download warehouse data", "error");
+                        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+                } finally {
+                }
+      };
+
     const downloadPdf = async (uuid: string) => {
         try {
             setLoading(true);
             const response = await exportOrderInvoice({ uuid: uuid, format: "pdf" });
             if (response && typeof response === 'object' && response.download_url) {
-                await downloadFile(response.download_url);
+                 const fileName = `invoice-${uuid}.pdf`;
+                await downloadPDFGlobal(response.download_url, fileName);
+                // await downloadFile(response.download_url);
                 showSnackbar("File downloaded successfully ", "success");
             } else {
                 showSnackbar("Failed to get download URL", "error");
@@ -333,7 +386,7 @@ export default function CustomerInvoicePage() {
                                 icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                                 label: "Export Excel",
                                 labelTw: "text-[12px] hidden sm:block",
-                                onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                                onClick: () => !threeDotLoading.xlsx && exportCollapseFile("xlsx"),
                             },
                             {
                                 icon: "lucide:radio",
@@ -412,6 +465,10 @@ export default function CustomerInvoicePage() {
                     pageSize: 10,
                 }}
             />
+        <Drawer anchor="right" open={showDrawer} onClose={() => { setShowDrawer(false) }} className="p-2" >
+                {selectedRow?.uuid && <OrderDetailPage uuid={selectedRow.uuid} onClose={() => setShowDrawer(false)} />}
+            </Drawer>
         </div>
+
     );
 }

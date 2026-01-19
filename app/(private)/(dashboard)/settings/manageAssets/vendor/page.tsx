@@ -14,6 +14,7 @@ import { useLoading } from "@/app/services/loadingContext";
 import { deleteVendor, vendorList } from "@/app/services/assetsApi";
 import StatusBtn from "@/app/components/statusBtn2";
 
+
 const dropdownDataList = [
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
   { icon: "lucide:delete", label: "Delete", iconWidth: 20 },
@@ -30,7 +31,7 @@ export default function ShelfDisplay() {
   const { showSnackbar } = useSnackbar();
 
 
-  const fetchVendor = useCallback(
+  const fetchvendor = useCallback(
     async (pageNo: number = 1, pageSize: number = 10): Promise<listReturnType> => {
       setLoading(true);
       const res = await vendorList({
@@ -64,7 +65,7 @@ export default function ShelfDisplay() {
           refreshKey={refreshKey}
           config={{
             api: {
-              list: fetchVendor
+              list: fetchvendor
             },
             header: {
               title: "Vendor",
@@ -103,7 +104,7 @@ export default function ShelfDisplay() {
               },
 
             ],
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               // {
               //   icon: "lucide:eye",

@@ -300,7 +300,7 @@ export default function CustomerInvoicePage() {
                     },
                     footer: { nextPrevBtn: true, pagination: true },
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
                     localStorageKey: "invoice-table",
                     rowActions: [
                         {

@@ -31,9 +31,9 @@ import {
     FormikTouched,
 } from "formik";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as Yup from "yup";
-
+import { LocationInput } from "@/app/components/LocationInput";
 interface AgentCustomerFormValues {
     osa_code: string;
     name: string;
@@ -74,10 +74,10 @@ export default function AddEditAgentCustomer() {
         warehouseAllOptions,
         customerTypeOptions,
         allCustomerTypeOptions,
-        
+
         channelOptions,
         // onlyCountryOptions
-        ensureChannelLoaded, ensureCustomerTypeLoaded, ensureWarehouseLoaded, ensureWarehouseAllLoaded,ensureAllCustomerTypesLoaded } = useAllDropdownListData();
+        ensureChannelLoaded, ensureCustomerTypeLoaded, ensureWarehouseLoaded, ensureWarehouseAllLoaded, ensureAllCustomerTypesLoaded } = useAllDropdownListData();
     const params = useParams();
     const agentCustomerId = params?.uuid as string | undefined;
     const isEditMode =
@@ -87,7 +87,7 @@ export default function AddEditAgentCustomer() {
         ensureCustomerTypeLoaded();
         ensureWarehouseLoaded();
         ensureWarehouseAllLoaded();
-        if(isEditMode){
+        if (isEditMode) {
             ensureAllCustomerTypesLoaded();
             ensureChannelLoaded();
         }
@@ -116,7 +116,7 @@ export default function AddEditAgentCustomer() {
             if (res && !res.error && Array.isArray(res.data)) {
                 setOutletChannelOptions(res.data.map((c: any) => ({
                     value: String(c.id),
-                    label: c.name 
+                    label: c.name
                 })));
             } else {
                 setOutletChannelOptions([]);
@@ -177,10 +177,10 @@ export default function AddEditAgentCustomer() {
         }
     );
 
-    useEffect(() => {
-        if (loading) setLoading(true);
-        else setLoading(false);
-    }, [loading, setLoading]);
+    // useEffect(() => {
+    //     if (loading) setLoading(true);
+    //     else setLoading(false);
+    // }, [loading, setLoading]);
 
     const fetchRoutes = async (value: string) => {
         setSkeleton({ ...skeleton, route: true });
@@ -247,7 +247,8 @@ export default function AddEditAgentCustomer() {
     // Prevent double call of genearateCode in add mode
     const codeGeneratedRef = useRef(false);
     useEffect(() => {
-        setLoading(true);
+        // setLoading(true);
+
         if (isEditMode && agentCustomerId) {
             (async () => {
                 const res = await agentCustomerById(String(agentCustomerId));
@@ -297,9 +298,9 @@ export default function AddEditAgentCustomer() {
                                 ? String(data.payment_type)
                                 : "",
                         is_cash:
-                            (data.payment_type != null
-                                ? String(data.is_cash)
-                                : "1") ?? "1",
+                            data.payment_type != null
+                                ? (String(data.payment_type) === "1" ? "1" : "0")
+                                : "1",
                         creditday:
                             data.creditday != null
                                 ? String(data.creditday)
@@ -336,27 +337,27 @@ export default function AddEditAgentCustomer() {
                 }
                 setLoading(false);
             })();
-        } else if (!isEditMode && !codeGeneratedRef.current) {
-            codeGeneratedRef.current = true;
-            (async () => {
-                const res = await genearateCode({
-                    model_name: "agent_customers",
-                });
-                if (res?.code) {
-                    setInitialValues((prev) => ({
-                        ...prev,
-                        osa_code: res.code,
-                    }));
-                }
-                if (res?.prefix) {
-                    setPrefix(res.prefix);
-                } else if (res?.code) {
-                    // fallback: extract prefix from code if possible (e.g. ABC-00123 => ABC-)
-                    const match = res.prefix;
-                    if (match) setPrefix(prefix);
-                }
-                setLoading(false);
-            })();
+            // } else if (!isEditMode && !codeGeneratedRef.current) {
+            //     codeGeneratedRef.current = true;
+            //     (async () => {
+            //         const res = await genearateCode({
+            //             model_name: "agent_customers",
+            //         });
+            //         if (res?.code) {
+            //             setInitialValues((prev) => ({
+            //                 ...prev,
+            //                 osa_code: res.code,
+            //             }));
+            //         }
+            //         if (res?.prefix) {
+            //             setPrefix(res.prefix);
+            //         } else if (res?.code) {
+            //             // fallback: extract prefix from code if possible (e.g. ABC-00123 => ABC-)
+            //             const match = res.prefix;
+            //             if (match) setPrefix(prefix);
+            //         }
+            //         setLoading(false);
+            //     })();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isEditMode, agentCustomerId]);
@@ -538,6 +539,8 @@ export default function AddEditAgentCustomer() {
         }
     };
 
+
+
     const handleSubmit = async (
         values: AgentCustomerFormValues,
         actions?: Pick<
@@ -572,7 +575,7 @@ export default function AddEditAgentCustomer() {
                 try {
                     await saveFinalCode({
                         reserved_code: values.osa_code,
-                        model_name: "agent_customers",
+                        model_name: values.customer_type == "3" ? "agent_customers" : "OTC",
                     });
                 } catch (e) {
                     // Optionally handle error, but don't block success
@@ -637,6 +640,23 @@ export default function AddEditAgentCustomer() {
         }
     };
 
+    const generateCode = async (
+        customerType: string,
+        setFieldValue: (field: any, value: any) => void
+    ) => {
+        const res = await genearateCode({
+            model_name: customerType === "3" ? "agent_customers" : "OTC",
+        });
+
+        if (res?.code) {
+            setFieldValue("osa_code", res.code);
+        }
+
+        if (res?.prefix) {
+            setPrefix(res.prefix);
+        }
+    };
+
     const renderStepContent = (
         values: AgentCustomerFormValues,
         setFieldValue: (
@@ -657,55 +677,51 @@ export default function AddEditAgentCustomer() {
                                 Customer
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                                <div>
+                                    <InputFields
+                                        required
+                                        label="Customer Type"
+                                        options={isEditMode ? allCustomerTypeOptions : customerTypeOptions}
+                                        name="customer_type"
+                                        value={customerTypeOptions.length === 0 ? "" : values.customer_type?.toString() ?? ""}
+                                        disabled={customerTypeOptions.length === 0}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setFieldValue("customer_type", val);
+                                            setFieldValue("osa_code", ""); // Clear OSA code to trigger skeleton
+                                            setSkeleton((prev) => ({ ...prev, osa_code: true })); // Show skeleton
+                                            generateCode(val, (field, value) => {
+                                                setFieldValue(field, value);
+                                                if (field === "osa_code") {
+                                                    setSkeleton((prev) => ({ ...prev, osa_code: false })); // Hide skeleton when code is set
+                                                }
+                                            });
+                                            setFieldError?.("customer_type", undefined);
+                                        }}
+                                        error={
+                                            touched.customer_type &&
+                                            errors.customer_type
+                                        }
+                                    />
+                                </div>
+
                                 <div>
                                     <InputFields
                                         label="OSA Code"
                                         name="osa_code"
                                         value={values.osa_code}
+                                        showSkeleton={!!values.customer_type && !values.osa_code}
                                         onChange={(e) => {
                                             setFieldValue(
                                                 "osa_code",
                                                 e.target.value
                                             );
+                                            if (setFieldError) setFieldError("osa_code", undefined);
                                         }}
                                         disabled={codeMode === "auto"}
                                     />
-                                    {!isEditMode && false && (
-                                        <>
-                                            <IconButton
-                                                bgClass="white"
-                                                className="mt-[45px] cursor-pointer text-[#252B37]"
-                                                icon="mi:settings"
-                                                onClick={() => setIsOpen(true)}
-                                            />
-                                            <SettingPopUp
-                                                isOpen={isOpen}
-                                                onClose={() => setIsOpen(false)}
-                                                title="OSA Code"
-                                                prefix={prefix}
-                                                setPrefix={setPrefix}
-                                                onSave={(mode, code) => {
-                                                    setCodeMode(mode);
-                                                    if (
-                                                        mode === "auto" &&
-                                                        code
-                                                    ) {
-                                                        setFieldValue(
-                                                            "osa_code",
-                                                            code
-                                                        );
-                                                    } else if (
-                                                        mode === "manual"
-                                                    ) {
-                                                        setFieldValue(
-                                                            "osa_code",
-                                                            ""
-                                                        );
-                                                    }
-                                                }}
-                                            />
-                                        </>
-                                    )}
+
                                 </div>
                                 <div>
                                     <InputFields
@@ -713,12 +729,13 @@ export default function AddEditAgentCustomer() {
                                         label="Outlet Name"
                                         name="name"
                                         value={values.name}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "name",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("name", undefined);
+                                        }}
                                         error={touched.name && errors.name}
                                     />
                                 </div>
@@ -728,33 +745,14 @@ export default function AddEditAgentCustomer() {
                                         label="Owner Name"
                                         name="owner_name"
                                         value={values.owner_name}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "owner_name",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("owner_name", undefined);
+                                        }}
                                         error={touched.owner_name && errors.owner_name}
-                                    />
-                                </div>
-                                <div>
-                                    <InputFields
-                                        required
-                                        label="Customer Type"
-                                        options={isEditMode ? allCustomerTypeOptions : customerTypeOptions}
-                                        name="customer_type"
-                                        value={customerTypeOptions.length === 0 ? "" : values.customer_type?.toString() ?? ""}
-                                        disabled={customerTypeOptions.length === 0 }
-                                        onChange={(e) =>
-                                            setFieldValue(
-                                                "customer_type",
-                                                e.target.value
-                                            )
-                                        }
-                                        error={
-                                            touched.customer_type &&
-                                            errors.customer_type
-                                        }
                                     />
                                 </div>
 
@@ -769,6 +767,7 @@ export default function AddEditAgentCustomer() {
                                         disabled={isEditMode ? warehouseAllOptions.length === 0 : warehouseOptions.length === 0}
                                         onChange={(e) => {
                                             setFieldValue("warehouse", e.target.value);
+                                            if (setFieldError) setFieldError("warehouse", undefined);
                                             if (values.warehouse !== e.target.value) {
                                                 setFieldValue("route_id", "");
                                                 fetchRoutes(e.target.value);
@@ -788,9 +787,10 @@ export default function AddEditAgentCustomer() {
                                         name="route_id"
                                         searchable={true}
                                         value={filteredRouteOptions.length === 0 ? "" : values.route_id?.toString()}
-                                        onChange={(e) =>
-                                            setFieldValue("route_id", e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                            setFieldValue("route_id", e.target.value);
+                                            if (setFieldError) setFieldError("route_id", undefined);
+                                        }}
                                         disabled={filteredRouteOptions.length === 0}
                                         showSkeleton={skeleton.route}
                                         error={
@@ -818,12 +818,13 @@ export default function AddEditAgentCustomer() {
                                         label="Street"
                                         name="street"
                                         value={values.street}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "street",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("street", undefined);
+                                        }}
                                         error={touched.street && errors.street}
                                     />
                                 </div>
@@ -834,12 +835,13 @@ export default function AddEditAgentCustomer() {
                                         label="Landmark"
                                         name="landmark"
                                         value={values.landmark}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "landmark",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("landmark", undefined);
+                                        }}
                                         error={
                                             touched.landmark && errors.landmark
                                         }
@@ -852,12 +854,13 @@ export default function AddEditAgentCustomer() {
                                         label="Town"
                                         name="town"
                                         value={values.town}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "town",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("town", undefined);
+                                        }}
                                         error={touched.town && errors.town}
                                     />
                                 </div>
@@ -868,12 +871,13 @@ export default function AddEditAgentCustomer() {
                                         label="District"
                                         name="district"
                                         value={values.district}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "district",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("district", undefined);
+                                        }}
                                         error={
                                             touched.district && errors.district
                                         }
@@ -882,20 +886,25 @@ export default function AddEditAgentCustomer() {
 
                                 <div>
                                     <InputFields
-                                        label="Latitude"
-                                        type="number"
-                                        name="latitude"
-                                        value={values.latitude?.toString()}
-                                        onChange={(e) =>
-                                            setFieldValue(
-                                                "latitude",
-                                                e.target.value
-                                            )
+                                    label="Latitude"
+                                        type="location"
+                                        value={
+                                            values.latitude && values.longitude
+                                                ? `${values.latitude},${values.longitude}`
+                                                : values.latitude || ""
                                         }
+                                        onChange={(e) => {
+                                            // e.target.value is "lat,lng"
+                                            const [lat, lng] = (e.target.value || "").split(",");
+                                            setFieldValue("latitude", lat || "");
+                                            setFieldValue("longitude", lng || "");
+                                            if (setFieldError) setFieldError("latitude", undefined);
+                                        }}
                                         error={
                                             touched.latitude && errors.latitude
                                         }
                                     />
+                                       
                                 </div>
 
                                 <div>
@@ -904,12 +913,13 @@ export default function AddEditAgentCustomer() {
                                         type="number"
                                         name="longitude"
                                         value={values.longitude?.toString()}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "longitude",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("longitude", undefined);
+                                        }}
                                         error={
                                             touched.longitude && errors.longitude
                                         }
@@ -938,7 +948,10 @@ export default function AddEditAgentCustomer() {
                                         setSelectedCountry={(country: contactCountry) => setCountry(prev => ({ ...prev, contact_no: country }))}
                                         selectedCountry={country.contact_no}
                                         value={`${values.contact_no ?? ''}`}
-                                        onChange={(e) => setFieldValue("contact_no", e.target.value)}
+                                        onChange={(e) => {
+                                            setFieldValue("contact_no", e.target.value);
+                                            if (setFieldError) setFieldError("contact_no", undefined);
+                                        }}
                                         error={errors?.contact_no && touched?.contact_no ? errors.contact_no : false}
                                     />
                                 </div>
@@ -952,12 +965,13 @@ export default function AddEditAgentCustomer() {
                                         setSelectedCountry={(country: contactCountry) => setCountry(prev => ({ ...prev, contact_no2: country }))}
                                         selectedCountry={country.contact_no2}
                                         value={values.contact_no2}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "contact_no2",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("contact_no2", undefined);
+                                        }}
                                         error={
                                             touched.contact_no2 &&
                                             errors.contact_no2
@@ -973,12 +987,13 @@ export default function AddEditAgentCustomer() {
                                         value={values.whatsapp_no}
                                         setSelectedCountry={(country: contactCountry) => setCountry(prev => ({ ...prev, whatsapp_no: country }))}
                                         selectedCountry={country.whatsapp_no}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "whatsapp_no",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("whatsapp_no", undefined);
+                                        }}
                                         error={
                                             touched.whatsapp_no &&
                                             errors.whatsapp_no
@@ -1008,12 +1023,13 @@ export default function AddEditAgentCustomer() {
                                         value={
                                             values.buyertype?.toString() ?? ""
                                         }
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "buyertype",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("buyertype", undefined);
+                                        }}
                                         error={
                                             touched.buyertype &&
                                             errors.buyertype
@@ -1027,12 +1043,13 @@ export default function AddEditAgentCustomer() {
 
                                 <div>
                                     <InputFields
-                                        label="VAT No"
+                                        label="TIN No"
                                         name="vat_no"
                                         value={values.vat_no?.toString()}
-                                        onChange={(e) =>
-                                            setFieldValue("vat_no", e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                            setFieldValue("vat_no", e.target.value);
+                                            if (setFieldError) setFieldError("vat_no", undefined);
+                                        }}
                                         error={touched.vat_no && errors.vat_no}
                                     />
                                 </div>
@@ -1040,12 +1057,13 @@ export default function AddEditAgentCustomer() {
                                 <div>
                                     <InputFields
                                         required
-                                        label="Payment Type"
+                                        label="Payment Terms"
                                         name="payment_type"
                                         value={values.payment_type?.toString() ?? ""}
                                         onChange={(e) => {
-                                            setFieldValue("payment_type", e.target.value)
-                                            setFieldValue("is_cash", (e.target.value === "1") ? "1" : "0")
+                                            setFieldValue("payment_type", e.target.value);
+                                            setFieldValue("is_cash", (e.target.value === "1") ? "1" : "0");
+                                            if (setFieldError) setFieldError("payment_type", undefined);
                                         }}
                                         error={
                                             touched.payment_type &&
@@ -1053,8 +1071,7 @@ export default function AddEditAgentCustomer() {
                                         }
                                         options={[
                                             { value: "1", label: "Cash" },
-                                            { value: "2", label: "Cheque" },
-                                            { value: "3", label: "Transfer" },
+                                            { value: "2", label: "Credit" },
                                         ]}
                                     />
                                 </div>
@@ -1063,26 +1080,30 @@ export default function AddEditAgentCustomer() {
                                     <>
                                         <div>
                                             <InputFields
-                                            required
+                                                required
                                                 label="Credit Day"
+                                                type="number"
                                                 name="creditday"
                                                 value={values.creditday}
-                                                onChange={(e) =>
-                                                    setFieldValue("creditday", e.target.value)
-                                                }
+                                                onChange={(e) => {
+                                                    setFieldValue("creditday", e.target.value);
+                                                    if (setFieldError) setFieldError("creditday", undefined);
+                                                }}
                                                 error={touched.creditday && errors.creditday}
                                             />
                                         </div>
 
                                         <div>
                                             <InputFields
-                                            required
+                                                required
                                                 label="Credit Limit"
+                                                type="number"
                                                 name="credit_limit"
                                                 value={values.credit_limit}
-                                                onChange={(e) =>
-                                                    setFieldValue("credit_limit", e.target.value)
-                                                }
+                                                onChange={(e) => {
+                                                    setFieldValue("credit_limit", e.target.value);
+                                                    if (setFieldError) setFieldError("credit_limit", undefined);
+                                                }}
                                                 error={touched.credit_limit && errors.credit_limit}
                                             />
                                         </div>
@@ -1110,6 +1131,7 @@ export default function AddEditAgentCustomer() {
                                         value={outletChannelOptions.length === 0 ? "" : values.outlet_channel_id?.toString()}
                                         onChange={(e) => {
                                             setFieldValue("outlet_channel_id", e.target.value);
+                                            if (setFieldError) setFieldError("outlet_channel_id", undefined);
                                             if (values.outlet_channel_id !== e.target.value) {
                                                 setFieldValue("category_id", "");
                                                 fetchCategories(e.target.value);
@@ -1190,12 +1212,13 @@ export default function AddEditAgentCustomer() {
                                             values.enable_promotion?.toString() ??
                                             ""
                                         }
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setFieldValue(
                                                 "enable_promotion",
                                                 e.target.value
-                                            )
-                                        }
+                                            );
+                                            if (setFieldError) setFieldError("enable_promotion", undefined);
+                                        }}
                                         error={
                                             touched.enable_promotion &&
                                             errors.enable_promotion
@@ -1207,15 +1230,21 @@ export default function AddEditAgentCustomer() {
                                     />
                                 </div>
 
-                                <div>
-                                    <InputFields
-                                        label="Add QR Code"
-                                        value={values.qr_code}
-                                        name="qr_code"
-                                        onChange={(e) => setFieldValue("qr_code", e.target.value)}
-                                        error={touched.qr_code && errors.qr_code}
-                                    />
-                                </div>
+                                {isEditMode && (
+                                    <div>
+                                        <InputFields
+                                            label="Add QR Code"
+                                            value={values.qr_code}
+                                            name="qr_code"
+                                            onChange={(e) => {
+                                                setFieldValue("qr_code", e.target.value);
+                                                if (setFieldError) setFieldError("qr_code", undefined);
+                                            }}
+                                            error={touched.qr_code && errors.qr_code}
+                                        />
+                                    </div>
+                                )}
+
 
                             </div>
                         </div>

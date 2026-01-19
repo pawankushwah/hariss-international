@@ -3,7 +3,8 @@
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import Table, {
     listReturnType,
-    searchReturnType
+    searchReturnType,
+    TableDataType
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import { irServiceTerrtList } from "@/app/services/assetsApi";
@@ -14,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import Drawer from "@mui/material/Drawer";
 import ServiceTerritoryDetailsDrawer from "./ServiceTerritoryDetailsDrawer";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+import ApprovalStatus from "@/app/components/approvalStatus";
 
 
 // ✅ TYPE FOR SERVICE TERRITORY API ITEM
@@ -112,6 +114,12 @@ const getColumns = (
             label: "Technician Name",
             render: (row: any) => <p>{row.technician?.name || "-"}</p>,
         },
+        {
+            key: "approval_status",
+            label: "Approval Status",
+            render: (row: TableDataType) => <ApprovalStatus status={row.approval_status || "-"} />,
+        },
+        
         // {
         //     key: "created_at",
         //     label: "Created Date",
@@ -126,16 +134,16 @@ export default function ServiceTerritoryListPage() {
     const { setLoading } = useLoading();
     const router = useRouter();
 
-    const { warehouseAllOptions, regionOptions, areaOptions, assetsModelOptions , ensureAreaLoaded, ensureAssetsModelLoaded, ensureRegionLoaded, ensureWarehouseAllLoaded} =
+    const { warehouseAllOptions, regionOptions, areaOptions, assetsModelOptions, ensureAreaLoaded, ensureAssetsModelLoaded, ensureRegionLoaded, ensureWarehouseAllLoaded } =
         useAllDropdownListData();
 
-  // Load dropdown data
-  useEffect(() => {
-    ensureAreaLoaded();
-    ensureAssetsModelLoaded();
-    ensureRegionLoaded();
-    ensureWarehouseAllLoaded();
-  }, [ensureAreaLoaded, ensureAssetsModelLoaded, ensureRegionLoaded, ensureWarehouseAllLoaded]);
+    // Load dropdown data
+    useEffect(() => {
+        ensureAreaLoaded();
+        ensureAssetsModelLoaded();
+        ensureRegionLoaded();
+        ensureWarehouseAllLoaded();
+    }, [ensureAreaLoaded, ensureAssetsModelLoaded, ensureRegionLoaded, ensureWarehouseAllLoaded]);
 
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -306,19 +314,19 @@ export default function ServiceTerritoryListPage() {
 
                     columns: getColumns(regionOptions || [], areaOptions || [], warehouseAllOptions || []),
 
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
-                        {
-                            icon: "lucide:edit",
-                            onClick: (row: any) => {
-                                router.push(`/serviceTerritory/${row.uuid}`);
-                            },
-                        },
                         {
                             icon: "lucide:eye",
                             onClick: (row: any) => {
                                 setSelectedUuid(row.uuid);
                                 setDrawerOpen(true);
+                            },
+                        },
+                        {
+                            icon: "lucide:edit-2",
+                            onClick: (row: any) => {
+                                router.push(`/serviceTerritory/${row.uuid}`);
                             },
                         },
                     ],
@@ -335,7 +343,7 @@ export default function ServiceTerritoryListPage() {
                 onClose={() => setDrawerOpen(false)}
                 sx={{
                     '& .MuiDrawer-paper': {
-                        width: '33.333%',
+                        width: '45.333%',
                         minWidth: '400px',
                         maxWidth: '600px',
                     },

@@ -12,6 +12,8 @@ import {
   salesmanLoadHeaderAdd,
   salesmanLoadHeaderById,
   salesmanLoadHeaderUpdate,
+  getSalesmanByWarehouse,
+  getSalesmanByWarehouseId
 } from "@/app/services/agentTransaction";
 import { genearateCode, itemList, getWarehouseStockDetails, warehouseStockTopOrders } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
@@ -40,11 +42,12 @@ export default function AddEditSalesmanLoad() {
     ensureSalesmanTypeLoaded();
     ensureWarehouseLoaded();
   }, [ensureProjectLoaded, ensureRouteLoaded, ensureSalesmanLoaded, ensureSalesmanTypeLoaded, ensureWarehouseLoaded]);
-  // console.log(useAllDropdownListData())
+
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
   const { setLoading } = useLoading();
   const params = useParams();
+  const [nestedLoading, setNestedLoading] = useState(false);
   const loadUUID = params?.uuid as string | undefined;
   const isEditMode = loadUUID !== undefined && loadUUID !== "add";
 
@@ -101,10 +104,44 @@ export default function AddEditSalesmanLoad() {
     project_type: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Track per-row errors for PCS and CSE
+  const [rowQtyErrors, setRowQtyErrors] = useState<{ [key: string]: { pcs?: string; cse?: string } }>({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [itemData, setItemData] = useState<TableDataType[]>([]);
   const [isItemsLoaded, setIsItemsLoaded] = useState(false);
   const [itemOptions, setItemsOptions] = useState();
+  const [projectSalesmanOptions, setProjectSalesmanOptions] = useState<any[]>([]);
+  const [salesmanWarehouseRouteOptions, setSalesmanWarehouseRouteOptions] = useState<any[]>([]);
+  // Store last API data for mapping salesman_id to route_id
+  const [lastProjectSalesmanData, setLastProjectSalesmanData] = useState<any[]>([]);
+  const [salesmanWarehouseOptions, setSalesmanWarehouseOptions] = useState<any[]>([]);
+  // Fetch salesmen for project type (salesman_type === '6')
+  useEffect(() => {
+    const fetchProjectSalesmen = async () => {
+      if (form.salesman_type === "6" && form.warehouse) {
+        setSkeleton((prev) => ({ ...prev, salesman: true }));
+        try {
+          const res = await getSalesmanByWarehouse({ warehouse_id: form.warehouse });
+          const data = res?.data || [];
+          setLastProjectSalesmanData(data);
+          const options = data.map((item: any) => ({
+            value: String(item.salesman_id),
+            label: `${item.salesman_code ? item.salesman_code + ' - ' : ''}${item.salesman_name}`
+          }));
+          setProjectSalesmanOptions(options);
+        } catch (e) {
+          setProjectSalesmanOptions([]);
+          setLastProjectSalesmanData([]);
+        } finally {
+          setSkeleton((prev) => ({ ...prev, salesman: false }));
+        }
+      } else {
+        setProjectSalesmanOptions([]);
+        setLastProjectSalesmanData([]);
+      }
+    };
+    fetchProjectSalesmen();
+  }, [form.salesman_type, form.warehouse]);
   const [orderData, setOrderData] = useState<FormData[]>([]);
   const [skeleton, setSkeleton] = useState({
     route: false,
@@ -113,12 +150,40 @@ export default function AddEditSalesmanLoad() {
   });
   const codeGeneratedRef = useRef(false);
 
+
+  useEffect(() => {
+    const fetchSalesmanByWarehouseId = async () => {
+      if (form.salesman_type === "2" && form.warehouse) {
+        setSkeleton((prev) => ({ ...prev, salesman: true }));
+        try {
+          const res = await getSalesmanByWarehouseId({ warehouse_id: form.warehouse, type: form.salesman_type });
+          const data = res?.data.salesmen || [];
+          setSalesmanWarehouseOptions(data);
+          const options = data.map((item: any) => ({
+            value: String(item.id),
+            label: `${item.osa_code ? item.osa_code + ' - ' : ''}${item.name}`
+          }));
+          setSalesmanWarehouseRouteOptions(options);
+        } catch (e) {
+          setSalesmanWarehouseRouteOptions([]);
+          setSalesmanWarehouseOptions([]);
+        } finally {
+          setSkeleton((prev) => ({ ...prev, salesman: false }));
+        }
+      } else {
+        setSalesmanWarehouseRouteOptions([]);
+        setSalesmanWarehouseOptions([]);
+      }
+    };
+    fetchSalesmanByWarehouseId();
+  }, [form.salesman_type, form.warehouse]);
+
   // ✅ Load items based on selected warehouse
   useEffect(() => {
     if (form.warehouse) {
       (async () => {
         try {
-          setLoading(true);
+          setNestedLoading(true);
 
           // Fetch warehouse stock details
           const stockRes = await warehouseStockTopOrders(form.warehouse);
@@ -178,11 +243,11 @@ export default function AddEditSalesmanLoad() {
           // console.error("❌ Error fetching warehouse stock:", error);
           showSnackbar("Failed to fetch items for the selected warehouse", "error");
         } finally {
-          setLoading(false);
+          setNestedLoading(false);
         }
       })();
     }
-  }, [form.warehouse, setLoading, showSnackbar]);
+  }, [form.warehouse, setNestedLoading, showSnackbar]);
 
 
 
@@ -208,33 +273,73 @@ export default function AddEditSalesmanLoad() {
       [field]: value.replace(/[^0-9]/g, ''), // allow only numbers
     };
     setItemData(updated);
-  };
 
-  const handleQtyBlur = (index: number, field: 'pcs_qty' | 'cse_qty') => {
-    const updated = [...itemData];
+    // Validation logic
     const row = updated[index];
-    const pcs_upc = getUpc(row.uom, 'primary');
-    const cse_upc = getUpc(row.uom, 'secondary');
+    const secondary_upc = getUpc(row.uom, 'secondary');
     const availableStock = getAvailableStock(row);
-    let pcs_qty = Number(row.pcs_qty || 0);
-    let cse_qty = Number(row.cse_qty || 0);
-
-    // Clamp values so total does not exceed available stock
-    let total = pcs_qty * pcs_upc + cse_qty * cse_upc;
-    if (total > availableStock) {
-      if (field === 'pcs_qty') {
-        pcs_qty = Math.max(0, Math.floor((availableStock - cse_qty * cse_upc) / pcs_upc));
+    const pcs_qty = Number(field === 'pcs_qty' ? value : row.pcs_qty || 0);
+    const cse_qty = Number(field === 'cse_qty' ? value : row.cse_qty || 0);
+    const maxCseQty = secondary_upc > 0 ? Math.floor(availableStock / secondary_upc) : 0;
+    const remainingPcs = Math.max(0, availableStock - cse_qty * secondary_upc);
+    let errorMsg = '';
+    let newRowErrors = { ...(rowQtyErrors[index] || {}) };
+    if (field === 'pcs_qty') {
+      if (pcs_qty > remainingPcs) {
+        errorMsg = 'Entered qty is greater than stock';
+        newRowErrors.pcs = errorMsg;
       } else {
-        cse_qty = Math.max(0, Math.floor((availableStock - pcs_qty * pcs_upc) / cse_upc));
+        newRowErrors.pcs = '';
+      }
+    } else if (field === 'cse_qty') {
+      if (cse_qty > maxCseQty) {
+        errorMsg = 'Entered qty is greater than stock';
+        newRowErrors.cse = errorMsg;
+      } else {
+        newRowErrors.cse = '';
       }
     }
-    updated[index] = {
-      ...row,
-      pcs_qty: pcs_qty ? pcs_qty.toString() : '',
-      cse_qty: cse_qty ? cse_qty.toString() : '',
-    };
-    setItemData(updated);
+    setRowQtyErrors((prev) => ({ ...prev, [index]: newRowErrors }));
   };
+
+  // const handleQtyBlur = (index: number, field: 'pcs_qty' | 'cse_qty') => {
+  //   const updated = [...itemData];
+  //   const row = updated[index];
+  //   const pcs_upc = getUpc(row.uom, 'primary');
+  //   const cse_upc = getUpc(row.uom, 'secondary');
+  //   const availableStock = getAvailableStock(row);
+  //   let pcs_qty = Number(row.pcs_qty || 0);
+  //   let cse_qty = Number(row.cse_qty || 0);
+
+  //   if (field === 'cse_qty') {
+  //     // Clamp cse_qty so it doesn't exceed available stock
+  //     const maxCseQty = cse_upc > 0 ? Math.floor(availableStock / cse_upc) : 0;
+  //     if (cse_qty > maxCseQty) cse_qty = maxCseQty;
+  //     // After cse_qty is set, calculate remaining for pcs
+  //     const remainingForPcs = availableStock - (cse_qty * cse_upc);
+  //     // If user hasn't entered pcs_qty or it's 0, set it to remainingForPcs
+  //     if (!row.pcs_qty || Number(row.pcs_qty) === 0) {
+  //       pcs_qty = Math.max(0, remainingForPcs);
+  //     } else {
+  //       // If user entered a value, clamp it
+  //       pcs_qty = Math.max(0, Math.min(pcs_qty, remainingForPcs));
+  //     }
+  //   } else if (field === 'pcs_qty') {
+  //     // Clamp pcs_qty so it doesn't exceed available stock minus cse_qty * cse_upc
+  //     const remainingForPcs = availableStock - (cse_qty * cse_upc);
+  //     pcs_qty = Math.max(0, Math.min(pcs_qty, remainingForPcs));
+  //     // Optionally, clamp cse_qty if needed (not strictly necessary)
+  //     const maxCseQty = cse_upc > 0 ? Math.floor(availableStock / cse_upc) : 0;
+  //     if (cse_qty > maxCseQty) cse_qty = maxCseQty;
+  //   }
+
+  //   updated[index] = {
+  //     ...row,
+  //     pcs_qty: pcs_qty ? pcs_qty.toString() : '',
+  //     cse_qty: cse_qty ? cse_qty.toString() : '',
+  //   };
+  //   setItemData(updated);
+  // };
 
 
 
@@ -258,6 +363,39 @@ export default function AddEditSalesmanLoad() {
   // useEffect(() => {
   //   fetchItem("");
   // }, []);
+const handleQtyBlur = (index: number, field: 'pcs_qty' | 'cse_qty') => {
+  const updated = [...itemData];
+  const row = updated[index];
+
+  const secondary_upc = getUpc(row.uom, 'secondary');
+  const availableStock = getAvailableStock(row);
+
+  let pcs_qty = Number(row.pcs_qty || 0);
+  let cse_qty = Number(row.cse_qty || 0);
+
+  // Clamp CSE to its own max
+  const maxCseQty = secondary_upc > 0 ? Math.floor(availableStock / secondary_upc) : 0;
+  if (cse_qty > maxCseQty) cse_qty = maxCseQty;
+
+  if (field === 'pcs_qty') {
+    // Only clamp PCS to allowed max, do NOT change CSE
+    const remainingPcs = Math.max(0, availableStock - cse_qty * secondary_upc);
+    if (pcs_qty > remainingPcs) pcs_qty = remainingPcs;
+    // Do NOT change cse_qty
+  } else if (field === 'cse_qty') {
+    // Clamp CSE to max, and clamp PCS to remaining
+    const remainingPcs = Math.max(0, availableStock - cse_qty * secondary_upc);
+    if (pcs_qty > remainingPcs) pcs_qty = remainingPcs;
+  }
+
+  updated[index] = {
+    ...row,
+    cse_qty: cse_qty ? cse_qty.toString() : '',
+    pcs_qty: pcs_qty ? pcs_qty.toString() : '',
+  };
+
+  setItemData(updated);
+};
 
   const [code, setCode] = useState("");
   useEffect(() => {
@@ -330,18 +468,26 @@ export default function AddEditSalesmanLoad() {
     }
   }, [isEditMode, loadUUID, isItemsLoaded, setLoading, showSnackbar]);
 
-  // ✅ Validation Schema
-  // ✅ Validation Schema
+  // Validation Schema: Route is required unless salesman_type is '6' (project)
   const validationSchema = yup.object().shape({
     salesman_type: yup.string().required("Sales Team Type is required"),
     warehouse: yup.string().required("Distributor is required"),
-    route: yup.string().required("Route is required"),
-
+    route: yup.string().when('salesman_type', {
+      is: (val: string) => val !== '6',
+      then: (schema) => schema.required('Route is required'),
+      otherwise: (schema) => schema.notRequired(),
+    }),
     salesman: yup.string().required("Sales Team is required"),
   });
 
   const handleChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    // If selecting salesman in project mode, also set route from selected salesman option
+    if (field === "salesman" && form.salesman_type === "6") {
+      const match = lastProjectSalesmanData.find((item: any) => String(item.salesman_id) === value);
+      setForm((prev) => ({ ...prev, salesman: value, route: match ? String(match.route_id) : "" }));
+    } else {
+      setForm((prev) => ({ ...prev, [field]: value }));
+    }
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
@@ -360,7 +506,6 @@ export default function AddEditSalesmanLoad() {
       setSubmitting(true);
 
       let validItems = itemData.filter((i) => (i.cse_qty && Number(i.cse_qty) > 0) || (i.pcs_qty && Number(i.pcs_qty) > 0));
-      console.log("Valid Items:", validItems);
 
       if (validItems.length === 0) {
         showSnackbar("Please add at least one item with quantity", "error");
@@ -385,17 +530,18 @@ export default function AddEditSalesmanLoad() {
           return [];
         });
       });
-      console.log("Details Payload:", details);
 
-      const payload = {
+      const payload: any = {
         salesman_type: Number(form.salesman_type),
-        project_type: form.project_type ? Number(form.project_type) : null, // ✅ fix here
         warehouse_id: Number(form.warehouse),
         route_id: Number(form.route),
         salesman_id: Number(form.salesman),
         status: 1,
         details: details,
       };
+      if (form.project_type) {
+        payload.project_type = Number(form.project_type);
+      }
 
       let res;
       if (isEditMode && loadUUID) {
@@ -407,13 +553,13 @@ export default function AddEditSalesmanLoad() {
       if (res?.error) {
         showSnackbar(res.data?.message || "Failed to submit form", "error");
       } else {
+        router.push("/salesTeamLoad");
         showSnackbar(
           isEditMode
             ? "Sales Team Load updated successfully"
             : "Sales Team Load added successfully",
           "success"
         );
-        router.push("/salesTeamLoad");
       }
     } catch (err) {
       if (err instanceof yup.ValidationError) {
@@ -485,7 +631,7 @@ export default function AddEditSalesmanLoad() {
           </div>
           <div className="flex flex-col items-end">
             <span className="text-[42px] uppercase text-[#A4A7AE] mb-[10px]">
-              Sales Team Load
+              Load
             </span>
             <span className="text-primary text-[14px] tracking-[10px]">
               #{code}
@@ -533,9 +679,7 @@ export default function AddEditSalesmanLoad() {
             onChange={async (e) => {
               const val = e.target.value;
               handleChange("warehouse", val);
-              // Clear customer when warehouse changes
               handleChange("route", "");
-              // Fetch customers for selected warehouse
               if (val) {
                 setSkeleton({ ...skeleton, route: true });
                 await fetchRouteOptions(val);
@@ -544,43 +688,50 @@ export default function AddEditSalesmanLoad() {
             }
             }
           />
-          <InputFields
-            required
-            label="Route"
-            name="route"
-            value={form.route}
-            searchable={true}
-            options={routeOptions}
-            error={errors.route}
-            disabled={!form.warehouse}
-            showSkeleton={skeleton.route}
-            onChange={async (e) => {
-              const val = e.target.value;
-              handleChange("route", val);
-              // Clear customer when warehouse changes
-              handleChange("salesman", "");
-              // Fetch customers for selected warehouse
-              if (val) {
-                setSkeleton({ ...skeleton, salesman: true });
-                await fetchSalesmanByRouteOptions(val);
-                setSkeleton({ ...skeleton, salesman: false });
-              }
-            }}
-          />
+          {form.salesman_type !== "6" && (
+            <InputFields
+              required
+              label="Route"
+              name="route"
+              value={form.route}
+              searchable={true}
+              options={routeOptions}
+              error={errors.route}
+              disabled={!form.warehouse}
+              showSkeleton={skeleton.route}
+              onChange={async (e) => {
+                const val = e.target.value;
+                handleChange("route", val);
+                // Clear customer when warehouse changes
+                handleChange("salesman", "");
+                // Fetch customers for selected warehouse
+                if (val) {
+                  setSkeleton({ ...skeleton, salesman: true });
+                  await fetchSalesmanByRouteOptions(val);
+                  setSkeleton({ ...skeleton, salesman: false });
+                }
+              }}
+            />
+          )}
           <InputFields
             required
             label="Sales Team"
             name="salesman"
             value={form.salesman}
-            disabled={!form.route}
+            disabled={!form.warehouse || (form.salesman_type !== "6" && !form.route)}
             searchable={true}
-            options={salesmanOptions}
+            options={
+              form.salesman_type === "6"
+                ? projectSalesmanOptions
+                : form.salesman_type === "2"
+                ? salesmanWarehouseRouteOptions
+                : salesmanOptions
+            }
             error={errors.salesman}
             showSkeleton={skeleton.salesman}
             onChange={(e) => handleChange("salesman", e.target.value)}
           />
         </div>
-        {/* --- Table --- */}
         <div>
         </div>
         <Table
@@ -588,7 +739,7 @@ export default function AddEditSalesmanLoad() {
           data={itemData.map((row, idx) => ({ ...row, idx: idx.toString() }))}
           config={{
             table: { height: 500 },
-            showNestedLoading: false,
+            showNestedLoading: nestedLoading,
             columns: [
               {
                 key: "item",
@@ -620,61 +771,163 @@ export default function AddEditSalesmanLoad() {
                   return <span>{stockQty !== undefined ? stockQty : "0"}</span>;
                 },
               },
-              {
-                key: "cse_qty",
-                label: "Secondary",
-                render: (row) => {
-                  const pcs_upc = getUpc(row.uom, 'primary');
-                  const cse_upc = getUpc(row.uom, 'secondary');
-                  const availableStock = getAvailableStock(row);
-                  const pcs_qty = Number(row.pcs_qty || 0);
-                  const maxCseQty = cse_upc > 0 ? Math.floor((availableStock - pcs_qty * pcs_upc) / cse_upc) : 0;
-                  return (
-                    <InputFields
-                      label=""
-                      type="number"
-                      name="cse_qty"
-                      value={row.cse_qty}
-                      min={0}
-                      max={maxCseQty}
-                      disabled={!row.uom || row.uom.length === 0}
-                      trailingElement={
-                        <span className="text-sm text-gray-500">{maxCseQty}  {row.uom?.find((u: {uom_type: string; name:string}) => u.uom_type === 'secondary')?.name}</span>
-                      }
-                      onChange={(e) => handleQtyInput(Number(row.idx), 'cse_qty', e.target.value)}
-                      onBlur={() => handleQtyBlur(Number(row.idx), 'cse_qty')}
-                    />
-                  );
-                },
-              },
+              // {
+              //   key: "cse_qty",
+              //   label: "Secondary",
+              //   render: (row) => {
+              //     const pcs_upc = getUpc(row.uom, 'primary');
+              //     const cse_upc = getUpc(row.uom, 'secondary');
+              //     const availableStock = getAvailableStock(row);
+              //     const pcs_qty = Number(row.pcs_qty || 0);
+              //     // Clamp cse_qty so total does not exceed available stock
+              //     const maxCseQty = cse_upc > 0 ? Math.floor((availableStock - pcs_qty * pcs_upc) / cse_upc) : 0;
+              //     const value = Math.max(0, Math.min(Number(row.cse_qty || 0), maxCseQty));
+              //     return (
+              //       <InputFields
+              //         label=""
+              //         type="number"
+              //         integerOnly
+              //         name="cse_qty"
+              //         value={String(value)}
+              //         min={0}
+              //         max={maxCseQty}
+              //         disabled={!row.uom || row.uom.length === 0}
+              //         trailingElement={
+              //           <span className="text-sm text-gray-500">{maxCseQty}  {row.uom?.find((u: { uom_type: string; name: string }) => u.uom_type === 'secondary')?.name}</span>
+              //         }
+              //         onChange={(e) => {
+              //           let val = e.target.value.replace(/[^0-9]/g, '');
+              //           let num = Number(val);
+              //           if (num > maxCseQty) num = maxCseQty;
+              //           handleQtyInput(Number(row.idx), 'cse_qty', num.toString());
+              //         }}
+              //         onBlur={() => handleQtyBlur(Number(row.idx), 'cse_qty')}
+              //       />
+              //     );
+              //   },
+              // },
+{
+  key: "cse_qty",
+  label: "Secondary",
+  render: (row) => {
+    const secondary_upc = getUpc(row.uom, 'secondary');
+    const availableStock = getAvailableStock(row);
+    const maxCseQty = secondary_upc > 0 ? Math.floor(availableStock / secondary_upc) : 0;
+    const idx = row.idx;
+    const errorMsg = rowQtyErrors[idx]?.cse;
 
+    return (
+      <div>
+        <InputFields
+          type="number"
+          integerOnly
+          value={row.cse_qty || ''}
+          min={0}
+          // max={maxCseQty} // Remove max to allow any value
+          trailingElement={
+            <span className="text-sm text-gray-500">
+              {maxCseQty}{' '}
               {
-                key: "pcs_qty",
-                label: "Primary",
-                render: (row) => {
-                  const pcs_upc = getUpc(row.uom, 'primary');
-                  const cse_upc = getUpc(row.uom, 'secondary');
-                  const availableStock = getAvailableStock(row);
-                  const cse_qty = Number(row.cse_qty || 0);
-                  const maxPcsQty = pcs_upc > 0 ? Math.floor((availableStock - cse_qty * cse_upc) / pcs_upc) : 0;
-                  return (
-                    <InputFields
-                      label=""
-                      type="number"
-                      name="pcs_qty"
-                      value={row.pcs_qty}
-                      min={0}
-                      max={maxPcsQty}
-                      disabled={!row.uom || row.uom.length === 0}
-                      trailingElement={
-                        <span className="text-sm text-gray-500">{maxPcsQty} {row.uom?.find((u: {uom_type: string; name:string}) => u.uom_type === 'primary')?.name}</span>
-                      }
-                      onChange={(e) => handleQtyInput(Number(row.idx), 'pcs_qty', e.target.value)}
-                      onBlur={() => handleQtyBlur(Number(row.idx), 'pcs_qty')}
-                    />
-                  );
-                },
-              },
+                row.uom?.find(
+                  (u: any) => u.uom_type === 'secondary'
+                )?.name
+              }
+            </span>
+          }
+          onChange={(e) =>
+            handleQtyInput(Number(row.idx), 'cse_qty', e.target.value)
+          }
+          error={errorMsg}
+        />
+        
+      </div>
+    );
+  },
+},
+{
+  key: "pcs_qty",
+  label: "Primary",
+  render: (row) => {
+    const secondary_upc = getUpc(row.uom, 'secondary');
+    const availableStock = getAvailableStock(row);
+    const secondaryQty = secondary_upc > 0 ? Math.floor(availableStock / secondary_upc) : 0;
+    const primaryQty = availableStock - (secondaryQty * secondary_upc);
+    const idx = row.idx;
+    const errorMsg = rowQtyErrors[idx]?.pcs;
+
+    return (
+      <div>
+        <InputFields
+          type="number"
+          integerOnly
+          value={row.pcs_qty || ''}
+          min={0}
+          // max={primaryQty} // Remove max to allow any value
+          trailingElement={
+            <span className="text-sm text-gray-500">
+              {primaryQty} {
+                row.uom?.find(
+                  (u: any) => u.uom_type === 'primary'
+                )?.name
+              } 
+            </span>
+          }
+          onChange={(e) =>
+            handleQtyInput(Number(row.idx), 'pcs_qty', e.target.value)
+          }
+          error={errorMsg}
+        />
+        {/* {errorMsg && (
+          <div style={{ color: 'red', fontSize: 12 }}>{errorMsg}</div>
+        )} */}
+      </div>
+    );
+  },
+}
+
+
+              // {
+              //   key: "pcs_qty",
+              //   label: "Primary",
+              //   render: (row) => {
+              //     const pcs_upc = getUpc(row.uom, 'primary');
+              //     const cse_upc = getUpc(row.uom, 'secondary');
+              //     const availableStock = getAvailableStock(row);
+              //     const cse_qty = Number(row.cse_qty || 0);
+              //     // Calculate remaining pcs after cse_qty is filled
+              //     const usedByCse = cse_qty * cse_upc;
+              //     const remainingPcs = Math.max(0, availableStock - usedByCse);
+              //     // Clamp pcs_qty so total does not exceed available stock
+              //     const maxPcsQty = pcs_upc > 0 ? Math.floor(remainingPcs / pcs_upc) : 0;
+              //     const value = Math.max(0, Math.min(Number(row.pcs_qty || 0), maxPcsQty));
+              //     // Show the actual remaining pcs after cse_qty is filled (not maxPcsQty)
+              //     const displayPcs = pcs_upc > 0 ? remainingPcs - (maxPcsQty * pcs_upc) : remainingPcs;
+              //     return (
+              //       <InputFields
+              //         label=""
+              //         type="number"
+              //         integerOnly
+              //         name="pcs_qty"
+              //         value={String(value)}
+              //         min={0}
+              //         max={maxPcsQty}
+              //         disabled={!row.uom || row.uom.length === 0}
+              //         trailingElement={
+              //           <span className="text-sm text-gray-500">
+              //             {displayPcs} {row.uom?.find((u: { uom_type: string; name: string }) => u.uom_type === 'primary')?.name}
+              //           </span>
+              //         }
+              //         onChange={(e) => {
+              //           let val = e.target.value.replace(/[^0-9]/g, '');
+              //           let num = Number(val);
+              //           if (num > maxPcsQty) num = maxPcsQty;
+              //           handleQtyInput(Number(row.idx), 'pcs_qty', num.toString());
+              //         }}
+              //         onBlur={() => handleQtyBlur(Number(row.idx), 'pcs_qty')}
+              //       />
+              //     );
+              //   },
+              // },
             ],
             pageSize: itemData.length > 0 ? itemData.length : 10
           }}
@@ -701,6 +954,7 @@ export default function AddEditSalesmanLoad() {
             className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
             // onClick={() => router.push("/selesTeamLoad")}
             onClick={() => router.back()}
+            
 
           >
             Cancel
@@ -709,6 +963,12 @@ export default function AddEditSalesmanLoad() {
             isActive={true}
             label={submitting ? "Creating Load..." : "Create Load"}
             onClick={handleSubmit}
+            disabled={
+              submitting ||
+              Object.values(rowQtyErrors).some(
+                (err) => (err && (err.pcs || err.cse))
+              )
+            }
           />
         </div>
       </ContainerCard>

@@ -8,13 +8,15 @@ import {
   companyCustomerStatusUpdate,
   downloadFile,
   exportCompanyCustomerData,
-  getCompanyCustomers
+  getCompanyCustomers,
+  statusFilter
 } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+import toInternationalNumber from "@/app/(private)/utils/formatNumber";
 
 interface CustomerItem {
   id: number;
@@ -48,6 +50,8 @@ interface CustomerItem {
 export default function CompanyCustomers() {
   const { can, permissions } = usePagePermissions();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentStatusFilter, setCurrentStatusFilter] = useState<boolean | null>(null);
+  const [searchFilterValue, setSearchFilterValue] = useState<string>("");
 
   // Refresh table when permissions load
   useEffect(() => {
@@ -67,12 +71,38 @@ export default function CompanyCustomers() {
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
 
+  const handleStatusFilter = async (status: boolean) => {
+    try {
+      // If clicking the same filter, clear it
+      const newFilter = currentStatusFilter === status ? null : status;
+      setCurrentStatusFilter(newFilter);
+
+      // Refresh the table with the new filter
+      setRefreshKey((k) => k + 1);
+    } catch (error) {
+      console.error("Error filtering by status:", error);
+      showSnackbar("Failed to filter by status", "error");
+    }
+  };
+
   const fetchCompanyCustomers = async (pageNo: number = 1, pageSize: number = 50): Promise<listReturnType> => {
     // setLoading(true);
-    const res = await getCompanyCustomers({ page: pageNo.toString(), pageSize: pageSize.toString() });
+
+    // Build params with all filters
+    const params: any = {
+      page: pageNo.toString(),
+      pageSize: pageSize.toString()
+    };
+
+    // Add status filter if active (true=1, false=0)
+    if (currentStatusFilter !== null) {
+      params.status = currentStatusFilter ? "1" : "0";
+    }
+
+    const res = await getCompanyCustomers(params);
     // setLoading(false);
     if (res.error) {
-      showSnackbar(res.data.message || "Failed to fetch Key Customers", "error");
+      showSnackbar(res.data.message || "Failed to fetch Company Customers", "error");
       throw new Error(res.data.message);
     }
     return {
@@ -88,6 +118,7 @@ export default function CompanyCustomers() {
     // setLoading(true);
     const res = await companyCustomersGlobalSearch({ query: searchQuery, pageSize: pageSize.toString(), page: page.toString() });
     // setLoading(false);
+    setSearchFilterValue(searchQuery);
     if (res.error) {
       showSnackbar(res.data.message || "Failed to fetch search results", "error");
       throw new Error(res.data.message);
@@ -118,8 +149,18 @@ export default function CompanyCustomers() {
     },
     { key: "business_name", label: "Business Name", },
     { key: "district", label: "District", },
-    { key: "creditlimit", label: "Credit Limit" },
-    { key: "totalcreditlimit", label: "Total Credit Limit" },
+    {
+      key: "creditlimit", label: "Credit Limit", render: (row: TableDataType) => {
+
+        return toInternationalNumber(row.creditlimit || "-");
+      },
+    },
+    {
+      key: "totalcreditlimit", label: "Total Credit Limit", render: (row: TableDataType) => {
+
+        return toInternationalNumber(row.totalcreditlimit || "-");
+      },
+    },
     {
       key: "payment_type", label: "Payment Type",
       render: (row: TableDataType) => {
@@ -135,9 +176,14 @@ export default function CompanyCustomers() {
     {
       key: "status",
       label: "Status",
-      isSortable: true,
+      // isSortable: true,
       render: (row: TableDataType) => {
         return <StatusBtn isActive={String(row.status) > "0"} />;
+      },
+      filterStatus: {
+        enabled: true,
+        onFilter: handleStatusFilter,
+        currentFilter: currentStatusFilter,
       },
       // showByDefault: true,
     },
@@ -146,7 +192,7 @@ export default function CompanyCustomers() {
   const exportFile = async (format: string) => {
     try {
       setThreeDotLoading((prev) => ({ ...prev, [format]: true }))
-      const response = await exportCompanyCustomerData({ format });
+      const response = await exportCompanyCustomerData({ format, search: searchFilterValue, filter: { status: currentStatusFilter == false ? "0" : "1" } });
       if (response && typeof response === 'object' && response.url) {
         await downloadFile(response.url);
         showSnackbar("File downloaded successfully ", "success");
@@ -155,6 +201,7 @@ export default function CompanyCustomers() {
         setThreeDotLoading((prev) => ({ ...prev, [format]: false }))
 
       }
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }))
     } catch (error) {
       showSnackbar("Failed to download distributor data", "error");
       setThreeDotLoading((prev) => ({ ...prev, [format]: false }))
@@ -190,27 +237,31 @@ export default function CompanyCustomers() {
               search: search,
             },
             header: {
-              title: "Key Customer",
-              threeDot: [
-                {
-                  icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
-                  label: "Export CSV",
-                  labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => !threeDotLoading.csv && exportFile("csv"),
-                },
-                {
-                  icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
-                  label: "Export Excel",
-                  labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
-                },
-              ],
+              title: "Company Customer",
+              exportButton: {
+                show: true,
+                onClick: () => exportFile("xlsx"),
+              },
+              // threeDot: [
+              //   {
+              //     icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
+              //     label: "Export CSV",
+              //     labelTw: "text-[12px] hidden sm:block",
+              //     onClick: () => !threeDotLoading.csv && exportFile("csv"),
+              //   },
+              //   {
+              //     icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
+              //     label: "Export Excel",
+              //     labelTw: "text-[12px] hidden sm:block",
+              //     onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+              //   },
+              // ],
               searchBar: true,
               columnFilter: true,
               actions: can("create") ? [
                 <SidebarBtn
                   key="add-company-customer"
-                  href="/keyCustomer/add"
+                  href="/companyCustomer/add"
                   leadingIcon="lucide:plus"
                   label="Add"
                   labelTw="hidden sm:block"
@@ -274,46 +325,22 @@ export default function CompanyCustomers() {
               {
                 icon: "lucide:eye",
                 onClick: (data: TableDataType) => {
-                  router.push(`/keyCustomer/details/${data.uuid}`);
+                  router.push(`/companyCustomer/details/${data.uuid}`);
                 },
               },
               ...(can("edit") ? [{
                 icon: "lucide:edit-2",
                 onClick: (row: TableDataType) => {
-                  console.log(row)
                   router.push(
-                    `/keyCustomer/${row.uuid}`
+                    `/companyCustomer/${row.uuid}`
                   )
                 }
               }] : []),
-              // {
-              //   icon: "lucide:trash-2",
-              //   onClick: (row: TableDataType) => {
-              //     const fullRow = customers.find(
-              //       (c) => c.id.toString() === row.id
-              //     );
-              //     if (fullRow) {
-              //       setSelectedRow(fullRow);
-              //       setShowDeletePopup(true);
-              //     }
-              //   },
-              // },
             ],
             pageSize: 50,
           }}
         />
       </div>
-
-      {/* Delete Popup */}
-      {/* {showDeletePopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
-          <DeleteConfirmPopup
-            title="Company Customer"
-            onClose={() => setShowDeletePopup(false)}
-            onConfirm={handleConfirmDelete}
-          />
-        </div>
-      )} */}
     </>
   );
 }

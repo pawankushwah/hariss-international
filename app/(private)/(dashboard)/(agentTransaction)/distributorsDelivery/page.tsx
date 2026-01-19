@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import Table, {
@@ -10,7 +10,7 @@ import Table, {
 } from "@/app/components/customTable";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
-import { agentDeliveryExport, agentOrderExport, deliveryList } from "@/app/services/agentTransaction";
+import { agentDeliveryExport, agentOrderExport, deliveryList,deliveryExportCollapse } from "@/app/services/agentTransaction";
 import StatusBtn from "@/app/components/statusBtn2";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import { downloadFile } from "@/app/services/allApi";
@@ -19,7 +19,7 @@ import toInternationalNumber from "@/app/(private)/utils/formatNumber";
 import FilterComponent from "@/app/components/filterComponent";
 import ApprovalStatus from "@/app/components/approvalStatus";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
-
+import { downloadPDFGlobal } from "@/app/services/allApi";
 // const dropdownDataList = [
 //     // { icon: "lucide:layout", label: "SAP", iconWidth: 20 },
 //     // { icon: "lucide:download", label: "Download QR Code", iconWidth: 20 },
@@ -158,11 +158,13 @@ export default function CustomerInvoicePage() {
         return Object.entries(params).sort().map(([k, v]) => `${k}:${v}`).join("|");
     };
 
-    // Unified fetch function
+    // Unified fetch function with useRef for cache to avoid dependency issues
+    const deliveryDataCacheRef = useRef<{ [key: string]: any }>({});
+    
     const fetchDeliveryData = useCallback(async (params: Record<string, string | number>) => {
         const cacheKey = getCacheKey(params);
-        if (deliveryDataCache[cacheKey]) {
-            return deliveryDataCache[cacheKey];
+        if (deliveryDataCacheRef.current[cacheKey]) {
+            return deliveryDataCacheRef.current[cacheKey];
         }
         setLoading(true);
         try {
@@ -172,6 +174,7 @@ export default function CustomerInvoicePage() {
                 stringParams[k] = String(v);
             });
             const result = await deliveryList(stringParams);
+            deliveryDataCacheRef.current[cacheKey] = result;
             setDeliveryDataCache((prev) => ({ ...prev, [cacheKey]: result }));
             return result;
         } catch (error) {
@@ -180,12 +183,12 @@ export default function CustomerInvoicePage() {
         } finally {
             setLoading(false);
         }
-    }, [deliveryDataCache, setLoading, showSnackbar]);
+    }, [setLoading, showSnackbar]);
 
     // Fetch for table (list)
     const fetchDelivery = useCallback(async (
         page: number = 1,
-        pageSize: number = 10
+        pageSize: number = 50
     ): Promise<listReturnType> => {
         const params = { page: page.toString(), per_page: pageSize.toString() };
         const result = await fetchDeliveryData(params);
@@ -257,13 +260,32 @@ export default function CustomerInvoicePage() {
         } finally {
         }
     };
+      const exportCollapseFile = async (format: "csv" | "xlsx" = "csv") => {
+        try {
+          setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+          const response = await deliveryExportCollapse({ format });
+          if (response && typeof response === "object" && response.download_url) {
+            await downloadFile(response.download_url);
+            showSnackbar("File downloaded successfully ", "success");
+          } else {
+            showSnackbar("Failed to get download URL", "error");
+          }
+          setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+        } catch (error) {
+          showSnackbar("Failed to download warehouse data", "error");
+          setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+        } finally {
+        }
+      };
 
     const downloadPdf = async (uuid: string) => {
         try {
             setLoading(true);
             const response = await agentDeliveryExport({ uuid: uuid, format: "pdf" });
             if (response && typeof response === 'object' && response.download_url) {
-                await downloadFile(response.download_url);
+                 const fileName = `delivery-${uuid}.pdf`;
+                await downloadPDFGlobal(response.download_url, fileName);
+                // await downloadFile(response.download_url);
                 showSnackbar("File downloaded successfully ", "success");
             } else {
                 showSnackbar("Failed to get download URL", "error");
@@ -274,10 +296,6 @@ export default function CustomerInvoicePage() {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        setRefreshKey((k) => k + 1);
-    }, [customerSubCategoryOptions, routeOptions, warehouseAllOptions, channelOptions, companyOptions, salesmanOptions, agentCustomerOptions, regionOptions, areaOptions]);
 
     return (
         <div className="flex flex-col h-full">
@@ -301,7 +319,7 @@ export default function CustomerInvoicePage() {
                                 icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                                 label: "Export Excel",
                                 labelTw: "text-[12px] hidden sm:block",
-                                onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                                onClick: () => !threeDotLoading.xlsx && exportCollapseFile("xlsx"),
                             },
                         ],
                         actions: can("create") ? [
@@ -341,7 +359,7 @@ export default function CustomerInvoicePage() {
                         //         ),
                         // },
                     ],
-                    pageSize: 10,
+                    pageSize: 50,
                 }}
             />
         </div>

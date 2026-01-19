@@ -386,7 +386,6 @@ export const competitorList = async (params?: Params) => {
 
 export const updatePlanogramById = async (uuid: string, data: FormData) => {
   try {
-    console.log(uuid)
     const res = await APIFormData.post(
       `/api/merchendisher/planogram/update/${uuid}`,
       data
@@ -461,7 +460,7 @@ export const exportCmplaintFeedback = async (params: { format: string }) => {
 
 export const exportPlanogram = async (params?: Params) => {
   try {
-    const res = await API.get("/api/merchendisher/planogram/export-file", {
+    const res = await API.get("/api/merchendisher/planogram/export", {
       params,
     });
     return res.data;
@@ -526,7 +525,6 @@ export const addStockInStore = async (body: object) => {
 
 export const updateStockInStore = async (uuid: string, body: object) => {
   try {
-    console.log(uuid)
     const res = await API.put(
       `/api/merchendisher/stockinstore/update/${uuid}`,
       body

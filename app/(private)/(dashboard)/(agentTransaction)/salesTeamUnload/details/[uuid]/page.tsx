@@ -29,7 +29,9 @@ interface CustomerItem {
   sync_date: string;
   sync_time: string;
   unload_from: string;
-  salesman_type: string | null;
+  salesman_type: {
+    name: string;
+  };
   latitude: string;
   longtitude: string;
   load_date: string;
@@ -58,7 +60,7 @@ interface CustomerItem {
       code: string;
       name: string;
     };
-    uom: number;
+    uom_name: string;
     qty: number;
     price: string;
     status: number;
@@ -103,7 +105,7 @@ export default function ViewPage() {
       item: detail.item
         ? `${detail.item.code} - ${detail.item.name}`
         : "-",
-      uom: detail.uom !== undefined && detail.uom !== null ? String(detail.uom) : "-",
+      uom: detail.uom_name !== undefined && detail.uom_name !== null ? String(detail.uom_name) : "-",
       qty: detail.qty !== undefined && detail.qty !== null ? String(detail.qty) : "-",
       price: detail.price !== undefined && detail.price !== null ? String(detail.price) : "-",
     })) || [];
@@ -191,8 +193,8 @@ export default function ViewPage() {
                       : "-",
                   },
                   {
-                    key: "Salesman Type",
-                    value: customer?.salesman_type || "-",
+                    key: "Sales Team Type",
+                    value: customer?.salesman_type?.name || "-",
                   },
                   {
                     key: "Salesman",

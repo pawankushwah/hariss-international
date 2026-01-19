@@ -64,6 +64,15 @@ export const salesmanLoadByUuid = async (uuid: string) => {
   }
 };
 
+export const getSalesmanByWarehouseId = async (params: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/load/get-salesmanRoute`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
 // Salesman Load Details
 
 export const salesmanLoadDetailsList = async (params: Params) => {
@@ -324,7 +333,7 @@ export const invoiceByUuid = async (uuid: string) => {
 
 export const exportInvoice = async (params?: Params) => {
   try {
-    const res = await API.get(`/api/agent_transaction/invoices/export`, { params });
+    const res = await API.get(`/api/agent_transaction/invoices/exportall`, { params });
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -334,6 +343,15 @@ export const exportInvoice = async (params?: Params) => {
 export const exportOrderInvoice = async (params?: Params) => {
   try {
     const res = await API.get(`/api/agent_transaction/invoices/exportall`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const exportReturnInvoice = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/master/items/item-returns`, { params });
     return res.data;
   } catch (error: unknown) {
     return handleError(error);
@@ -841,6 +859,115 @@ export const salesTeamRecontionOrderByUuid = async (uuid: string) => {
 export const salesTeamTracking = async (params: Params) => {
   try {
     const res = await API.get(`/api/agent_transaction/salesteam-tracking/track`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const getSalesmanByWarehouse = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/load/getsalesmanbywarehouse`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const exportSpecificCustomerReturn = async (params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/returns/exportall`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const exportAllInvoices = async (uuid: string, params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/invoices/exportinvoiceagentcustomer/${uuid}`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const capsExportCollapse = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/capscollection/exportcollapse`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const loadExportCollapse = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/load/exportcollapse`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const orderExportCollapse = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/orders/exportcollapse`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const invoiceExportCollapse = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/invoices/exportcollapse`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const returnExportCollapse = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/returns/exportcollapse
+`, { params });
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const unloadExportCollapse = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/unload/exportcollapse`,{params});
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const exchangeExportCollapse = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/exchanges/exportallcollapse`,{params});
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const deliveryExportCollapse = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/agent-delivery/exportcollapse`,{params});
+    return res.data;
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+};
+
+export const salesmanLoadPdf = async ( params?: Params) => {
+  try {
+    const res = await API.get(`/api/agent_transaction/load/exportall`,{params});
     return res.data;
   } catch (error: unknown) {
     return handleError(error);

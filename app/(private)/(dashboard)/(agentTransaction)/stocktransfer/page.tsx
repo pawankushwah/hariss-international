@@ -15,7 +15,7 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useEffect } from "react";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
-
+import { formatWithPattern } from "@/app/utils/formatDate";
 export default function StockTransferPage() {
     const { can, permissions } = usePagePermissions();
     const router = useRouter();
@@ -133,16 +133,16 @@ export default function StockTransferPage() {
             label: "Transfer Date",
             showByDefault: true,
             render: (row: TableDataType) => {
-                // Show only date part (YYYY-MM-DD)
-                const val = row.transfer_date;
-                if (!val) return "-";
-                // If value is a string like "2025-12-26 12:15:42.379966"
-                return String(val).split(" ")[0];
+               return formatWithPattern(
+                         new Date(row.transfer_date),
+                         "DD MMM YYYY",
+                         "en-GB",
+                       );
             },
         },
         {
             key: "source_warehouse",
-            label: "Source Warehouse",
+            label: "Source Distributor",
             showByDefault: true,
             render: (row: TableDataType) =>
                 row.source_warehouse
@@ -151,7 +151,7 @@ export default function StockTransferPage() {
         },
         {
             key: "destiny_warehouse",
-            label: "Destination Warehouse",
+            label: "Destination Distributor",
             showByDefault: true,
             render: (row: TableDataType) =>
                 row.destiny_warehouse
@@ -229,7 +229,7 @@ export default function StockTransferPage() {
                     localStorageKey: "stock-transfer-table",
                     footer: { pagination: true, nextPrevBtn: true },
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
                         {
                             icon: "lucide:eye",

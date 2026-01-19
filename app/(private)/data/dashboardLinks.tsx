@@ -1,3 +1,21 @@
+// Utility to recursively lowercase all hrefs in the menu structure
+function lowercaseHrefs(data: SidebarDataType[]): SidebarDataType[] {
+  return data.map((sidebar) => ({
+    ...sidebar,
+    data: sidebar.data.map(lowercaseLinkData)
+  }));
+}
+
+function lowercaseLinkData(link: LinkDataType): LinkDataType {
+  const newLink: LinkDataType = {
+    ...link,
+    href: typeof link.href === 'string' ? link.href.toLowerCase() : link.href,
+  };
+  if (link.children && Array.isArray(link.children)) {
+    newLink.children = link.children.map(lowercaseLinkData);
+  }
+  return newLink;
+}
 import { IconifyIcon } from "@iconify-icon/react/dist/iconify.mjs";
 
 export type SidebarDataType = {
@@ -17,7 +35,7 @@ export type LinkDataType = {
   children?: LinkDataType[];
 };
 
-export const initialLinkData: SidebarDataType[] = [
+export const initialLinkData: SidebarDataType[] = lowercaseHrefs([
   {
     data: [
       {
@@ -53,7 +71,7 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/routeTransfer",
             label: "Route Transfer",
-            leadingIcon: "mdi-light:transfer",
+            leadingIcon: "icon-park-outline:transfer",
             iconColor: "text-yellow-400",
           },
           {
@@ -65,8 +83,8 @@ export const initialLinkData: SidebarDataType[] = [
           },
           {
             isActive: false,
-            href: "/keyCustomer",
-            label: "Key Customers",
+            href: "/companyCustomer",
+            label: "Company Customers",
             leadingIcon: "lucide:user",
             iconColor: "text-green-500",
           },
@@ -140,13 +158,13 @@ export const initialLinkData: SidebarDataType[] = [
             leadingIcon: "carbon:delivery-parcel",
             iconColor: "text-cyan-500"
           },
-          {
-            isActive: false,
-            href: "/distributorsStock",
-            label: "Distributors Stock",
-            leadingIcon: "carbon:delivery-parcel",
-            iconColor: "text-cyan-500"
-          },
+          // {
+          //   isActive: false,
+          //   href: "/distributorsStock",
+          //   label: "Distributors Stock",
+          //   leadingIcon: "carbon:heat-map-stocks",
+          //   iconColor: "text-cyan-500"
+          // },
 
         ]
       },
@@ -201,7 +219,7 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/distributorsDelivery",
             label: "Distributor's Delivery",
-            leadingIcon: "hugeicons:invoice",
+            leadingIcon: "solar:delivery-broken",
             iconColor: "text-cyan-500"
           },
           {
@@ -215,21 +233,21 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/distributorsReturn",
             label: "Distributor's Return",
-            leadingIcon: "mdi:truck-remove-outline",
+            leadingIcon: "icon-park-outline:return",
             iconColor: "text-cyan-500"
           },
           {
             isActive: false,
             href: "/distributorsExchange",
             label: "Distributor's Exchange",
-            leadingIcon: "mdi:truck-remove-outline",
+            leadingIcon: "uil:exchange",
             iconColor: "text-cyan-500"
           },
           {
             isActive: false,
             href: "/salesTeamRouteLinkage",
             label: "Sales Team Linkage",
-            leadingIcon: "mdi:tanker-truck",
+            leadingIcon: "line-md:link",
             iconColor: "text-cyan-500"
           },
           {
@@ -271,21 +289,21 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/advancePayment",
             label: "Advance Payment",
-            leadingIcon: "mdi:package-variant",
+            leadingIcon: "oui:ml-create-advanced-job",
             iconColor: "text-cyan-500"
           },
           {
             isActive: false,
             href: "/stocktransfer",
             label: "Stock Transfer",
-            leadingIcon: "mdi:package-variant",
+            leadingIcon: "bitcoin-icons:transfer-filled",
             iconColor: "text-cyan-500"
           },
           {
             isActive: false,
             href: "/salesTeamTracking",
             label: "Sales Team Tracking",
-            leadingIcon: "mdi:package-variant",
+            leadingIcon: "hugeicons:shipment-tracking",
             iconColor: "text-cyan-500"
           },
           {
@@ -323,7 +341,7 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/delivery",
             label: "Delivery",
-            leadingIcon: "hugeicons:invoice",
+            leadingIcon: "solar:delivery-broken",
             iconColor: "text-cyan-500"
           },
           {
@@ -337,7 +355,7 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/return",
             label: "Return",
-            leadingIcon: "hugeicons:invoice",
+            leadingIcon: "icon-park-outline:return",
             iconColor: "text-cyan-500"
           },
           // {
@@ -358,7 +376,7 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/creditNote",
             label: "Credit Note",
-            leadingIcon: "hugeicons:invoice",
+            leadingIcon: "mdi-light:credit-card",
             iconColor: "text-cyan-500"
           },
           {
@@ -533,21 +551,21 @@ export const initialLinkData: SidebarDataType[] = [
             isActive: false,
             href: "/callRegister",
             label: "Call Register",
-            leadingIcon: "si:pull-request-duotone",
+            leadingIcon: "material-symbols:add-call-outline",
             iconColor: "text-cyan-500",
           },
           {
             isActive: false,
             href: "/serviceVisit",
             label: "Service Visit",
-            leadingIcon: "si:pull-request-duotone",
+            leadingIcon: "material-symbols:nest-doorbell-visitor-outline",
             iconColor: "text-cyan-500",
           },
           {
             isActive: false,
             href: "/serviceTerritory",
             label: "Service Territory",
-            leadingIcon: "si:pull-request-duotone",
+            leadingIcon: "carbon:user-service",
             iconColor: "text-cyan-500",
           },
         ],
@@ -592,8 +610,15 @@ export const initialLinkData: SidebarDataType[] = [
             leadingIcon: "mdi:adjust",
             iconColor: "text-cyan-500",
           },
+          {
+            isActive: false,
+            href: "/customerReport",
+            label: "Customer Report",
+            leadingIcon: "stash:person-duotone",
+            iconColor: "text-cyan-500",
+          },
         ],
       },
     ],
   },
-];
+]);

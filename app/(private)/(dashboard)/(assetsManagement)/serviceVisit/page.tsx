@@ -6,15 +6,17 @@ import { useRouter } from "next/navigation";
 import Table, {
     listReturnType,
     searchReturnType,
+    TableDataType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import StatusBtn from "@/app/components/statusBtn2";
 
-import { ServiceVisitList } from "@/app/services/assetsApi";
+import { serviceVisitExport, ServiceVisitList } from "@/app/services/assetsApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import { useEffect } from "react";
+import ApprovalStatus from "@/app/components/approvalStatus";
 
 // ✅ SERVICE VISIT ROW TYPE
 interface ServiceVisitRow {
@@ -77,8 +79,10 @@ export default function ServiceVisit() {
     const { showSnackbar } = useSnackbar();
     const { setLoading } = useLoading();
     const router = useRouter();
-
+    const [showExportDropdown, setShowExportDropdown] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [threeDotLoading, setThreeDotLoading] = useState<{ pdf: boolean; xlsx: boolean; csv: boolean }>({ pdf: false, xlsx: false, csv: false });
+
 
     // Refresh table when permissions load
     useEffect(() => {
@@ -147,6 +151,11 @@ export default function ServiceVisit() {
 
             { key: "comment", label: "Comment" },
             { key: "cts_comment", label: "CTS Comment" },
+            {
+                key: "approval_status",
+                label: "Approval Status",
+                render: (row: TableDataType) => <ApprovalStatus status={row.approval_status || "-"} />,
+            },
         ],
         []
     );
@@ -196,6 +205,54 @@ export default function ServiceVisit() {
         [setLoading, showSnackbar]
     );
 
+    const handleExport = async (fileType: "csv" | "xlsx") => {
+        try {
+            // setLoading(true);
+            setThreeDotLoading((prev) => ({ ...prev, [fileType]: true }));
+
+            const res = await serviceVisitExport({ format: fileType });
+
+            let downloadUrl = "";
+
+            if (res?.download_url && res.download_url.startsWith("blob:")) {
+                downloadUrl = res.download_url;
+            } else if (res?.download_url && res.download_url.startsWith("http")) {
+                downloadUrl = res.download_url;
+            } else if (typeof res === "string" && res.includes(",")) {
+                const blob = new Blob([res], {
+                    type:
+                        fileType === "csv"
+                            ? "text/csv;charset=utf-8;"
+                            : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                });
+                downloadUrl = URL.createObjectURL(blob);
+            } else {
+                showSnackbar("No valid file or URL returned from server", "error");
+                return;
+            }
+
+            // ⬇️ Trigger browser download
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = `assets_export.${fileType}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showSnackbar(
+                `Download started for ${fileType.toUpperCase()} file`,
+                "success"
+            );
+        } catch (error) {
+            console.error("Export error:", error);
+            showSnackbar("Failed to export Assets Master data", "error");
+        } finally {
+            // setLoading(false);
+            setThreeDotLoading((prev) => ({ ...prev, [fileType]: false }));
+            setShowExportDropdown(false);
+        }
+    };
+
     // ✅ SEARCH PLACEHOLDER
     const searchInvoices = useCallback(async (): Promise<searchReturnType> => {
         return { data: [], currentPage: 1, total: 0, pageSize: 20 };
@@ -213,22 +270,38 @@ export default function ServiceVisit() {
 
                     header: {
                         title: "Service Visit",
+                        threeDot: [
+                            {
+                                icon: threeDotLoading.csv || threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
+                                label: "Export CSV",
+                                onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                                    handleExport("csv");
+                                },
+                            },
+                            {
+                                icon: threeDotLoading.csv || threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
+                                label: "Export Excel",
+                                onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                                    handleExport("xlsx");
+                                },
+                            },
+                        ],
                         columnFilter: false,
                         searchBar: false,
                         actions: can("create") ? [
-                            // <SidebarBtn
-                            //     key="add"
-                            //     href="/serviceVisit/add"
-                            //     leadingIcon="lucide:plus"
-                            //     label="Add Visit"
-                            //     labelTw="hidden lg:block"
-                            //     isActive
-                            // />,
+                            <SidebarBtn
+                                key="add"
+                                href="/serviceVisit/add"
+                                leadingIcon="lucide:plus"
+                                label="Add"
+                                labelTw="hidden lg:block"
+                                isActive
+                            />,
                         ] : [],
                     },
 
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
 
                     rowActions: [
                         {

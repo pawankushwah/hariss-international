@@ -4,6 +4,7 @@ import { JSX, useEffect, useState } from "react";
 import { ServiceTerritoryByUUID, serviceTerritoryExport } from "@/app/services/assetsApi";
 import { downloadFile } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
+import WorkflowApprovalActions from "@/app/components/workflowApprovalActions";
 type Warehouse = {
     warehouse_id: number;
     warehouse_code: string;
@@ -38,7 +39,7 @@ type ServiceTerritoryData = {
     regions: Region[];
     technician?: Technician;
     comment_reject?: string | null;
-
+    request_step_id?: number | null;
 };
 
 interface ServiceTerritoryDetailsDrawerProps {
@@ -56,9 +57,7 @@ export default function ServiceTerritoryDetailsDrawer({ uuid, onClose }: Service
     const { showSnackbar } = useSnackbar();
     // Debug: Log when component mounts
     useEffect(() => {
-        // console.log("🚀 ServiceTerritoryDetailsDrawer MOUNTED with UUID:", uuid);
         return () => {
-            // console.log("🔴 ServiceTerritoryDetailsDrawer UNMOUNTED");
         };
     }, []);
 
@@ -70,9 +69,6 @@ export default function ServiceTerritoryDetailsDrawer({ uuid, onClose }: Service
                 if (res.error) {
                     console.error("Failed to fetch service territory details:", res.data?.message);
                 } else {
-                    // console.log("✅ Service Territory Details Response:", res);
-                    // console.log("📦 res.data:", res.data);
-                    // console.log("🔍 res.data.regions:", res.data?.regions);
                     setData(res.data);
                 }
             } catch (error) {
@@ -132,18 +128,10 @@ export default function ServiceTerritoryDetailsDrawer({ uuid, onClose }: Service
         window.URL.revokeObjectURL(url);
     };
 
-    // Debug: Log data state when it changes
-    useEffect(() => {
-        // console.log("🎯 Data state updated:", data);
-        // console.log("🎯 Data.regions:", data?.regions);
-        // console.log("🎯 Data.regions length:", data?.regions?.length);
-    }, [data]);
-
     const exportFile = async (format: "csv" | "xlsx" = "csv") => {
         try {
             setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
             const response = await serviceTerritoryExport(uuid, { format });
-            console.log(response, "response")
             const url = response?.download_url || response?.data?.download_url;
 
             if (url) {
@@ -174,6 +162,11 @@ export default function ServiceTerritoryDetailsDrawer({ uuid, onClose }: Service
                     Download CSV
                 </button>
             </div>
+            <WorkflowApprovalActions
+                requestStepId={data?.request_step_id}
+                redirectPath={"/serviceTerritory"}
+                model="Service_Territory"
+            />
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">

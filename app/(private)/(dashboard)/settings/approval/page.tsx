@@ -159,7 +159,6 @@ export default function WorkflowTable() {
 
         // WORKFLOW_DATA.slice(start, end);
        const pageData:any =  await workFlowList()
-       console.log(pageData,"pageData")
         return {
             data: pageData.data,
             currentPage: 1,
@@ -221,7 +220,7 @@ export default function WorkflowTable() {
                         pagination: true,
                     },
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
                         {
                             icon: "lucide:edit-2",

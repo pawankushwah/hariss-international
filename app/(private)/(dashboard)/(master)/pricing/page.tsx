@@ -31,7 +31,6 @@ const dropdownDataList: DropdownItem[] = [
 ];
 
 const columns = [
-    { key: "osa_code", label: "Pricing Code" },
     { key: "code", label: "Pricing Code" },
     { key: "name", label: "Name" },
     { key: "applicable_for", label: "Pricing Type" },
@@ -107,7 +106,7 @@ export default function Pricing() {
                 setLoading(true);
 
                 const result = await pricingDetailGlobalSearch({
-                    search: searchQuery,
+                    query: searchQuery,
                     per_page: pageSize.toString(),
                 });
 
@@ -135,7 +134,7 @@ export default function Pricing() {
 
     return (
         <>
-            <div className="h-[calc(100%-60px)]">
+            <div className="h-full">
                 <Table
                     refreshKey={refreshKey}
                     config={{

@@ -36,7 +36,7 @@ const validationSchema = Yup.object().shape({
     .required("Contact number is required")
     .matches(/^[0-9]+$/, "Contact must only contain digits")
     .min(10, "Contact must be at least 10 digits")
-    .max(15, "Contact cannot exceed 15 digits"),
+    .max(13, "Contact cannot exceed 13 digits"),
   email: Yup.string()
     .trim()
     .email("Invalid email format")
@@ -218,6 +218,7 @@ export default function AddEditVendor() {
 
                 {/* Vendor Name */}
                 <InputFields
+                required
                   label="Vendor Name"
                   type="text"
                   name="name"
@@ -233,6 +234,7 @@ export default function AddEditVendor() {
 
                 {/* Address */}
                 <InputFields
+                required
                   label="Address"
                   type="text"
                   name="address"
@@ -248,8 +250,9 @@ export default function AddEditVendor() {
 
                 {/* Contact */}
                 <InputFields
+                required
                   label="Contact Number"
-                  type="text"
+                  type="contact"
                   name="contact"
                   value={formik.values.contact}
                   onChange={formik.handleChange}
@@ -263,6 +266,7 @@ export default function AddEditVendor() {
 
                 {/* Email */}
                 <InputFields
+                required
                   label="Email Address"
                   type="text"
                   name="email"

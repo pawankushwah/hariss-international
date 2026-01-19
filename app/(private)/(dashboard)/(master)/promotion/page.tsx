@@ -15,13 +15,14 @@ import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import {
     promotionHeaderList,
     deletePricingHeader,
-    pricingDetailGlobalSearch,
+    promotionHeaderGlobalSearch,
 } from "@/app/services/allApi";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+import { formatDateFlexible } from "@/app/utils/formatDate";
 
 interface DropdownItem {
     icon: string;
@@ -41,8 +42,20 @@ const columns = [
     // { key: "code", label: "Promotion Code" },
     { key: "promotion_name", label: "Name" },
     // { key: "description", label: "Description" },
-    { key: "from_date", label: "From Date" },
-    { key: "to_date", label: "To Date" },
+    { 
+        key: "from_date", 
+        label: "From Date",
+        render: (row: TableDataType) => {
+            return <span>{formatDateFlexible(row.from_date as string, { preset: "DD MMM YYYY" })}</span>;
+        }
+    },
+    { 
+        key: "to_date", 
+        label: "To Date",
+        render: (row: TableDataType) => {
+            return <span>{formatDateFlexible(row.to_date as string, { preset: "DD MMM YYYY" })}</span>;
+        }
+    },
 
     {
         key: "status",
@@ -110,23 +123,40 @@ export default function Pricing() {
     const searchCountries = useCallback(
         async (
             searchQuery: string,
-            pageSize: number
+            pageSize: number,
+            columnName?: string,
+            page: number = 1
         ): Promise<searchReturnType> => {
             setLoading(true);
-            const result = await pricingDetailGlobalSearch({
-                query: searchQuery,
-                per_page: pageSize.toString(),
-            });
+            let result;
+            if (columnName && columnName !== "") {
+                // Use list API for column search
+                result = await promotionHeaderList({
+                    [columnName]: searchQuery,
+                    limit: pageSize.toString(),
+                    page: page.toString(),
+                });
+            } else {
+                // Use global search API
+                result = await promotionHeaderGlobalSearch({
+                    query: searchQuery,
+                    per_page: pageSize.toString(),
+                    page: page.toString(),
+                });
+            }
             setLoading(false);
             if (result.error) throw new Error(result.data.message);
-            else {
-                return {
-                    data: result.data || [],
-                    total: result.pagination.pagination.totalPages || 0,
-                    currentPage: result.pagination.pagination.current_page || 0,
-                    pageSize: result.pagination.pagination.limit || pageSize,
-                };
-            }
+            const pagination = result.pagination?.pagination || result.pagination || {};
+            // Defensive: always set totalPages to at least 1
+            const totalPages = pagination.totalPages || 1;
+            const currentPage = pagination.current_page || pagination.page || 1;
+            const limit = pagination.limit || pageSize;
+            return {
+                data: result.data || [],
+                total: totalPages,
+                currentPage: currentPage,
+                pageSize: limit,
+            };
         },
         []
     );
@@ -214,7 +244,7 @@ export default function Pricing() {
                                     href="/promotion/add"
                                     isActive
                                     leadingIcon="lucide:plus"
-                                    label="Add Promotion"
+                                    label="Add"
                                     labelTw="hidden sm:block"
                                 />,
                             ],

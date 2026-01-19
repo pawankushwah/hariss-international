@@ -27,15 +27,16 @@ import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 export default function Route() {
     const { can, permissions } = usePagePermissions();
     const { warehouseAllOptions , ensureWarehouseAllLoaded} = useAllDropdownListData();
-    console.log(permissions)
   // Load dropdown data
   useEffect(() => {
     ensureWarehouseAllLoaded();
   }, [ensureWarehouseAllLoaded]);
 
     const [warehouseId, setWarehouseId] = useState<string>("");
+    const [currentStatusFilter, setCurrentStatusFilter] = useState<boolean | null>(null);
     const [selectedRowId, setSelectedRowId] = useState<number | undefined>();
     const [showDeletePopup, setShowDeletePopup] = useState(false);
+    const [searchFilterValue, setSearchFilterValue] = useState<string>("");
     const [refreshKey, setRefreshKey] = useState(0);
 
     // Refresh table when permissions load
@@ -52,6 +53,20 @@ export default function Route() {
         csv: false,
         xlsx: false,
     });
+
+    const handleStatusFilter = async (status: boolean) => {
+        try {
+            // If clicking the same filter, clear it
+            const newFilter = currentStatusFilter === status ? null : status;
+            setCurrentStatusFilter(newFilter);
+            
+            // Refresh the table with the new filter
+            setRefreshKey((k) => k + 1);
+        } catch (error) {
+            console.error("Error filtering by status:", error);
+            showSnackbar("Failed to filter by status", "error");
+        }
+    };
 
     const columns = [
         {
@@ -84,10 +99,12 @@ export default function Route() {
             filter: {
                 isFilterable: true,
                 width: 320,
+                filterkey: "warehouse_id",
                 options: Array.isArray(warehouseAllOptions) ? warehouseAllOptions : [],
                 onSelect: (selected: string | string[]) => {
                     setWarehouseId((prev) => (prev === selected ? "" : (selected as string)));
                 },
+                isSingle: false,
                 selectedValue: warehouseId,
             },
         },
@@ -112,24 +129,36 @@ export default function Route() {
                     }
                 />
             ),
+            filterStatus: {
+                enabled: true,
+                onFilter: handleStatusFilter,
+                currentFilter: currentStatusFilter,
+            },
         },
     ];
 
     useEffect(() => {
         setRefreshKey((k) => k + 1);
-    }, [warehouseId]);
+    }, [warehouseId, currentStatusFilter]);
 
     const fetchRoutes = async (
         pageNo: number = 1,
         pageSize: number = 10
     ): Promise<listReturnType> => {
         try {
+            // Build params with all filters
             const params: any = {
                 page: pageNo.toString(),
                 per_page: pageSize.toString(),
             };
+            
             if (warehouseId) {
                 params.warehouse_id = warehouseId;
+            }
+            
+            // Add status filter if active (true=1, false=0)
+            if (currentStatusFilter !== null) {
+                params.status = currentStatusFilter ? "1" : "0";
             }
             const listRes = await routeList(params);
             return {
@@ -168,6 +197,7 @@ export default function Route() {
                     page: page.toString(),
                 });
             }
+            setSearchFilterValue(searchQuery);
             // setLoading(false);
             if (result.error) throw new Error(result.data.message);
             const pagination = result?.pagination || result?.pagination?.pagination || {};
@@ -183,12 +213,12 @@ export default function Route() {
 
     const handleStatusChange = async (ids: (string | number)[] | undefined, status: number) => {
         if (!ids || ids.length === 0) return;
-        setLoading(true);
+        // setLoading(true);
         const res = await routeStatusUpdate({
             ids: ids,
             status: Number(status)
         });
-        setLoading(true);
+        // setLoading(false);
 
         if (res.error) {
             showSnackbar(res.data.message || "Failed to update status", "error");
@@ -207,7 +237,7 @@ export default function Route() {
     const exportFile = async (format: string) => {
         try {
             setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
-            const response = await exportRoutes({ format });
+            const response = await exportRoutes({ format, search: searchFilterValue, filter:{ status: currentStatusFilter == false ? "0" : "1", warehouse_id: warehouseId }});
             if (response && typeof response === 'object' && response.url) {
                 await downloadFile(response.url);
                 showSnackbar("File downloaded successfully ", "success");
@@ -233,19 +263,13 @@ export default function Route() {
                         },
                         header: {
                             title: "Routes",
+                            exportButton: {
+                                threeDotLoading: threeDotLoading,
+                show: true,
+                onClick: () => exportFile("xlsx"), 
+              },
                             threeDot: [
-                                {
-                                    icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
-                                    label: "Export CSV",
-                                    labelTw: "text-[12px] hidden sm:block",
-                                    onClick: () => !threeDotLoading.csv && exportFile("csv"),
-                                },
-                                {
-                                    icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
-                                    label: "Export Excel",
-                                    labelTw: "text-[12px] hidden sm:block",
-                                    onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
-                                },
+                               
                                 {
                                     icon: "lucide:radio",
                                     label: "Inactive",

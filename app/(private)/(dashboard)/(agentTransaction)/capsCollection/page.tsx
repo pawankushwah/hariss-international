@@ -10,7 +10,7 @@ import Table, {
   TableDataType,
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { capsCollectionList, exportCapsCollection, capsCollectionStatusUpdate } from "@/app/services/agentTransaction";
+import { capsCollectionList, exportCapsCollection, capsCollectionStatusUpdate,capsExportCollapse } from "@/app/services/agentTransaction";
 import { downloadFile } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext"; // ✅ import snackbar
 import { useLoading } from "@/app/services/loadingContext";
@@ -90,11 +90,57 @@ export default function SalemanLoad() {
     return Object.entries(params).sort().map(([k, v]) => `${k}:${v}`).join("|");
   };
 
+  // Memoize initial API result so it only loads once per mount/refreshKey
+  const [initialCapsData, setInitialCapsData] = useState<listReturnType | null>(null);
+  const [initialCapsParams, setInitialCapsParams] = useState<{ page: number, pageSize: number }>({ page: 1, pageSize: 50 });
+
+  useEffect(() => {
+    // Only fetch once per refreshKey
+    const fetchInitial = async () => {
+      const params = { page: initialCapsParams.page.toString(), per_page: initialCapsParams.pageSize.toString() };
+      const cacheKey = getCacheKey(params);
+      if (capsCollectionCache.current[cacheKey]) {
+        const listRes = capsCollectionCache.current[cacheKey];
+        setInitialCapsData({
+          data: Array.isArray(listRes.data) ? listRes.data : [],
+          total: listRes?.pagination?.totalPages || 1,
+          currentPage: listRes?.pagination?.page || 1,
+          pageSize: listRes?.pagination?.limit || initialCapsParams.pageSize,
+        });
+        return;
+      }
+      try {
+        setLoading(true);
+        const listRes = await capsCollectionList(params);
+        capsCollectionCache.current[cacheKey] = listRes;
+        setInitialCapsData({
+          data: Array.isArray(listRes.data) ? listRes.data : [],
+          total: listRes?.pagination?.totalPages || 1,
+          currentPage: listRes?.pagination?.page || 1,
+          pageSize: listRes?.pagination?.limit || initialCapsParams.pageSize,
+        });
+      } catch {
+        setInitialCapsData({
+          data: [],
+          total: 1,
+          currentPage: 1,
+          pageSize: 5,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitial();
+  }, [refreshKey, setLoading]);
+
+  // Table expects a function, so wrap the memoized result
   const fetchSalesmanLoadHeader = useCallback(
-    async (
-      page: number = 1,
-      pageSize: number = 50
-    ): Promise<listReturnType> => {
+    async (page: number = 1, pageSize: number = 50): Promise<listReturnType> => {
+      // Only return memoized data if params match
+      if (page === initialCapsParams.page && pageSize === initialCapsParams.pageSize && initialCapsData) {
+        return initialCapsData;
+      }
+      // Otherwise, fetch and cache as before
       const params = { page: page.toString(), per_page: pageSize.toString() };
       const cacheKey = getCacheKey(params);
       if (capsCollectionCache.current[cacheKey]) {
@@ -110,7 +156,6 @@ export default function SalemanLoad() {
         setLoading(true);
         const listRes = await capsCollectionList(params);
         capsCollectionCache.current[cacheKey] = listRes;
-        setLoading(false);
         return {
           data: Array.isArray(listRes.data) ? listRes.data : [],
           total: listRes?.pagination?.totalPages || 1,
@@ -118,15 +163,16 @@ export default function SalemanLoad() {
           pageSize: listRes?.pagination?.limit || pageSize,
         };
       } catch (error: unknown) {
-        setLoading(false);
         return {
           data: [],
           total: 1,
           currentPage: 1,
           pageSize: 5,
         };
+      } finally {
+        setLoading(false);
       }
-    }, [setLoading]);
+    }, [initialCapsData, initialCapsParams, setLoading]);
 
   const exportListFile = async (format: string) => {
     try {
@@ -162,6 +208,23 @@ export default function SalemanLoad() {
     try {
       setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
       const response = await exportCapsCollection({ format });
+      if (response && typeof response === 'object' && response.download_url) {
+        await downloadFile(response.download_url);
+        showSnackbar("File downloaded successfully ", "success");
+      } else {
+        showSnackbar("Failed to get download URL", "error");
+      }
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+    } catch (error) {
+      showSnackbar("Failed to download Salesman Load data", "error");
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+    } finally {
+    }
+  };
+  const exportCollapseFile = async (format: "csv" | "xlsx" = "csv") => {
+    try {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+      const response = await capsExportCollapse({ format });
       if (response && typeof response === 'object' && response.download_url) {
         await downloadFile(response.download_url);
         showSnackbar("File downloaded successfully ", "success");
@@ -311,7 +374,7 @@ export default function SalemanLoad() {
                 icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                 label: "Export Excel",
                 labelTw: "text-[12px] hidden sm:block",
-                onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                onClick: () => !threeDotLoading.xlsx && exportCollapseFile("xlsx"),
               },
             ],
             columnFilter: true,

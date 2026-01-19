@@ -1,21 +1,16 @@
 "use client";
 import ContainerCard from "@/app/components/containerCard";
 import InputFields from "@/app/components/inputFields";
-import TabBtn from "@/app/components/tabBtn";
-import Container from "@mui/material/Container";
 import React, { useEffect, useState } from "react";
-// import {warehouseOptions} from "@/app/data/warehouseOptions";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import Table from "@/app/components/customTable";
-import { TableDataType } from "@/app/components/customTable";
-import OrderStatus from "@/app/components/orderStatus";
 import { Icon } from "@iconify-icon/react";
-import { warehouseLowStocksKpi, warehouseStocksKpi, warehouseStockTopOrders } from "@/app/services/allApi";
+import { warehouseStocksKpi, distributorStockOverview } from "@/app/services/allApi";
 import { CustomTableSkelton } from "@/app/components/customSkeleton";
 import Skeleton from "@mui/material/Skeleton";
 import toInternationalNumber from "@/app/(private)/utils/formatNumber";
-import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
-
+import FilterComponent from "@/app/components/filterComponent";
+import { toInternationalQty } from "@/app/(private)/utils/formatNumber";
 
 type CardItem = {
   title: string;
@@ -25,14 +20,8 @@ type CardItem = {
   percentage: number;
   isUp: boolean;
 };
-const tabList = [
-  { key: "overview", label: "Overview" },
-  { key: "detailedView", label: "Detailed View" },
-  // { key: "address", label: "Location Info" },
-  // { key: "financial", label: "Financial Info" },
-  // { key: "guarantee", label: "Guarantee Info" },
-  // { key: "additional", label: "Additional Info" },
-];
+
+
 const itemColumns = [
   {
     key: "item_code",
@@ -49,31 +38,28 @@ const itemColumns = [
     key: "stock_qty",
     label: "Stock Qty",
     showByDefault: true,
-    render: (row: any) => row.stock_qty ?? "-",
+    render: (row: any) => (typeof row.stock_qty === 'number' || (typeof row.stock_qty === 'string' && row.stock_qty !== '')) ? toInternationalQty(Number(row.stock_qty)) : '0',
+    isSortable: true,
   },
   {
     key: "total_sold_qty",
     label: "Sold Qty",
     showByDefault: true,
-    render: (row: any) => row.total_sold_qty ?? "-",
+    render: (row: any) => (typeof row.total_sold_qty === 'number' || (typeof row.total_sold_qty === 'string' && row.total_sold_qty !== '')) ? toInternationalQty(Number(row.total_sold_qty)) : '0',
+    isSortable: true,
   },
   {
     key: "purchase",
     label: "Purchase Qty",
     showByDefault: true,
-
-    render: (row: any) => row.purchase ?? "-",
+    render: (row: any) => (typeof row.purchase === 'number' || (typeof row.purchase === 'string' && row.purchase !== '')) ? toInternationalQty(Number(row.purchase)) : '0',
+    isSortable: true,
   },
 ];
 
 
 const OverallPerformance: React.FC = () => {
-  const { can, permissions } = usePagePermissions();
-  const [openMenu, setOpenMenu] = useState(false);
-  const [selected, setSelected] = useState("Last 24h");
-  const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState<boolean>(false);
-
   const [stockData, setStockData] = useState<any>({
     "total_warehouse_valuation": "0.00",
     "today_loaded_qty": "0.00",
@@ -88,18 +74,10 @@ const OverallPerformance: React.FC = () => {
   })
 
   const [selectedWarehouse, setSelectedWarehouse] = useState("")
-  const { warehouseOptions,ensureWarehouseLoaded } = useAllDropdownListData();
+  const [selectedFilter, setSelectedFilter] = useState("")
+  const { warehouseOptions, ensureWarehouseLoaded } = useAllDropdownListData();
 
-  const options = ["Last 12h", "Last 24h", "Last 20h"];
 
-  const onTabClick = (idx: number) => {
-    // ensure index is within range and set the corresponding tab key
-    if (typeof idx !== "number") return;
-    if (typeof tabList === "undefined" || idx < 0 || idx >= tabList.length) return;
-    setActiveTab(tabList[idx].key);
-  };
-
-  // ⭐ Array of card objects
   const cards: CardItem[] = [
     {
       title: "Total Valuation",
@@ -115,7 +93,6 @@ const OverallPerformance: React.FC = () => {
       percentage: -10,
       icon: "maki:warehouse",
       color: "#fff0f2",
-
       isUp: false,
     }, {
       title: "Low Stock",
@@ -134,137 +111,167 @@ const OverallPerformance: React.FC = () => {
       isUp: true,
     },
   ];
-  useEffect(()=>{
+  useEffect(() => {
     ensureWarehouseLoaded();
-  },[ensureWarehouseLoaded])
-  async function callAllKpisData(id: string) {
+  }, [ensureWarehouseLoaded])
+  async function callAllKpisData(id: string, filter?: string) {
     try {
-      setLoading(true)
+      setLoading(true);
 
-      const res = await warehouseStocksKpi(id)
-      const lowCostRes = await warehouseLowStocksKpi(id)
-      const topOrderRes = await warehouseStockTopOrders(id)
-      //  const top5Orders = await warehouseStockTopOrders(id)
+      const res = await warehouseStocksKpi(id);
+      let topOrderRes;
+      if (filter) {
+        topOrderRes = await distributorStockOverview(id, { date_filter: filter });
+      } else {
+        topOrderRes = await distributorStockOverview(id);
+      }
 
-      console.log(warehouseOptions, "hii")
-      console.log(topOrderRes, "hii")
+      setStockData(res);
 
-      setStockData(res)
-      setStockLowQty(lowCostRes)
-      setTopOrders(topOrderRes)
-      setLoading(false)
+      let lowCount = 0;
+      if (topOrderRes && typeof topOrderRes.low_count !== 'undefined') {
+        if (typeof topOrderRes.low_count === 'number') {
+          lowCount = topOrderRes.low_count;
+        } else if (!isNaN(Number(topOrderRes.low_count))) {
+          lowCount = Number(topOrderRes.low_count);
+        }
+      }
+      setStockLowQty({
+        count: lowCount,
+        items: []
+      });
+      const stocksRaw = Array.isArray(topOrderRes?.stocks)
+        ? topOrderRes.stocks
+        : Array.isArray(topOrderRes?.data?.items)
+          ? topOrderRes.data.items
+          : Array.isArray(topOrderRes?.data)
+            ? topOrderRes.data
+            : [];
 
+      const stocksFromTopOrders = stocksRaw.map((it: any) => ({
+        id: it.item_id ?? it.id ?? undefined,
+        item_code: it.item_code ?? it.item?.item_code ?? it.erp_code ?? "",
+        item_name: it.item_name ?? it.item?.name ?? it.item?.item_name ?? "",
+        stock_qty: it.available_stock_qty !== undefined && it.available_stock_qty !== null && it.available_stock_qty !== '' ? Number(it.available_stock_qty) : 0,
+        total_sold_qty: it.total_sales !== undefined && it.total_sales !== null && it.total_sales !== '' ? Number(it.total_sales) : 0,
+        purchase: it.purchase_qty !== undefined && it.purchase_qty !== null && it.purchase_qty !== '' ? Number(it.purchase_qty) : 0,
+        uoms: it.uoms ?? it.item?.uoms ?? [],
+        health_flag: typeof it.health_flag === "number" ? it.health_flag : it.health_flag ? Number(it.health_flag) : 1,
+        _raw: it,
+      }));
 
+      setTopOrders({ stocks: stocksFromTopOrders });
+      setLoading(false);
+    } catch (err) {
     }
-    catch (err) {
-
-    }
-
   }
   return (
     <>
 
-      {/* <ContainerCard className="w-full flex gap-[4px] overflow-x-auto" padding="5px">
-        {tabList.map((tab, index) => (
-          <div key={index}>
-            <TabBtn
-              label={tab.label}
-              isActive={activeTab === tab.key}
-              onClick={() => onTabClick(index)}
-            />
-          </div>
-        ))}
-      </ContainerCard> */}
-      <ContainerCard className="w-full">
+      <ContainerCard className="flex flex-col h-full w-full">
 
         <div className="flex justify-between md:items-center">
           <div>
             <p className="text-base font-bold">Distributors Overview</p>
           </div>
 
-          {/* Dropdown */}
-          {/* <div className=""> */}
-
           <InputFields
             searchable={true}
-            //   required
-            // label="Distributers"
             placeholder="Select Distributers"
             name="Distributers"
             value={selectedWarehouse}
             options={warehouseOptions}
-
             onChange={(e) => {
-              setSelectedWarehouse(e.target.value)
-
-              callAllKpisData(e.target.value)
-              // const newWarehouse = e.target.value;
-              // handleChange("warehouse", newWarehouse);
-              // handleChange("vehicleType", ""); // clear vehicle when warehouse changes
-              // fetchRoutes(newWarehouse);
+              setSelectedWarehouse(e.target.value);
+              callAllKpisData(e.target.value, selectedFilter);
             }}
           />
 
         </div>
 
-        {/* CARDS (dynamic from array) */}
         <div className="mt-6 grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 items-center md:gap-2.5 gap-4">
+
           {cards.map((card, index) => {
-
-
-
             return (
-              !loading ? <div key={index} className="flex items-center rounded-lg bg-white text-gray-700 shadow-md border border-gray-200 p-2" >
-                <div style={{ background: card.color }} className="p-2 rounded-lg"> <Icon icon={card.icon} width="48" height="48" /> </div>
-
-                <div
-                  key={index}
-                  className="relative flex flex-col w-[100%]"
-                >
-
-                  <div className="p-4">
-
-                    <div className="flex justify-between items-center">
-                      <p className="text-xs text-gray-600 font-medium">{card.title}</p>
-
-                      {/* Arrow + Percentage */}
-
-
+              !loading ? (
+                <div key={index} className="flex items-center rounded-lg bg-white text-gray-700 shadow-md border border-gray-200 p-2 min-w-0" >
+                  <div style={{ background: card.color }} className="p-2 rounded-lg min-w-[56px] flex-shrink-0"> <Icon icon={card.icon} width="48" height="48" /> </div>
+                  <div key={index} className="relative flex flex-col w-full min-w-0">
+                    <div className="p-4 min-w-0">
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-gray-600 font-medium">{card.title}</p>
+                      </div>
+                      <p className="mt-1 text-blue-gray-900 font-bold text-2xl break-words truncate max-w-full" style={{ wordBreak: 'break-all', overflowWrap: 'break-word' }}>
+                        {card.value}
+                      </p>
                     </div>
-
-
-                    {/* Value */}
-                    <p className="mt-1 text-blue-gray-900 font-bold text-2xl">
-                      {card.value}
-                    </p>
                   </div>
                 </div>
-              </div> : <div key={index} className="flex items-center rounded-lg bg-white text-gray-700 shadow-md border border-gray-200 p-2 gap-[5px]" ><Skeleton width={20} /><Skeleton width={20} /><Skeleton width={20} /><Skeleton width={20} /></div>
-            )
-
+              ) : (
+                <div key={index} className="flex items-center rounded-lg bg-white text-gray-700 shadow-md border border-gray-200 p-2 gap-[5px]" >
+                  <Skeleton width={20} /><Skeleton width={20} /><Skeleton width={20} /><Skeleton width={20} />
+                </div>
+              )
+            );
           })}
 
         </div>
         <br />
         <div className="flex flex-col h-full">
+
           {loading ? <CustomTableSkelton /> :
             <Table
-              // refreshKey={1}
               data={topOrders?.stocks ? topOrders?.stocks : []}
               config={{
-                //   api: { list: fetchOrders, filterBy: filterBy },
                 header: {
-                  //   title: "Customer Orders",
                   searchBar: false,
                   columnFilter: false,
-
+                  filterRenderer: (props) => (
+                    <FilterComponent
+                      {...props}
+                      onlyFilters={['from_date', 'to_date', 'day_filter']}
+                      disabled={!selectedWarehouse}
+                      api={async (payload: any) => {
+                        if (!selectedWarehouse) return;
+                        try {
+                          setLoading(true);
+                          let topOrderRes;
+                          const params: any = {};
+                          if (payload.day_filter) {
+                            params.range = payload.day_filter;
+                          } 
+                            if (payload.from_date) {
+                              params.from_date = payload.from_date;
+                            }
+                            if (payload.to_date) {
+                              params.to_date = payload.to_date;
+                            }
+                            topOrderRes = await distributorStockOverview(selectedWarehouse, params);
+                            setTopOrders({ stocks: topOrderRes?.data?.items });
+                            setStockLowQty({
+                              count: topOrderRes?.data?.low_count,
+                              items: []
+                            });
+                            setSelectedFilter(payload.day_filter || `${payload.from_date || ''}|${payload.to_date || ''}`);
+                        } catch (err) {
+                          console.error("Filter API error", err);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                    />
+                  ),
                 },
-                //   rowSelection: true,
-                footer: { nextPrevBtn: true, pagination: true },
                 columns: itemColumns,
-
-                pageSize: 10,
+                pageSize: 1000000,
+                rowColor: (row: any) => {
+                  const healthFlag = row.health_flag ?? 1;
+                  if (healthFlag === 2) return "#FEF9C3";
+                  if (healthFlag === 3) return "#FECACA";
+                  return "";
+                },
               }}
+
             />}
         </div>
 

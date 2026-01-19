@@ -10,7 +10,8 @@ import Table, { listReturnType, TableDataType } from "@/app/components/customTab
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
-import { fridgeUpdateCustomerList } from "@/app/services/assetsApi";
+import { fridgeUpdateCustomerList, exportFridgeCustomer, FridgeCustomerGlobalSearch } from "@/app/services/assetsApi";
+import { downloadFile } from "@/app/services/allApi";
 import StatusBtn from "@/app/components/statusBtn2";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import { formatDate } from "../../(master)/salesTeam/details/[uuid]/page";
@@ -23,9 +24,13 @@ export default function FridgeUpdateCustomer() {
     const { can, permissions } = usePagePermissions();
     const { setLoading } = useLoading();
     const [showDropdown, setShowDropdown] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const [refreshKey, setRefreshKey] = useState(0);
     const [showExportDropdown, setShowExportDropdown] = useState(false);
-
+    const [threeDotLoading, setThreeDotLoading] = useState({
+        csv: false,
+        xlsx: false,
+    });
     // Refresh table when permissions load
     useEffect(() => {
         if (permissions.length > 0) {
@@ -67,59 +72,47 @@ export default function FridgeUpdateCustomer() {
             }
         }, []
     )
-    // const searchChiller = useCallback(
-    //     async (
-    //         query: string,
-    //         pageSize: number = 10,
-    //         columnName?: string
-    //     ): Promise<listReturnType> => {
-    //         try {
-    //             setLoading(true);
+    const searchChiller = useCallback(
+        async (
+            query: string,
+            pageSize: number = 10,
+            columnName?: string
+        ): Promise<listReturnType> => {
+            try {
+                setSearchQuery(query);
+                setLoading(true);
+                const res = await FridgeCustomerGlobalSearch({
+                    search: query,
+                    per_page: pageSize.toString(),
+                });
 
-    //             // 🔒 Guard clause
-    //             if (!columnName) {
-    //                 return {
-    //                     data: [],
-    //                     currentPage: 0,
-    //                     pageSize,
-    //                     total: 0,
-    //                 };
-    //             }
+                if (res?.error) {
+                    showSnackbar(
+                        res?.data?.message || "Failed to search the Chillers",
+                        "error"
+                    );
+                    throw new Error("Unable to search the Chillers");
+                }
 
-    //             const res = await chillerList({
-    //                 query,
-    //                 per_page: pageSize.toString(),
-    //                 [columnName]: query,
-    //             });
-
-    //             if (res?.error) {
-    //                 showSnackbar(
-    //                     res?.data?.message || "Failed to search the Chillers",
-    //                     "error"
-    //                 );
-    //                 throw new Error("Unable to search the Chillers");
-    //             }
-
-    //             return {
-    //                 data: res?.data || [],
-    //                 currentPage: res?.pagination?.page || 0,
-    //                 pageSize: res?.pagination?.limit || pageSize,
-    //                 total: res?.pagination?.totalPages || 0,
-    //             };
-    //         } finally {
-    //             // ✅ always runs (success or error)
-    //             setLoading(false);
-    //         }
-    //     },
-    //     []
-    // );
+                return {
+                    data: res?.data || [],
+                    currentPage: res?.pagination?.page || 0,
+                    pageSize: res?.pagination?.limit || pageSize,
+                    total: res?.pagination?.totalPages || 0,
+                };
+            } finally {
+                // ✅ always runs (success or error)
+                setLoading(false);
+            }
+        },
+        []
+    );
 
     // const handleExport = async (fileType: "csv" | "xlsx") => {
     //     try {
     //         setLoading(true);
 
     //         const res = await assetsMasterExport({ format: fileType });
-    //         console.log("Export API Response:", res);
 
     //         let downloadUrl = "";
 
@@ -166,6 +159,24 @@ export default function FridgeUpdateCustomer() {
         setLoading(true);
     }, [])
 
+    const exportFile = async (format: "csv" | "xlsx" = "csv") => {
+        try {
+            setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+            const response = await exportFridgeCustomer({ format, search: searchQuery });
+            if (response && typeof response === "object" && response.download_url) {
+                await downloadFile(response.download_url);
+                showSnackbar("File downloaded successfully ", "success");
+            } else {
+                showSnackbar("Failed to get download URL", "error");
+            }
+            setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+        } catch (error) {
+            showSnackbar("Failed to download fridge customer data", "error");
+            setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+        } finally {
+        }
+    };
+
     return (
         <>
             {/* Table */}
@@ -175,26 +186,28 @@ export default function FridgeUpdateCustomer() {
                     config={{
                         api: {
                             list: fetchServiceTypes,
-                            // search: searchChiller
+                            search: searchChiller
                         },
                         header: {
                             title: "Fridge Update Customer",
-                            // threeDot: [
-                            //     {
-                            //         icon: "gala:file-document",
-                            //         label: "Export CSV",
-                            //         onClick: (data: TableDataType[], selectedRow?: number[]) => {
-                            //             handleExport("csv");
-                            //         },
-                            //     },
-                            //     {
-                            //         icon: "gala:file-document",
-                            //         label: "Export Excel",
-                            //         onClick: (data: TableDataType[], selectedRow?: number[]) => {
-                            //             handleExport("xlsx");
-                            //         },
-                            //     },
-                            // ],
+                            threeDot: [
+                                {
+                                    icon: threeDotLoading.csv
+                                        ? "eos-icons:three-dots-loading"
+                                        : "gala:file-document",
+                                    label: "Export CSV",
+                                    labelTw: "text-[12px] hidden sm:block",
+                                    onClick: () => !threeDotLoading.csv && exportFile("csv"),
+                                },
+                                {
+                                    icon: threeDotLoading.xlsx
+                                        ? "eos-icons:three-dots-loading"
+                                        : "gala:file-document",
+                                    label: "Export Excel",
+                                    labelTw: "text-[12px] hidden sm:block",
+                                    onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                                },
+                            ],
                             searchBar: true,
                             columnFilter: true,
                         },
@@ -224,6 +237,7 @@ export default function FridgeUpdateCustomer() {
                             { key: "model", label: "Model Number" },
                             { key: "brand", label: "Branding" },
                             { key: "remark", label: "Remarks" },
+                            { key: "approval_status", label: "Approval Status" },
                             {
                                 key: "status",
                                 label: "Status",
@@ -233,7 +247,7 @@ export default function FridgeUpdateCustomer() {
                                 },
                             },
                         ],
-                        rowSelection: true,
+                        // rowSelection: true,
                         rowActions: [
                             {
                                 icon: "lucide:eye",

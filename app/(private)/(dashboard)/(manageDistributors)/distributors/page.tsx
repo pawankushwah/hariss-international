@@ -4,54 +4,59 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Table, { TableDataType, listReturnType } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
-import { getWarehouse, deleteWarehouse, warehouseListGlobalSearch, exportWarehouseData, warehouseStatusUpdate, downloadFile } from "@/app/services/allApi";
+import { getWarehouse, deleteWarehouse, warehouseListGlobalSearch, exportWarehouseData, warehouseStatusUpdate, downloadFile, statusFilter } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import StatusBtn from "@/app/components/statusBtn2";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 
 
-type WarehouseRow = TableDataType & {
-  id?: string;
-  uuid?: string;
-  code?: string;
-  warehouseName?: string;
-  tin_no?: string;
-  ownerName?: string;
-  owner_email?: string;
-  ownerContact?: string;
-  warehouse_type?: string;
-  business_type?: string;
-  warehouse_manager?: string;
-  warehouse_manager_contact?: string;
-  district?: string;
-  street?: string;
-  branch_id?: string;
-  town_village?: string;
-  region?: { code?: string; name?: string; region_name?: string; }
-  location?: { code?: string; name?: string; location_code?: string; location_name?: string; }
-  company?: { company_code?: string; company_name?: string };
-  city?: string;
-  landmark?: string;
-  latitude?: string;
-  longitude?: string;
-  threshold_radius?: string;
-  device_no?: string;
-  is_branch?: string;
-  p12_file?: string;
-  is_efris?: string;
-  agreed_stock_capital?: string;
-  deposite_amount?: string;
-  phoneNumber?: string;
-  address?: string;
-  status?: string | boolean | number;
-  company_customer_id?: { customer_name: string };
-  region_id?: { region_name: string };
-  area?: { code?: string; area_code?: string; area_name?: string; name: string };
-};
 
-const columns = [
+export default function Warehouse() {
+  const { regionOptions,ensureRegionLoaded,areaOptions,ensureAreaLoaded  } = useAllDropdownListData();
+  const { can, permissions } = usePagePermissions("/distributors");
+  const { setLoading } = useLoading();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [searchFilter, setSearchFilter] = useState("");
+  useEffect(() => {
+    ensureRegionLoaded();
+    ensureAreaLoaded();
+  }, [ensureRegionLoaded, ensureAreaLoaded]);
+
+  const [areaId, setAreaId] = useState<string>("");
+  const [regionId, setRegionId] = useState<string>("");
+  const [currentStatusFilter, setCurrentStatusFilter] = useState<boolean | null>(null);
+  // Refresh table when permissions load
+  useEffect(() => {
+    if (permissions.length > 0) {
+      setRefreshKey((prev) => prev + 1);
+    }
+  }, [permissions]);
+
+  const router = useRouter();
+  const { showSnackbar } = useSnackbar();
+  const [threeDotLoading, setThreeDotLoading] = useState({
+    csv: false,
+    xlsx: false,
+  });
+
+  const handleStatusFilter = async (status: boolean) => {
+    try {
+      // If clicking the same filter, clear it
+      const newFilter = currentStatusFilter === status ? null : status;
+      setCurrentStatusFilter(newFilter);
+      
+      // Refresh the table with the new filter
+      setRefreshKey((k) => k + 1);
+    } catch (error) {
+      console.error("Error filtering by status:", error);
+      showSnackbar("Failed to filter by status", "error");
+    }
+  };
+
+  const columns = [
   // { key: "warehouse_code", label: "Warehouse Code", showByDefault: true, render: (row: WarehouseRow) =>(<span className="font-semibold text-[#181D27] text-[14px]">{ row.warehouse_code || "-"}</span>) },
   // { key: "registation_no", label: "Registration No.", render: (row: WarehouseRow) => (<span className="font-semibold text-[#181D27] text-[14px]">{row.registation_no || "-" }</span>)},
   { key: "warehouse_name", label: "Distributors Name", render: (row: WarehouseRow) => row.warehouse_code + " - " + row.warehouse_name || "-" },
@@ -89,7 +94,18 @@ const columns = [
     key: 'region',
     render: (row: WarehouseRow) => {
       return row.region?.name || row.region?.region_name || '-';
-    }
+    },
+    filter: {
+                isFilterable: true,
+                width: 320,
+                filterkey: "warehouse_id",
+                options: Array.isArray(regionOptions) ? regionOptions : [],
+                onSelect: (selected: string | string[]) => {
+                    setRegionId((prev) => (prev === selected ? "" : (selected as string)));
+                },
+                isSingle: false,
+                selectedValue: regionId,
+            },
   },
   {
     label: 'Area',
@@ -98,13 +114,24 @@ const columns = [
     render: (row: WarehouseRow) => {
       return row.area?.name || row.area?.area_name || '-';
 
-    }
+    },
+    filter: {
+                isFilterable: true,
+                width: 320,
+                filterkey: "warehouse_id",
+                options: Array.isArray(areaOptions) ? areaOptions : [],
+                onSelect: (selected: string | string[]) => {
+                    setAreaId((prev) => (prev === selected ? "" : (selected as string)));
+                },
+                isSingle: false,
+                selectedValue: areaId,
+            },
   },
   // { key: "sub_region_id", label: "Sub Region"},
   { key: "city", label: "City", render: (row: WarehouseRow) => row.city || "-", },
   {
     key: "location", label: "Location", render: (row: WarehouseRow) => {
-      return row.location?.name || row.location?.location_name || '-';
+      return row.location?.name || row.location?.location_name || row.location_relation?.name || '-';
     }
   },
   // { key: "town_village", label: "Town", render: (row: WarehouseRow) => row.town_village || "-" },
@@ -128,20 +155,17 @@ const columns = [
     // showByDefault: true,
     // isSortable: true,
     render: (row: WarehouseRow) => <StatusBtn isActive={String(row.status) > "0"} />,
+    filterStatus: {
+      enabled: true,
+      onFilter: handleStatusFilter,
+      currentFilter: currentStatusFilter,
+    },
   },
 ];
 
-export default function Warehouse() {
-  const { can, permissions } = usePagePermissions("/distributors");
-  const { setLoading } = useLoading();
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // Refresh table when permissions load
   useEffect(() => {
-    if (permissions.length > 0) {
-      setRefreshKey((prev) => prev + 1);
-    }
-  }, [permissions]);
+        setRefreshKey((k) => k + 1);
+    }, [regionId, areaId, currentStatusFilter]);
 
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   type TableRow = TableDataType & { id?: string };
@@ -163,10 +187,10 @@ export default function Warehouse() {
     street?: string;
     branch_id?: string;
     town_village?: string;
-    region?: { code?: string; region_name?: string; }
+    region?: { code?: string; name:string; region_name?: string; }
     get_company_customer?: { owner_name?: string };
     city?: string;
-    location?: string;
+    location?: { code?: string; name?: string; location_code?: string; location_name?: string; }
     landmark?: string;
     latitude?: string;
     longitude?: string;
@@ -186,12 +210,7 @@ export default function Warehouse() {
   };
 
   const [selectedRow, setSelectedRow] = useState<WarehouseRow | null>(null);
-  const router = useRouter();
-  const { showSnackbar } = useSnackbar();
-  const [threeDotLoading, setThreeDotLoading] = useState({
-    csv: false,
-    xlsx: false,
-  });
+  
   const fetchWarehouse = useCallback(
     async (
       page: number = 1,
@@ -199,11 +218,25 @@ export default function Warehouse() {
     ): Promise<listReturnType> => {
       try {
         //  setLoading(true);
-        const listRes = await getWarehouse({
-          //  limit: pageSize.toString(),
+        
+        // Build params with all filters
+        const params: any = {
           page: page.toString(),
           per_page: pageSize.toString(),
-        });
+        };
+        
+        if (regionId) {
+          params.region_id = regionId;
+        }
+        if (areaId) {
+          params.area_id = areaId;
+        }
+        
+        // Add status filter if active (true=1, false=0)
+        if (currentStatusFilter !== null) {
+          params.status = currentStatusFilter ? "1" : "0";
+        }
+        const listRes = await getWarehouse(params);
         //  setLoading(false);
         return {
           data: listRes.data || [],
@@ -217,7 +250,7 @@ export default function Warehouse() {
         throw new Error(String(error));
       }
     },
-    []
+    [areaId, regionId, currentStatusFilter]
   );
 
   const searchWarehouse = useCallback(
@@ -234,6 +267,7 @@ export default function Warehouse() {
           per_page: pageSize.toString(),
           page: page.toString(),
         });
+        setSearchFilter(query);
         //  setLoading(false);
         return {
           data: listRes.data || [],
@@ -254,7 +288,7 @@ export default function Warehouse() {
   const exportFile = async (format: string) => {
     try {
       setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
-      const response = await exportWarehouseData({ format });
+      const response = await exportWarehouseData({ format, search: searchFilter,filters:{ area_id: areaId, region_id: regionId, status: currentStatusFilter === null ? undefined : (currentStatusFilter ? "1" : "0") }});
       if (response && typeof response === 'object' && response.download_url) {
         await downloadFile(response.download_url);
         showSnackbar("File downloaded successfully ", "success");
@@ -276,7 +310,6 @@ export default function Warehouse() {
         return;
       }
       const selectedRowsData: number[] = ids.map((id) => Number(id)).filter((n) => !Number.isNaN(n));
-      console.log("selectedRowsData", selectedRowsData);
       if (selectedRowsData.length === 0) {
         showSnackbar("No Distributors selected", "error");
         return;
@@ -324,19 +357,24 @@ export default function Warehouse() {
             },
 
             header: {
+               exportButton: {
+                threeDotLoading:  threeDotLoading,
+                show: true,
+                onClick: () => exportFile("xlsx"), 
+              },
               threeDot: [
-                {
-                  icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
-                  label: "Export CSV",
-                  labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => !threeDotLoading.csv && exportFile("csv"),
-                },
-                {
-                  icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
-                  label: "Export Excel",
-                  labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
-                },
+                // {
+                //   icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
+                //   label: "Export CSV",
+                //   labelTw: "text-[12px] hidden sm:block",
+                //   onClick: () => !threeDotLoading.csv && exportFile("csv"),
+                // },
+                // {
+                //   icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
+                //   label: "Export Excel",
+                //   labelTw: "text-[12px] hidden sm:block",
+                //   onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                // },
                 {
                   icon: "lucide:radio",
                   label: "Inactive",

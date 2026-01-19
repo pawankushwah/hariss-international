@@ -46,18 +46,18 @@ const SUPPORTED_FORMATS = [
 
 const fileValidation = Yup.mixed()
     .test("fileSize", "File too large (max 10MB)", (value) => {
-        if (!value) return true; // No file is valid (optional field)
+        if (!value) return true;
         if (value instanceof File) {
             return value.size <= FILE_SIZE;
         }
-        return true; // If it's a string (existing file), it's valid
+        return true;
     })
     .test("fileFormat", "Unsupported Format", (value) => {
-        if (!value) return true; // No file is valid (optional field)
+        if (!value) return true;
         if (value instanceof File) {
             return SUPPORTED_FORMATS.includes(value.type);
         }
-        return true; // If it's a string (existing file), it's valid
+        return true;
     });
 
 const validationSchema = Yup.object({
@@ -75,12 +75,9 @@ const validationSchema = Yup.object({
     landmark: Yup.string()
         .trim()
         .max(255, "Landmark cannot exceed 255 characters"),
-    existing_coolers: Yup.string()
-        .trim()
-        .max(100, "Existing coolers cannot exceed 100 characters"),
-    outlet_weekly_sale_volume_current: Yup.string()
-        .trim()
-        .max(100, "Outlet weekly sale volume cannot exceed 100 characters"),
+    existing_coolers: Yup.array()
+        .of(Yup.string())
+        .min(1, "Select at least one cooler"),
     outlet_weekly_sale_volume: Yup.string()
         .trim()
         .max(100, "Outlet weekly sale volume cannot exceed 100 characters"),
@@ -158,7 +155,7 @@ type Chiller = {
     landmark: string;
     location: string;
     postal_address: string;
-    existing_coolers: string;
+    existing_coolers: string[];
     outlet_weekly_sale_volume: string;
     outlet_weekly_sales: string;
     stock_share_with_competitor: string;
@@ -306,7 +303,6 @@ APIFormData.interceptors.request.use(
 );
 
 export default function AddCompanyWithStepper() {
-    console.log("ashdfvazbfavhj")
     const [warehouseOptions, setWarehouseOptions] = useState<DropdownOption[]>(
         []
     );
@@ -323,7 +319,6 @@ export default function AddCompanyWithStepper() {
 
     const params = useParams();
     const uuid = params?.id;
-    console.log("UUID from params:", params);
 
     const steps: StepperStep[] = [
         { id: 1, label: "Outlet Information" },
@@ -645,7 +640,7 @@ export default function AddCompanyWithStepper() {
         landmark: "",
         location: "",
         postal_address: "",
-        existing_coolers: "",
+        existing_coolers: [],
         outlet_weekly_sale_volume: "",
         outlet_weekly_sales: "",
         stock_share_with_competitor: "",
@@ -684,7 +679,7 @@ export default function AddCompanyWithStepper() {
     };
 
     const stepFields = [
-        ["owner_name", "contact_number", "landmark", "existing_coolers", "outlet_weekly_sale_volume", "display_location", "chiller_safty_grill"],
+        ["owner_name", "outlet_name", "contact_number", "landmark", "existing_coolers", "outlet_weekly_sale_volume", "display_location", "chiller_safty_grill"],
         ["warehouse_id", "salesman_id", "outlet_id", "manager_sales_marketing"],
         ["national_id", "outlet_stamp", "model", "hil", "ir_reference_no", "installation_done_by", "date_lnitial", "date_lnitial2", "contract_attached", "machine_number", "brand", "asset_number"],
         ["lc_letter", "trading_licence", "password_photo", "outlet_address_proof", "chiller_asset_care_manager", "national_id_file", "password_photo_file", "outlet_address_proof_file", "trading_licence_file", "lc_letter_file", "outlet_stamp_file", "sign__customer_file", "chiller_manager_id", "is_merchandiser", "status", "fridge_status", "iro_id", "remark"]
@@ -975,7 +970,7 @@ export default function AddCompanyWithStepper() {
                                         { value: "Other", label: "Other" },
                                     ]}
                                     onChange={(e) =>
-                                        setFieldValue("existing_coolers", e.target.value)
+                                        setFieldValue("existing_coolers", e.target.value as string[])
                                     }
                                 // error={touched.existing_coolers && errors.existing_coolers}
                                 />

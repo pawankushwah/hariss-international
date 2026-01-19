@@ -17,17 +17,19 @@ import {
   getCustomerByMerchandiser,
   subRegionList,
   updateRouteVisitDetails,
-  warehouseList
+  warehouseList,
+  dummyImport,
+  downloadFile
 } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { Icon } from "@iconify-icon/react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import * as yup from "yup";
 import Table from "./toggleTable";
-
+import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 
 // Types for API responses
 type Company = {
@@ -93,7 +95,7 @@ type RouteVisitDetails = {
 };
 
 type ApiResponse<T> = {
-  data?: T;
+  data?: T | [T];
   error?: boolean;
   message?: string;
   pagination?: {
@@ -123,6 +125,26 @@ type RowStates = {
 type CustomerSchedules = Record<number, RowStates>;
 
 export default function AddEditRouteVisit() {
+  // Info popover state/hooks (must be top-level, not inside renderStepContent)
+  const [infoPopoverOpen, setInfoPopoverOpen] = useState(false);
+  const infoPopoverRef = useRef<HTMLDivElement>(null);
+  const infoButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!infoPopoverOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        infoPopoverRef.current &&
+        !infoPopoverRef.current.contains(e.target as Node) &&
+        infoButtonRef.current &&
+        !infoButtonRef.current.contains(e.target as Node)
+      ) {
+        setInfoPopoverOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [infoPopoverOpen]);
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
   const params = useParams();
@@ -148,10 +170,11 @@ export default function AddEditRouteVisit() {
     loadingMore: false,
     hasMore: false
   });
-  console.log(customerPagination,"customerPagination")
   const [customerSchedules, setCustomerSchedules] = useState<CustomerSchedules>(
     {}
   );
+
+  const [headerUuid, setHeaderUuid] = useState<string>("");
 
   const [selectedCustomerType, setSelectedCustomerType] = useState<string>();
 
@@ -170,7 +193,7 @@ export default function AddEditRouteVisit() {
     region: [] as string[],
     area: [] as string[],
     warehouse: [] as string[],
-    route: [] as string[],
+    route: "",
     company: [] as string[],
     days: [] as string[],
     from_date: "",
@@ -199,22 +222,17 @@ export default function AddEditRouteVisit() {
     region: yup.array().min(1, "At least one region is required"),
     area: yup.array().min(1, "At least one area is required"),
     warehouse: yup.array().min(1, "At least one warehouse is required"),
-    route: yup.array().min(1, "At least one route is required"),
+    route: yup.string().required("Route is required"),
     company: yup.array().min(1, "At least one company is required"),
     days: yup.array().min(1, "At least one day is required"),
     from_date: yup.string().required("From date is required"),
-    to_date: yup
-      .string()
-      .required("To date is required")
-      .test(
-        "is-after-or-equal",
-        "To Date must be after or equal to From Date",
-        function (value) {
-          const { from_date } = this.parent;
-          if (!from_date || !value) return true;
-          return new Date(value) >= new Date(from_date);
-        }
-      ),
+    to_date: yup.date()
+      .required("Valid To date is required")
+      .when("from_date", (from_date, schema) => {
+        return from_date
+          ? schema.min(from_date, "Valid To must be after Valid From")
+          : schema;
+      }),
     status: yup.string().required("Status is required"),
   });
 
@@ -257,7 +275,7 @@ export default function AddEditRouteVisit() {
       region: yup.array().of(yup.string()).min(1, "At least one region is required"),
       area: yup.array().of(yup.string()).min(1, "At least one area is required"),
       warehouse: yup.array().of(yup.string()).min(1, "At least one warehouse is required"),
-      route: yup.array().of(yup.string()).min(1, "At least one route is required"),
+      route: yup.string().required("Route is required"),
       from_date: validationSchema.fields.from_date,
       to_date: validationSchema.fields.to_date,
       status: validationSchema.fields.status,
@@ -270,12 +288,15 @@ export default function AddEditRouteVisit() {
       !isEditMode && setLoading(true);
       // Fetch companies
       setSkeleton({ ...skeleton, company: true });
-      const companies: ApiResponse<Company[]> = await companyList({ ...(!isEditMode && { allData: "true" }), dropdown: 'true' });
+      const companiesRes = await companyList({ ...(!isEditMode && { allData: "true" }), dropdown: 'true' });
+      const companies = (companiesRes?.data || []) as Company[];
       setCompanyOptions(
-        companies?.data?.map((c: Company) => ({
-          value: String(c.id),
-          label: c.company_name || c.name || "",
-        })) || []
+        Array.isArray(companies)
+          ? companies.map((c: Company) => ({
+            value: String(c.id),
+            label: c.company_name || c.name || "",
+          }))
+          : []
       );
       setSkeleton({ ...skeleton, company: false });
       // Fetch merchandiser list for merchandiser dropdown
@@ -298,17 +319,19 @@ export default function AddEditRouteVisit() {
     }
   };
 
-  // ✅ Load data for editing - UPDATED BASED ON API RESPONSE
+  // ✅ Load data for editing - UPDATED BASED ON NEW ARRAY RESPONSE FORMAT
   const loadVisitData = async (uuid: string) => {
     setLoading(true);
     try {
-      const res: ApiResponse<RouteVisitDetails> = await getRouteVisitDetails(
-        uuid
-      );
-      console.log("API Response for edit:", res);
+      const res = await getRouteVisitDetails(uuid);
+      console.log("Route Visit Data:", res.data);
 
       if (res?.data) {
-        const existing = res.data;
+        const d = Array.isArray(res.data) ? res.data[0] : res.data;
+        setHeaderUuid(d.header?.uuid || "");
+
+        const routeId = res.data[0].route[0]?.id;
+        console.log("Route ID:", routeId);
 
         // Format dates from "2025-10-31T00:00:00.000000Z" to "2025-10-31"
         const formatDate = (dateString: string) => {
@@ -316,50 +339,47 @@ export default function AddEditRouteVisit() {
           return dateString.split("T")[0];
         };
 
-        // ✅ FIX: Properly handle status conversion
-        const backendStatus = existing.status;
-        console.log(
-          "Backend status:",
-          backendStatus,
-          "Type:",
-          typeof backendStatus
-        );
-
+        const backendStatus = d.status;
         const statusValue = backendStatus === 0 ? "0" : "1";
 
+        // Always set as arrays of string IDs
+        const toIdArray = (arr: any[] | undefined) => Array.isArray(arr) ? arr.map((x) => String(x.id)) : [];
+
         setForm({
-          salesman_type: existing.customer_type || "1",
-          merchandiser: String(existing.merchandiser_id),
-          region: existing.region?.map((r: Region) => String(r.id)) || [],
-          area: existing.area?.map((a: Area) => String(a.id)) || [],
-          warehouse:
-            existing.warehouse?.map((w: Warehouse) => String(w.id)) || [],
-          route: existing.route?.map((r: Route) => String(r.id)) || [],
-          company: existing.companies?.map((c: Company) => String(c.id)) || [],
-          days: existing.days || [],
-          from_date: formatDate(existing.from_date),
-          to_date: formatDate(existing.to_date),
-          status: statusValue, // ✅ Use the properly converted value
+          salesman_type: d.customer_type || "1",
+          merchandiser: d?.merchandiser?.id ? String(d.merchandiser.id) : "",
+          region: toIdArray(d.region),
+          area: toIdArray(d.area),
+          warehouse: toIdArray(d.warehouse),
+          route: routeId ? String(routeId) : "",
+          company: toIdArray(d.companies),
+          days: d.days || [],
+          from_date: formatDate(d.from_date),
+          to_date: formatDate(d.to_date),
+          status: statusValue,
         });
+        console.log("Form data:", d.route.id);
 
-        setSelectedCustomerType(existing.customer_type || "1");
+        setSelectedCustomerType(d.customer_type || "1");
 
-        if (existing.customer && existing.customer.id) {
-          const schedule: CustomerSchedules = {
-            [existing.customer.id]: {
-              Monday: existing.days?.includes("Monday") || false,
-              Tuesday: existing.days?.includes("Tuesday") || false,
-              Wednesday: existing.days?.includes("Wednesday") || false,
-              Thursday: existing.days?.includes("Thursday") || false,
-              Friday: existing.days?.includes("Friday") || false,
-              Saturday: existing.days?.includes("Saturday") || false,
-              Sunday: existing.days?.includes("Sunday") || false,
-            },
-          };
-          setCustomerSchedules(schedule);
-        }
-
-
+        // Step 2: Extract all customers and their days
+        const schedules: CustomerSchedules = {};
+        const list = Array.isArray(res.data) ? res.data : [res.data];
+        list.forEach((item: any) => {
+          if (item.customer && item.customer.id) {
+            const days = item.days || [];
+            schedules[item.customer.id] = {
+              Monday: days.includes("Monday"),
+              Tuesday: days.includes("Tuesday"),
+              Wednesday: days.includes("Wednesday"),
+              Thursday: days.includes("Thursday"),
+              Friday: days.includes("Friday"),
+              Saturday: days.includes("Saturday"),
+              Sunday: days.includes("Sunday"),
+            };
+          }
+        });
+        setCustomerSchedules(schedules);
       } else {
         showSnackbar("Route visit not found", "error");
       }
@@ -384,45 +404,21 @@ export default function AddEditRouteVisit() {
     try {
       let res: ApiResponse<Customer[]> | null = null;
 
-      // if (USE_total_DATA) {
-      //   // Simulate network delay
-      //   await new Promise(resolve => setTimeout(resolve, 800));
-        
-      //   const last_page = 10; // Test with 10 current_pages
-      //   const itemsPerPage = 50;
-        
-      //   const totalData = Array.from({ length: itemsPerPage }, (_, i) => ({
-      //     id: (current_page - 1) * itemsPerPage + i + 5000, // Offset IDs to avoid conflicts
-      //     name: `Test Customer ${(current_page - 1) * itemsPerPage + i + 1} (Page ${current_page})`,
-      //     owner_name: `Owner ${(current_page - 1) * itemsPerPage + i + 1}`,
-      //     osa_code: `CODE-${current_page}-${i + 1}`
-      //   }));
+      const salesmanType = form.salesman_type;
+      const merchId = form.merchandiser;
+      const route_id = form.route;
 
-      //   res = {
-      //     data: totalData as any,
-      //     pagination: {
-      //       current_page: current_page,
-      //       last_page: last_page,
-      //       limit: itemsPerPage
-      //     }
-      //   };
-      // } else {
-        const salesmanType = form.salesman_type;
-        const merchId = form.merchandiser;
-        const route_id = Array.isArray(form.route) && form.route.length > 0 ? form.route.join(",") : undefined;
-
-        if (salesmanType === "2") {
-          if (!merchId) {
-            setCustomers([]);
-            setLoading(false);
-            return;
-          }
-          const normalizedId = String(merchId).trim().replace(/\\/g, "").replace(/^"+|"+$/g, "").replace(/^'+|'+$/g, "");
-          res = await getCustomerByMerchandiser(normalizedId, { page: String(current_page), limit: "50" });
-        } else if (salesmanType && route_id) {
-          res = await getAgentCusByRoute(String(route_id), { page: String(current_page), limit: "50" });
+      if (salesmanType === "2") {
+        if (!merchId) {
+          setCustomers([]);
+          setLoading(false);
+          return;
         }
-      // }
+        const normalizedId = String(merchId).trim().replace(/\\/g, "").replace(/^"+|"+$/g, "").replace(/^'+|'+$/g, "");
+        res = await getCustomerByMerchandiser(normalizedId, { page: String(current_page), limit: "50" });
+      } else if (salesmanType && route_id) {
+        res = await getAgentCusByRoute(String(route_id), { page: String(current_page), limit: "50" });
+      }
 
       if (res) {
         const newData = (Array.isArray(res) ? res : (res.data || [])) as Customer[];
@@ -436,12 +432,26 @@ export default function AddEditRouteVisit() {
           hasMore: (Number(pagination.current_page) || current_page) < (Number(pagination.last_page) || 1)
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching customers:", error);
-      if (!isAppend) setCustomers([]);
+
+      // Handle 404 as "No Data Found"
+      if (error?.response?.status === 404) {
+        if (!isAppend) {
+          setCustomers([]);
+          setCustomerPagination({
+            current_page: 1,
+            last_page: 1,
+            loadingMore: false,
+            hasMore: false
+          });
+        }
+      } else {
+        if (!isAppend) setCustomers([]);
+      }
     } finally {
       setLoading(false);
-      setCustomerPagination(prev => ({ ...prev, loadingMore: false }));
+      setCustomerPagination((prev) => ({ ...prev, loadingMore: false }));
     }
   }, [form.salesman_type, form.merchandiser, form.route, setLoading]);
 
@@ -467,56 +477,62 @@ export default function AddEditRouteVisit() {
         region: [],
         area: [],
         warehouse: [],
-        route: [],
+        route: "",
       }));
       return;
     }
 
     const fetchRegions = async () => {
       try {
-        setSkeleton({ ...skeleton, region: true });
-        // Pass company IDs as parameters to regionList
-        // In edit mode, pass allData = true to get all regions
+        setSkeleton((prev) => ({ ...prev, region: true }));
         const regions: ApiResponse<Region[]> = await regionList({
           company_id: form.company.join(","),
           dropdown: 'true',
           ...(!isEditMode && { allData: "true" }),
         });
+
+        // Defensive: handle both { data: Region[] } and Region[]
+        let regionListData: Region[] = [];
+        if (Array.isArray(regions)) {
+          regionListData = regions;
+        } else if (Array.isArray(regions?.data)) {
+          regionListData = regions.data as Region[];
+        }
+
         setRegionOptions(
-          regions?.data?.map((r: Region) => ({
+          regionListData.map((r: Region) => ({
             value: String(r.id),
             label: r.region_name || r.name || "",
-          })) || []
+          }))
         );
-        setSkeleton({ ...skeleton, region: false });
       } catch (err) {
         console.error("Failed to fetch region list:", err);
         setRegionOptions([]);
+      } finally {
+        setSkeleton((prev) => ({ ...prev, region: false }));
       }
     };
 
     fetchRegions();
-  }, [form.company]);
+  }, [form.company, isEditMode]);
 
   // 1️⃣ When Region changes → Fetch Areas
   useEffect(() => {
     if (!form.region.length) {
       setAreaOptions([]);
-      setForm((prev) => ({ ...prev, area: [], warehouse: [], route: [] }));
+      setForm((prev) => ({ ...prev, area: [], warehouse: [], route: "" }));
       return;
     }
 
     const fetchAreas = async () => {
       try {
-        setSkeleton({ ...skeleton, area: true });
-        const res: ApiResponse<{ data: Area[] } | Area[]> = await subRegionList(
-          { region_id: form.region.join(",") ,
-             dropdown: 'true',
-            ...(!isEditMode && { allData: "true" }),
-          }
-        );
-        const areaList =
-          (res as { data: Area[] })?.data || (res as Area[]) || [];
+        setSkeleton((prev) => ({ ...prev, area: true }));
+        const res: ApiResponse<{ data: Area[] } | Area[]> = await subRegionList({
+          region_id: form.region.join(","),
+          dropdown: 'true',
+          ...(!isEditMode && { allData: "true" }),
+        });
+        const areaList = (res as { data: Area[] })?.data || (res as Area[]) || [];
 
         setAreaOptions(
           areaList.map((a: Area) => ({
@@ -524,37 +540,34 @@ export default function AddEditRouteVisit() {
             label: a.area_name || a.name || "",
           }))
         );
-        setSkeleton({ ...skeleton, area: false });
       } catch (err) {
         console.error("Failed to fetch area list:", err);
         setAreaOptions([]);
+      } finally {
+        setSkeleton((prev) => ({ ...prev, area: false }));
       }
     };
 
     fetchAreas();
-  }, [form.region]);
+  }, [form.region, isEditMode]);
 
   // 2️⃣ When Area changes → Fetch Warehouses
   useEffect(() => {
     if (!form.area.length) {
       setWarehouseOptions([]);
-      setForm((prev) => ({ ...prev, warehouse: [], route: [] }));
+      setForm((prev) => ({ ...prev, warehouse: [], route: "" }));
       return;
     }
 
     const fetchWarehouses = async () => {
       try {
-        setSkeleton({ ...skeleton, warehouse: true });
-        let res;
-       if(!isEditMode){ 
-        res =
-          await warehouseList({ area_id: form.area.join(","),dropdown :"true"});
-        } else{
-          res =
-          await warehouseList({ area_id: form.area.join(","), dropdown: 'true' });
-        }
-        const warehousesList =
-          (res as { data: Warehouse[] })?.data || (res as Warehouse[]) || [];
+        setSkeleton((prev) => ({ ...prev, warehouse: true }));
+        const res = await warehouseList({
+          area_id: form.area.join(","),
+          dropdown: "true",
+          ...(isEditMode && { allData: "true" })
+        });
+        const warehousesList = (res as { data: Warehouse[] })?.data || (res as Warehouse[]) || [];
 
         setWarehouseOptions(
           warehousesList.map((w: Warehouse) => ({
@@ -562,36 +575,34 @@ export default function AddEditRouteVisit() {
             label: `${w.warehouse_code} - ${w.warehouse_name || w.name || ""}`,
           }))
         );
-        setSkeleton({ ...skeleton, warehouse: false });
       } catch (err) {
         console.error("Failed to fetch warehouse list:", err);
         setWarehouseOptions([]);
+      } finally {
+        setSkeleton((prev) => ({ ...prev, warehouse: false }));
       }
     };
 
     fetchWarehouses();
-  }, [form.area]);
+  }, [form.area, isEditMode]);
 
   // 3️⃣ When Warehouse changes → Fetch Routes
   useEffect(() => {
-    // isEditMode && setLoading(true);
     if (!form.warehouse.length) {
       setRouteOptions([]);
-      setForm((prev) => ({ ...prev, route: [] }));
+      setForm((prev) => ({ ...prev, route: "" }));
       return;
     }
 
     const fetchRoutes = async () => {
       try {
-        setSkeleton({ ...skeleton, route: true });
+        setSkeleton((prev) => ({ ...prev, route: true }));
         const res: ApiResponse<{ data: Route[] } | Route[]> = await routeList({
           warehouse_id: form.warehouse.join(","),
+          dropdown: 'true',
           ...(!isEditMode && { allData: "true" }),
-          dropdown: 'true'
         });
-        console.log(res);
-        const routeListData =
-          (res as { data: Route[] })?.data || (res as Route[]) || [];
+        const routeListData = (res as { data: Route[] })?.data || (res as Route[]) || [];
 
         setRouteOptions(
           routeListData.map((r: Route) => ({
@@ -599,22 +610,19 @@ export default function AddEditRouteVisit() {
             label: r.route_name || r.name || "",
           }))
         );
-        setSkeleton({ ...skeleton, route: false });
       } catch (err) {
         console.error("Failed to fetch route list:", err);
         setRouteOptions([]);
+      } finally {
+        setSkeleton((prev) => ({ ...prev, route: false }));
       }
-
-      isEditMode && setLoading(false);
     };
 
     fetchRoutes();
-  }, [form.warehouse]);
-
+  }, [form.warehouse, isEditMode]);
   useEffect(() => {
     loadDropdownData();
     if (isEditMode && visitId) {
-      console.log("Loading edit data for ID:", visitId);
       loadVisitData(visitId);
     }
   }, [isEditMode, visitId]);
@@ -622,7 +630,6 @@ export default function AddEditRouteVisit() {
   // ✅ Multi-select handler
   const handleMultiSelectChange = (field: string, value: string[]) => {
     if (field == "salesman_type") {
-      console.log(value);
       setSelectedCustomerType(value[0] || "");
       setForm((prev) => ({ ...prev, [field]: value[0] || "" }));
     } else if (field === "merchandiser") {
@@ -639,11 +646,11 @@ export default function AddEditRouteVisit() {
           region: [],
           area: [],
           warehouse: [],
-          route: [],
+          route: "",
         }),
-        ...(field === "region" && { area: [], warehouse: [], route: [] }),
-        ...(field === "area" && { warehouse: [], route: [] }),
-        ...(field === "warehouse" && { route: [] }),
+        ...(field === "region" && { area: [], warehouse: [], route: "" }),
+        ...(field === "area" && { warehouse: [], route: "" }),
+        ...(field === "warehouse" && { route: "" }),
       }));
     }
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -706,13 +713,10 @@ export default function AddEditRouteVisit() {
         }
       }
 
-      console.log("Form data:", form);
-      console.log("Raw customerSchedules:", customerSchedules);
 
       // ✅ Convert your raw object to expected format - customerSchedules is already in Record format
       const formattedSchedules = convertRowStatesToSchedules(customerSchedules);
 
-      console.log("✅ Converted customer schedules:", formattedSchedules);
 
       // Validate if at least one customer has days
       if (formattedSchedules.length === 0) {
@@ -723,7 +727,6 @@ export default function AddEditRouteVisit() {
       setErrors({});
       setSubmitting(true);
 
-      // ✅ Build payload in correct format
       const payload: Record<string, unknown> = {
         customer_type: Number(form.salesman_type),
         customers: formattedSchedules.map((schedule) => ({
@@ -732,8 +735,8 @@ export default function AddEditRouteVisit() {
           region: form.region.join(","),
           area: form.area.join(","),
           warehouse: form.warehouse.join(","),
-          route: form.route.join(","),
-          days: schedule.days.join(","), // ✅ Join days
+          route: [form.route],
+          days: schedule.days.join(","),
           from_date: form.from_date,
           to_date: form.to_date,
           status: Number(form.status),
@@ -746,14 +749,11 @@ export default function AddEditRouteVisit() {
         payload.merchandiser_id = Number(merchId);
       }
 
-      console.log("Submitting payload:", JSON.stringify(payload, null, 2));
 
       let res: ApiResponse<Record<string, unknown>>;
-      if (isEditMode && visitId) {
-        console.log("Updating existing route visit...");
-        res = await updateRouteVisitDetails(payload);
+      if (isEditMode && headerUuid) {
+        res = await updateRouteVisitDetails(headerUuid, payload);
       } else {
-        console.log("Creating new route visit...");
         res = await saveRouteVisit(payload);
       }
 
@@ -795,6 +795,23 @@ export default function AddEditRouteVisit() {
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
+        function setFieldValue(field: string, value: any): void {
+          setForm((prev) => ({
+            ...prev,
+            [field]: value,
+            // Reset dependent fields when parent changes
+            ...(field === "company" && {
+              region: [],
+              area: [],
+              warehouse: [],
+              route: "",
+            }),
+            ...(field === "region" && { area: [], warehouse: [], route: "" }),
+            ...(field === "area" && { warehouse: [], route: "" }),
+            ...(field === "warehouse" && { route: "" }),
+          }));
+          if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+        }
         return (
           <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
             <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -805,9 +822,10 @@ export default function AddEditRouteVisit() {
                   label="From Date"
                   type="date"
                   value={form.from_date ? form.from_date.split("T")[0] : ""}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, from_date: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, from_date: e.target.value }));
+                    if (errors.from_date) setErrors((prev) => ({ ...prev, from_date: "" }));
+                  }}
                   error={errors.from_date}
                 />
               </div>
@@ -819,9 +837,11 @@ export default function AddEditRouteVisit() {
                   label="To Date"
                   type="date"
                   value={form.to_date ? form.to_date.split("T")[0] : ""}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, to_date: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, to_date: e.target.value }));
+                    if (errors.to_date) setErrors((prev) => ({ ...prev, to_date: "" }));
+                  }}
+                  min={form.from_date}
                   error={errors.to_date}
                 />
               </div>
@@ -830,6 +850,7 @@ export default function AddEditRouteVisit() {
               <div>
                 <InputFields
                   required
+                  disabled={isEditMode}
                   label="Customer Type"
                   value={form.salesman_type}
                   onChange={(e) =>
@@ -874,6 +895,7 @@ export default function AddEditRouteVisit() {
                 <InputFields
                   required
                   label="Company"
+                  searchable
                   value={form.company}
                   multiSelectChips={true}
                   onChange={(e) =>
@@ -893,6 +915,7 @@ export default function AddEditRouteVisit() {
               <div>
                 <InputFields
                   required
+                  searchable
                   disabled={form.company.length === 0}
                   label="Region"
                   value={form.region}
@@ -915,6 +938,7 @@ export default function AddEditRouteVisit() {
                 <div>
                   <InputFields
                     required
+                    searchable
                     disabled={form.region.length === 0}
                     label="Area"
                     multiSelectChips={true}
@@ -938,6 +962,7 @@ export default function AddEditRouteVisit() {
                 <div>
                   <InputFields
                     required
+                    searchable
                     disabled={form.area.length === 0 || areaOptions.length === 0}
                     label="Distributors"
                     multiSelectChips={true}
@@ -961,19 +986,16 @@ export default function AddEditRouteVisit() {
                 <div>
                   <InputFields
                     required
+                    searchable
+                    placeholder="Select Route"
                     disabled={form.warehouse.length === 0}
                     label="Route"
-                    multiSelectChips={true}
                     value={form.route}
                     onChange={(e) =>
-                      handleMultiSelectChange(
-                        "route",
-                        Array.isArray(e.target.value) ? e.target.value : []
-                      )
+                      setFieldValue("route", e.target.value)
                     }
                     showSkeleton={skeleton.route}
                     options={routeOptions}
-                    isSingle={false}
                     error={errors.route}
                   />
                 </div>
@@ -1003,11 +1025,12 @@ export default function AddEditRouteVisit() {
         return (
           <div className="bg-white rounded-2xl shadow divide-y divide-gray-200 mb-6">
             <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Customer Schedule
+                </h3>
 
-
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Customer Schedule
-              </h3>
+              </div>
               <Table
                 customers={customers}
                 setCustomerSchedules={setCustomerSchedules}
@@ -1042,7 +1065,7 @@ export default function AddEditRouteVisit() {
             <Icon icon="lucide:arrow-left" width={24} />
           </Link>
           <h1 className="text-xl font-semibold text-gray-900">
-            {isEditMode ? "Update Route Visit" : "Add Route Visit"}
+            {isEditMode ? "Update Route Visit Plan" : "Add Route Visit Plan"}
           </h1>
         </div>
       </div>

@@ -34,6 +34,16 @@ interface ShelfDisplayItem {
   valid_to: string;
 }
 
+interface ShelfDisplayItemSearch {
+  uuid: string;
+  shelf_name: string;
+  height: string;
+  width: string;
+  depth: string;
+  valid_from: string;
+  valid_to: string;
+}
+
 const dropdownDataList = [
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
 ];
@@ -64,7 +74,6 @@ export default function ShelfDisplay() {
       setLoading(true);
 
       const res = await exportShelveData({ format: fileType });
-      console.log("Export API Response:", res);
 
       let downloadUrl = "";
 
@@ -117,7 +126,6 @@ export default function ShelfDisplay() {
         per_page: pageSize.toString(),
       });
 
-      console.log(res);
       setLoading(false);
       if (res.error) {
         showSnackbar(
@@ -145,7 +153,6 @@ export default function ShelfDisplay() {
     async (searchQuery: string): Promise<searchReturnType> => {
       setLoading(true);
       try {
-        console.log(searchQuery);
         // always start from page 1 for a new search
         const res = await shelfDisplayGlobalSearch({
           search: searchQuery,
@@ -154,9 +161,9 @@ export default function ShelfDisplay() {
         setLoading(false);
         if (res.error) throw new Error(res.message || "Search failed");
 
-        const data: TableDataType[] = res.data.map((item: ShelfDisplayItem) => ({
+        const data: TableDataType[] = res.data.map((item: ShelfDisplayItemSearch) => ({
           id: item.uuid,
-          self_name: item.self_name,
+          shelf_name: item.shelf_name,
           height: item.height,
           width: item.width,
           depth: item.depth,
@@ -246,7 +253,7 @@ export default function ShelfDisplay() {
                 render: (row: TableDataType) => formatDate(row.valid_to),
               },
             ],
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               {
                 icon: "lucide:eye",

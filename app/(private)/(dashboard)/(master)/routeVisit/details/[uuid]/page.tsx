@@ -44,7 +44,7 @@ interface CustomerItem {
   status: string;
 }
 
-const title = "Route Visit Details";
+const title = "Route Visit Plan Details";
 const backBtnUrl = "/routeVisit";
 export function getPaymentType(value: string): string {
   switch (value) {
@@ -90,7 +90,6 @@ export default function ViewPage() {
           );
           return;
         }
-        console.log(res)
         setCustomer(res.data);
       } catch {
         showSnackbar("Unable to fetch company customer details", "error");

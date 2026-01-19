@@ -5,6 +5,7 @@ import { Icon } from "@iconify-icon/react";
 import CustomDropdown from "./customDropdown";
 import BorderIconButton from "./borderIconButton";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import UploadPopup from "./UploadPopup";
 import FilterDropdown from "./filterDropdown";
 import InputFields from "./inputFields";
 import SidebarBtn from "./dashboardSidebarBtn";
@@ -13,6 +14,7 @@ import DismissibleDropdown from "./dismissibleDropdown";
 import { naturalSort } from "../(private)/utils/naturalSort";
 import { CustomTableSkelton } from "./customSkeleton";
 import Draggable from "react-draggable";
+import Skeleton from "@mui/material/Skeleton";
 
 export type listReturnType = {
     data: TableDataType[];
@@ -65,7 +67,7 @@ export type configType = {
         ) => Promise<listReturnType> | listReturnType;
         list?: (
             pageNo: number,
-            pageSize: number
+            pageSize: number,
         ) => Promise<listReturnType> | listReturnType;
         filterBy?: (
             payload: Record<string, string | number | null>,
@@ -85,6 +87,20 @@ export type configType = {
         columnFilter?: boolean;
         filterByFields?: FilterField[];
         filterRenderer?: (props: FilterRendererProps) => React.ReactNode;
+        exportButton?: {
+            threeDotLoading?: { csv: boolean; xlsx: boolean ; xls?: boolean; xslx?:boolean}; 
+            show: boolean;
+            onClick: (api: (params?: Record<string, any>) => Promise<any>, data?: TableDataType[]) => void;
+        };
+        /**
+         * Optional upload prop. If provided, shows upload icon next to exportButton.
+         * dummyApi: function for dummy upload
+         * api: function for real upload
+         */
+        upload?: {
+            dummyApi: (...args: any[]) => Promise<any>;
+            api: (...args: any[]) => Promise<any>;
+        };
         threeDot?: {
             label: string;
             labelTw?: string;
@@ -95,6 +111,7 @@ export type configType = {
             showWhen?: (data: TableDataType[], selectedRow?: number[]) => boolean;
         }[],
         selectedCount?: {
+            
             label?: string | React.ReactNode;
             labelTw?: string;
             onClick?: (data: TableDataType[], selectedRow?: number[]) => void;
@@ -123,6 +140,7 @@ export type configType = {
     pageSizeOptions?: number[]; // yet to implement
     rowSelection?: boolean;
     onRowSelectionChange?: (selectedRows: number[]) => void;
+    rowColor?: (row: TableDataType) => string;
     dragableColumn?: boolean;
     floatingInfoBar?: {
         showByDefault?: boolean;
@@ -147,8 +165,9 @@ export type configType = {
         sticky?: string;
         isSortable?: boolean;
         showByDefault?: boolean;
-        filter?: {
+         filter?: {
             isFilterable?: boolean;
+            filterkey?: string;
             width?: number | string;
             height?: number | string;
             maxHeight?: number | string;
@@ -167,6 +186,11 @@ export type configType = {
                     pageNo?: number,
                 ) => Promise<listReturnType> | listReturnType
             ) => React.ReactNode;
+        };
+        filterStatus?: {
+            enabled: boolean;
+            onFilter: (status: boolean) => Promise<void>;
+            currentFilter?: boolean | null;
         };
     }[];
 };
@@ -228,11 +252,12 @@ interface TableProps {
     // Accept either array or object with pagination
     data?: TableDataType[] | TableDataWithPagination;
     config: configType;
+    directFilterRenderer?: React.ReactNode;
 }
 
 const defaultPageSize = 50;
 
-export default function Table({ refreshKey = 0, data, config }: TableProps) {
+export default function Table({ refreshKey = 0, data, config, directFilterRenderer }: TableProps) {
     return (
         <ContextProvider>
             <TableContainer
@@ -243,6 +268,7 @@ export default function Table({ refreshKey = 0, data, config }: TableProps) {
                     dragableColumn: true,
                     ...config
                 }}
+                directFilterRenderer={directFilterRenderer}
             />
         </ContextProvider>
     );
@@ -271,7 +297,9 @@ function ContextProvider({ children }: { children: React.ReactNode }) {
     );
 }
 
-function TableContainer({ refreshKey, data, config }: TableProps) {
+function TableContainer({ refreshKey, data, config, directFilterRenderer }: TableProps) {
+    // Ref to track last API call params
+    const lastApiCallRef = useRef<{ pageNo: number; pageSize: number } | null>(null);
     const { setSelectedColumns } = useContext(ColumnFilterConfig);
     const { setConfig } = useContext(Config);
     const { tableDetails, setTableDetails, setNestedLoading, setInitialTableData } = useContext(TableDetails);
@@ -303,7 +331,6 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
         if (data) {
             const date = new Date();
             setNestedLoading(true);
-            // If data is an array, wrap in pagination object
             let tableDataWithPagination: TableDataWithPagination;
             if (Array.isArray(data)) {
                 tableDataWithPagination = {
@@ -320,63 +347,68 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
             setTableDetails(tableDataWithPagination);
             setDisplayedData(tableDataWithPagination.data);
             try {
-                                setInitialTableData(tableDataWithPagination);
-                            } catch (err) {
-                                /* ignore */
-                            }
-                            setTimeout(() => setNestedLoading(false), Math.max(0, 1000 - (new Date().getTime() - date.getTime())));
-                        }
-
-                        // if api is passed, use default values
-                        else if (config.api?.list) {
-                            const MIN_LOADING_MS = 1000; // ensure nested loading lasts at least 1s
-                            const start = Date.now();
-                            try {
-                                setNestedLoading(true);
-                                const result = await config.api.list(
-                                    1,
-                                    config.pageSize || defaultPageSize
-                                );
-                                const resolvedResult =
-                                    result instanceof Promise ? await result : result;
-                                const { data, total, currentPage } = resolvedResult;
-                                const tableInit = {
-                                    data,
-                                    total,
-                                    currentPage: currentPage - 1,
-                                    pageSize: config.pageSize || defaultPageSize,
-                                };
-                                setTableDetails(tableInit);
-                                setDisplayedData(data);
-                                try {
-                                    setInitialTableData(tableInit);
-                                } catch (err) {
-                                    /* ignore */
-                                }
-                            } finally {
-                                // guarantee minimum display time for nested loading
-                                const elapsed = Date.now() - start;
-                                const wait = Math.max(0, MIN_LOADING_MS - elapsed);
-                                if (wait > 0) {
-                                    await new Promise((res) => setTimeout(res, wait + 500));
-                                }
-                                setNestedLoading(false);
-                            }
-                        }
-
-                        // nothing is passed
-                        else {
-                            throw new Error(
-                                "Either pass data or list API function in Table config prop"
-                            );
-                        }
+                setInitialTableData(tableDataWithPagination);
+            } catch (err) {
+                /* ignore */
+            }
+            setTimeout(() => setNestedLoading(false), Math.max(0, 1000 - (new Date().getTime() - date.getTime())));
+        }
+        // if api is passed, use default values
+        else if (config.api?.list) {
+            const MIN_LOADING_MS = 1000; // ensure nested loading lasts at least 1s
+            const start = Date.now();
+            const pageNo = 1;
+            const pageSize = config.pageSize || defaultPageSize;
+            // Only call API if params changed
+            if (
+                !lastApiCallRef.current ||
+                lastApiCallRef.current.pageNo !== pageNo ||
+                lastApiCallRef.current.pageSize !== pageSize
+            ) {
+                lastApiCallRef.current = { pageNo, pageSize };
+                try {
+                    setNestedLoading(true);
+                    const result = await config.api.list(pageNo, pageSize);
+                    const resolvedResult = result instanceof Promise ? await result : result;
+                    const { data, total, currentPage } = resolvedResult;
+                    const tableInit = {
+                        data,
+                        total,
+                        currentPage: currentPage - 1,
+                        pageSize,
+                    };
+                    setTableDetails(tableInit);
+                    setDisplayedData(data);
+                    try {
+                        setInitialTableData(tableInit);
+                    } catch (err) {
+                        /* ignore */
                     }
+                } finally {
+                    const elapsed = Date.now() - start;
+                    const wait = Math.max(0, MIN_LOADING_MS - elapsed);
+                    if (wait > 0) {
+                        await new Promise((res) => setTimeout(res, wait + 500));
+                    }
+                    setNestedLoading(false);
+                }
+            }
+        }
+        // nothing is passed
+        else {
+            throw new Error(
+                "Either pass data or list API function in Table config prop"
+            );
+        }
+    }
 
                     useEffect(() => {
                         setConfig(config);
                     }, [config]);
 
                     useEffect(() => {
+                        // Reset lastApiCallRef when refreshKey changes to force API re-fetch
+                        lastApiCallRef.current = null;
                         checkForData();
 
                         // Only initialize "select all" when there is no saved selection in localStorage.
@@ -409,6 +441,14 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
                         }
                     }, [selectedRow, config.onRowSelectionChange]);
 
+                    const [showUploadPopup, setShowUploadPopup] = useState(false);
+                    // Listen for open-upload-popup event
+                    useEffect(() => {
+                        const handler = () => setShowUploadPopup(true);
+                        window.addEventListener('open-upload-popup', handler);
+                        return () => window.removeEventListener('open-upload-popup', handler);
+                    }, []);
+
                     const orderedColumns = (columnOrder || []).map((i) => config.columns[i]).filter(Boolean);
 
                     return (
@@ -426,20 +466,93 @@ function TableContainer({ refreshKey, data, config }: TableProps) {
                                             config.header?.wholeTableActions?.map(
                                                 (action) => action
                                             )}
+                                            {config.header?.exportButton && (
+                                                <div className="flex gap-[12px] relative items-center">
+                                                    <BorderIconButton
+                                                        icon={(config.header?.exportButton?.threeDotLoading?.xlsx || config.header?.exportButton?.threeDotLoading?.xslx || config.header?.exportButton?.threeDotLoading?.xls) ? "eos-icons:three-dots-loading" : "gala:file-document"}
+                                                        label="Export Excel"
+                                                        onClick={async () => {
+                                                            if (config.header?.exportButton?.threeDotLoading?.xlsx || config.header?.exportButton?.threeDotLoading?.xslx || config.header?.exportButton?.threeDotLoading?.xls) return;
+                                                            if (!config.header?.exportButton?.onClick) return;
+                                                            config.header.exportButton.onClick(config.api?.list as any, displayedData);
+                                                        }}
+                                                    />
+                                                    {/* Upload icon next to exportButton if upload prop is provided */}
+                                                    {config.header?.upload && (
+                                                        <BorderIconButton
+                                                            icon="material-symbols:upload-rounded"
+                                                            // label="Upload"
+                                                            onClick={() => setShowUploadPopup(true)}
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
                                         {/* If you want to add threeDot dropdown, do it in the correct place in header */}
+                                      {config.header?.threeDot && (() => {
+                            
+                                            const visibleOptions = config.header.threeDot.filter(option => {
+                                                const shouldShow = option.showOnSelect ? selectedRow.length > 0 : option.showWhen ? option.showWhen(displayedData, selectedRow) : true;
+                                                return shouldShow;
+                                            });
+                                            if (visibleOptions.length === 0) return null;
+                                            return (
+                                                <div className="flex gap-[12px] relative">
+                                                    <DismissibleDropdown
+                                                        isOpen={showDropdown}
+                                                        setIsOpen={setShowDropdown}
+                                                        button={
+                                                            <BorderIconButton icon="ic:sharp-more-vert" />
+                                                        }
+                                                        dropdown={
+                                                            <div className="absolute top-[40px] right-0 z-30 w-[226px]">
+                                                                <CustomDropdown>
+                                                                    {visibleOptions.map((option, idx) => (
+                                                                        <div
+                                                                            key={idx}
+                                                                            className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA] cursor-pointer"
+                                                                            onClick={() => option.onClick && option.onClick(displayedData, selectedRow)}
+                                                                        >
+                                                                            {option?.icon && (
+                                                                                <Icon
+                                                                                    icon={option.icon}
+                                                                                    width={option.iconWidth || 20}
+                                                                                    className="text-[#717680]"
+                                                                                />
+                                                                            )}
+                                                                            <span className={`text-[#181D27] font-[500] text-[16px] ${option?.labelTw}`}>
+                                                                                {option.label}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </CustomDropdown>
+                                                            </div>
+                                                        }
+                                                    />
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             )}
                             <div className="flex flex-col bg-white w-full border-[1px] border-[#E9EAEB] rounded-[8px] overflow-hidden">
-                                <TableHeader />
+                                <TableHeader directFilterRenderer={directFilterRenderer} />
                                 <TableBody orderedColumns={orderedColumns} setColumnOrder={setColumnOrder} />
                                 <TableFooter />
                             </div>
+                            {/* Upload Popup */}
+                            {config.header?.upload && (
+                                <UploadPopup
+                                    open={showUploadPopup}
+                                    onClose={() => setShowUploadPopup(false)}
+                                    dummyApi={config.header.upload.dummyApi}
+                                    api={config.header.upload.api}
+                                />
+                            )}
                         </>
                     );
                 }
 
-function TableHeader() {
+function TableHeader({ directFilterRenderer }: { directFilterRenderer?: React.ReactNode }) {
     const { config } = useContext(Config);
     const { tableDetails, setTableDetails, setNestedLoading, setSearchState, searchState, initialTableData } = useContext(TableDetails);
     const [searchBarValue, setSearchBarValue] = useState("");
@@ -455,7 +568,6 @@ function TableHeader() {
             );
             const resolvedResult = result instanceof Promise ? await result : result;
             const { data, pageSize, total, currentPage } = resolvedResult;
-            // console.log(resolvedResult);
             setTableDetails({
                 data,
                 total: total || 0,
@@ -487,9 +599,13 @@ function TableHeader() {
                                 <div className="w-full">
                                     <SearchBar
                                         value={searchBarValue}
-                                        onChange={(
+                                        onChange={async (
                                             e: React.ChangeEvent<HTMLInputElement>
                                         ) => setSearchBarValue(e.target.value)}
+                                        onClear={async () => {
+                                            setSearchBarValue("");
+                                            handleSearch();
+                                        }}
                                         onEnterPress={handleSearch}
                                     />
                                 </div>
@@ -502,7 +618,11 @@ function TableHeader() {
                             )}
 
                             {/* header filter panel button (shows configurable fields or custom renderer) */}
-                            {(config.header?.filterByFields?.length || config.header?.filterRenderer) && (
+                            {directFilterRenderer ? (
+                                <div className="ml-2">
+                                    {directFilterRenderer}
+                                </div>
+                            ) : (config.header?.filterByFields?.length || config.header?.filterRenderer) && (
                                 <div className="ml-2">
                                     <FilterBy />
                                 </div>
@@ -828,7 +948,7 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
                                                 {col.label}{" "}
                                                 {col.filter && (
                                                     <FilterTableHeader
-                                                        column={col.key}
+                                                        column={col?.filter?.filterkey || col.key}
                                                         dimensions={col.filter}
                                                         filterConfig={col.filter}
                                                     >
@@ -856,6 +976,32 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
                                                         }
                                                     />
                                                 )}
+                                                {col.filterStatus?.enabled && (
+                                                    <div className="flex flex-col gap-0 ml-1">
+                                                        <Icon
+                                                            icon="ep:arrow-up"
+                                                            width={12}
+                                                            height={12}
+                                                            className={`cursor-pointer transition-colors ${
+                                                                col.filterStatus.currentFilter === true
+                                                                    ? "text-blue-600"
+                                                                    : "text-gray-400 hover:text-gray-600"
+                                                            }`}
+                                                            onClick={() => col.filterStatus?.onFilter(true)}
+                                                        />
+                                                        <Icon
+                                                            icon="ep:arrow-down"
+                                                            width={12}
+                                                            height={12}
+                                                            className={`cursor-pointer transition-colors ${
+                                                                col.filterStatus.currentFilter === false
+                                                                    ? "text-blue-600"
+                                                                    : "text-gray-400 hover:text-gray-600"
+                                                            }`}
+                                                            onClick={() => col.filterStatus?.onFilter(false)}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         </th>
                                     );
@@ -877,14 +1023,19 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
                     <tbody className="text-[14px] bg-white text-[#535862]">
                         {displayedData.length > 0 &&
                             // repeat row 10 times
-                            displayedData.map((row, index) => (
+                            displayedData.map((row, index) => {
+                                const rowBgColor = config.rowColor ? config.rowColor(row) : undefined;
+                                return (
                                 <tr
                                     className="border-b-[1px] border-[#E9EAEB] capitalize"
                                     key={index}
+                                    style={{
+                                        backgroundColor: rowBgColor
+                                    }}
                                 >
                                     {rowSelection &&
                                         selectedColumns.length > 0 && (
-                                            <td className="sm:sticky left-0 bg-white px-[10px] py-[12px]">
+                                            <td className="sm:sticky left-0 px-[10px] py-[12px]" style={{ backgroundColor: rowBgColor || 'white' }}>
                                                 <div className="flex items-center gap-[12px] font-[500]">
                                                     <CustomCheckbox
                                                         id={"check" + index}
@@ -909,13 +1060,14 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
                                             <td
                                                 key={col.key}
                                                 width={col.width}
-                                                className={`px-[24px] py-[12px] bg-white ${col.sticky ? "z-10 md:sticky" : ""} ${col.sticky === "left"
+                                                className={`px-[24px] py-[12px] ${col.sticky ? "z-10 md:sticky" : ""} ${col.sticky === "left"
                                                     ? "left-0"
                                                     : ""
                                                     } ${col.sticky === "right"
                                                         ? "right-0"
                                                         : ""
                                                     }`}
+                                                style={{ backgroundColor: rowBgColor || 'white' }}
                                             >
                                                 {col.render ? (
                                                     col.render(row)
@@ -935,37 +1087,42 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
                                             sm:sticky right-0 z-[10]
                                             px-[2px] py-[12px]
                                             border-[#E9EAEB]
-                                            bg-white whitespace-nowrap
+                                            whitespace-nowrap
                                             before:content-[''] before:absolute before:top-0 before:left-0 before:w-[1px] before:h-full before:bg-[#E9EAEB]
                                             "
+                                            style={{ backgroundColor: rowBgColor || 'white' }}
                                             >
                                                 <div className="flex items-center gap-[4px]">
                                                     {rowActions.map(
                                                         (action, index) => (
-                                                            <div 
-                                                                key={index} 
-                                                                onClick={() => {
-                                                                    if (action.onClick) {
-                                                                        action.onClick(row);
-                                                                    }
-                                                                }}
-                                                                className="flex p-[10px] cursor-pointer text-[#5E5E5E] transition-all duration-200 ease-in-out hover:text-[#EA0A2A] hover:scale-110"
-                                                            >
-                                                            {action.icon 
-                                                                ? <Icon
-                                                                    key={index}
-                                                                    icon={action.icon}
-                                                                    width={20}
-                                                                /> 
-                                                                : <span>{action.label}</span>
-                                                            }
-                                                        </div>)
+                                                            <>
+                                                             <IconWithLoading action={action} index={index} row={row} />
+                                                             </>
+                                                        //     <div 
+                                                        //         key={index} 
+                                                        //         onClick={() => {
+                                                        //             if (action.onClick) {
+                                                        //                 action.onClick(row);
+                                                        //             }
+                                                        //         }}
+                                                        //         className="flex p-[10px] cursor-pointer text-[#5E5E5E] transition-all duration-200 ease-in-out hover:text-[#EA0A2A] hover:scale-110"
+                                                        //     >
+                                                        //     {action.icon 
+                                                        //         ? <Icon
+                                                        //             key={index}
+                                                        //             icon={action.icon}
+                                                        //             width={20}
+                                                        //         /> 
+                                                        //         : <span>{action.label}</span>
+                                                        //     }
+                                                        // </div>
+                                                        )
                                                     )}
                                                 </div>
                                             </td>
                                         )}
                                 </tr>
-                            ))}
+                            )})}
                     </tbody>
                 </table>
             </div>
@@ -985,6 +1142,30 @@ function TableBody({ orderedColumns, setColumnOrder }: { orderedColumns: configT
     );
 }
 
+function IconWithLoading({ action, index, row }: { action: any; index: number; row: any }){
+    const [isLoading, setIsLoading] = useState(false);
+    return (<> {isLoading ? <div className="flex justify-center items-center"><Skeleton width={20}/></div> : <div 
+                                                                key={index} 
+                                                                onClick={async () => {
+                                                                    if (action.onClick) {
+                                                                        setIsLoading(true);
+                                                                        await action.onClick(row);
+                                                                        setIsLoading(false);
+                                                                    }
+                                                                }}
+                                                                className="flex p-[10px] cursor-pointer text-[#5E5E5E] transition-all duration-200 ease-in-out hover:text-[#EA0A2A] hover:scale-110"
+                                                            >
+                                                            {action.icon  
+                                                                ? <Icon
+                                                                    key={index}
+                                                                    icon={action.icon}
+                                                                    width={20}
+                                                                /> 
+                                                                : <span>{action.label}</span>
+                                                            }
+                                                        </div>
+}</>)
+}
 function FilterTableHeader({
     column,
     dimensions,
@@ -1008,6 +1189,9 @@ function FilterTableHeader({
     children?: React.ReactNode;
 }) {
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+    const { config } = useContext(Config);
+    const { tableDetails, setTableDetails, setNestedLoading } = useContext(TableDetails);
+    const { api } = config;
     const [searchBarValue, setSearchBarValue] = useState("");
     const [filteredOptions, setFilteredOptions] = useState<Array<{ value: string; label: string }>>([]);
     const [selectedValues, setSelectedValues] = useState<string[]>([]);
@@ -1018,10 +1202,8 @@ function FilterTableHeader({
     useEffect(() => {
         if (filterConfig?.options) {
             setFilteredOptions(filterConfig.options);
-            // console.log('FilterTableHeader options:', filterConfig.options);
         } else {
             setFilteredOptions([]);
-            // console.log('FilterTableHeader options are empty or undefined');
         }
     }, [filterConfig?.options]);
 
@@ -1069,7 +1251,7 @@ function FilterTableHeader({
         // If no onSearch, local filtering is handled by useEffect above
     }
 
-    function handleSelect(value: string) {
+    async function handleSelect(value: string) {
         const isSingle = filterConfig?.isSingle !== undefined ? filterConfig.isSingle : true;
         if (isSingle) {
             // If already selected, deselect (clear filter)
@@ -1081,32 +1263,92 @@ function FilterTableHeader({
                     try {
                         setFilterState(prev => ({ applied: false, payload: { ...(prev?.payload || {}), [column]: "" } }));
                     } catch (err) { }
-                } else {
+                    // Call default list API and clear search filter
+                    if(api?.list) {
+                        try {
+                            setNestedLoading(true);
+                            const res = api.list(1, defaultPageSize);
+                            const result = res instanceof Promise ? await res : res;
+                            const { data, total, currentPage } = result;
+                            setTableDetails({
+                                ...tableDetails,
+                                data,
+                                currentPage: currentPage - 1,
+                                total,
+                                pageSize: defaultPageSize,
+                            });
+                        } catch (err) { /* ignore */ }
+                        finally { setNestedLoading(false); }
+                    }
+                } 
+                else {
                     filterConfig.onSelect(value);
-                    // persist selection in global filter state so header survives refresh
                     try {
                         setFilterState(prev => ({ applied: true, payload: { ...(prev?.payload || {}), [column]: value } }));
                     } catch (err) { }
+                    if(api?.search) {
+                        try {
+                            setNestedLoading(true);
+                            const res = api.search(value, defaultPageSize, column, 1);
+                            const result = res instanceof Promise ? await res : res;
+                            const { data, total, currentPage } = result;
+                            setTableDetails({
+                                ...tableDetails,
+                                data,
+                                currentPage: currentPage - 1,
+                                total,
+                                pageSize: defaultPageSize,
+                            });
+                        } catch (err) { /* ignore */ }
+                        finally { setNestedLoading(false); }
+                    }
                 }
             }
             setShowFilterDropdown(false);
         } else {
-            setSelectedValues((prev) => {
-                let updated: string[];
-                if (prev.includes(value)) {
-                    updated = prev.filter((v) => v !== value);
-                } else {
-                    updated = [...prev, value];
-                }
-                // persist multi-select in global filter state
-                try {
-                    setFilterState(prevState => ({ applied: updated.length > 0, payload: { ...(prevState?.payload || {}), [column]: updated } }));
-                } catch (err) { }
-                if (filterConfig?.onSelect) filterConfig.onSelect(updated);
-                return updated;
-            });
+            let updated: string[];
+            if (selectedValues.includes(value)) {
+                updated = selectedValues.filter((v) => v !== value);
+            } else {
+                updated = [...selectedValues, value];
+            }
+            // persist multi-select in global filter state
+            try {
+                setFilterState(prevState => ({ applied: updated.length > 0, payload: { ...(prevState?.payload || {}), [column]: updated } }));
+            } catch (err) { }
+            if (filterConfig?.onSelect) filterConfig.onSelect(String(updated));
+            setSelectedValues(updated);
         }
     }
+// function handleSelect(value: string) {
+//         const isSingle = filterConfig?.isSingle !== undefined ? filterConfig.isSingle : true;
+//         if (isSingle) {
+//             // If already selected, deselect (clear filter)
+//             const selectedValue = filterConfig?.selectedValue;
+//             if (filterConfig?.onSelect) {
+//                 if (selectedValue === value) {
+//                     filterConfig.onSelect(""); // Deselect
+//                 } else {
+//                     filterConfig.onSelect(value);
+//                 }
+//             }
+//             setShowFilterDropdown(false);
+//         } else {
+//             setSelectedValues((prev) => {
+//                 if (prev.includes(value)) {
+//                     // remove
+//                     const updated = prev.filter((v) => v !== value);
+//                     if (filterConfig?.onSelect) filterConfig.onSelect(updated);
+//                     return updated;
+//                 } else {
+//                     // add
+//                     const updated = [...prev, value];
+//                     if (filterConfig?.onSelect) filterConfig.onSelect(updated);
+//                     return updated;
+//                 }
+//             });
+//         }
+//     }
 
     return (
         <DismissibleDropdown
@@ -1134,32 +1376,12 @@ function FilterTableHeader({
                     {children ? (
                         <div>{children}</div>
                     ) : filteredOptions.length > 0 ? (
-                        (filterConfig && typeof filterConfig.selectedValue === 'string' && filterConfig.onSelect) ? (
-                            // prefer persisted selection (selectedRef) when available
+                        filterConfig?.isSingle !== false ? (
                             <FilterOptionList
                                 options={filteredOptions}
-                                selectedValue={typeof selectedRef.current === 'string' ? (selectedRef.current as string) : (filterConfig.selectedValue as string)}
-                                onSelect={(v: string) => {
-                                    // call parent's onSelect
-                                    try { filterConfig.onSelect && filterConfig.onSelect(v); } catch (err) { }
-                                    // persist into global filter state
-                                    try { setFilterState(prev => ({ applied: !!v, payload: { ...(prev?.payload || {}), [column]: v } })); } catch (err) { }
-                                }}
+                                selectedValue={typeof selectedRef.current === 'string' ? (selectedRef.current as string) : (filterConfig?.selectedValue ?? "")}
+                                onSelect={handleSelect}
                             />
-                        ) : filterConfig?.isSingle !== false ? (
-                            filteredOptions.map((option, idx) => {
-                                const currentSingle = typeof selectedRef.current === 'string' ? (selectedRef.current as string) : (filterConfig?.selectedValue ?? null);
-                                const isSelected = currentSingle === option.value || selectedValues.includes(option.value);
-                                return (
-                                    <div
-                                        key={option.value}
-                                        className={`font-normal text-[14px] ${isSelected ? 'text-[#EA0A2A] text-[15px] font-semibold' : 'text-[#181D27]'} flex gap-x-[8px] py-[10px] px-[14px] hover:bg-[#FAFAFA] cursor-pointer`}
-                                        onClick={() => handleSelect(option.value)}
-                                    >
-                                        <span className="text-[#535862]">{option.label}</span>
-                                    </div>
-                                );
-                            })
                         ) : (
                             filteredOptions.map((option, idx) => (
                                 <div
@@ -1466,7 +1688,7 @@ function PaginationBtn({
 }) {
     return (
         <div
-            className={`min-w-[40px] h-[40px] rounded-[8px] p-[12px] flex items-center justify-center cursor-pointer ${isActive
+            className={`min-w-[40px] h-[40px] rounded-[8px] p-[12px] flex items-center justify-center ${label === '...' ? '' : 'cursor-pointer'} ${isActive
                 ? "bg-[#FFF0F2] text-[#EA0A2A]"
                 : "bg-tranparent text-[#717680]"
                 }`}
@@ -1570,11 +1792,7 @@ function FilterBy() {
         if (config.api?.filterBy) {
             try {
                 setNestedLoading(true);
-                // convert array filter values into comma-separated strings for API
-                // Use `applyWhen` predicate (if provided on a FilterField) to
-                // decide whether to include a key in the payload. This makes the
-                // filter behavior reusable: e.g. date start/end can both be
-                // required before applying either.
+                
                 const payloadForApi: Record<string, string | number | null> = {};
                 const fields = config.header?.filterByFields || [];
                 Object.keys(filters || {}).forEach((k) => {

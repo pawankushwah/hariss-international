@@ -7,7 +7,7 @@ import Table, { listReturnType, TableDataType } from "@/app/components/customTab
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import DismissibleDropdown from "@/app/components/dismissibleDropdown";
 import StatusBtn from "@/app/components/statusBtn2";
-import { updateItemStatus, itemList, itemGlobalSearch, downloadFile, itemExport } from "@/app/services/allApi";
+import { updateItemStatus, itemList, itemGlobalSearch, downloadFile, itemExport, statusFilter } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { Icon } from "@iconify-icon/react";
@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ItemPage from "./itemPopup";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
-
+import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 interface DropdownItem {
   icon: string;
   label: string;
@@ -40,17 +40,23 @@ interface LocalTableDataType {
 
 
 export default function Item() {
+  const { itemCategoryAllOptions, ensureAllItemCategoryLoaded } = useAllDropdownListData();
   const { setLoading } = useLoading();
   const { can, permissions } = usePagePermissions();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentStatusFilter, setCurrentStatusFilter] = useState<boolean | null>(null);
 
+  useEffect(() => {
+    ensureAllItemCategoryLoaded();
+  }, [ensureAllItemCategoryLoaded]);
   // Refresh table when permissions load
   useEffect(() => {
     if (permissions.length > 0) {
       setRefreshKey((prev) => prev + 1);
     }
   }, [permissions]);
-
+  const [categoryId, setcategoryId] = useState<string>("");
+  const [searchFilterValue, setSearchFilterValue] = useState<string>("");
   // const [showDropdown, setShowDropdown] = useState(false);
   // const [showDeletePopup, setShowDeletePopup] = useState(false);
   // const [selectedRow, setSelectedRow] = useState<LocalTableDataType | null>(null);
@@ -63,6 +69,20 @@ export default function Item() {
     xlsx: false,
   });
 
+  const handleStatusFilter = async (status: boolean) => {
+    try {
+      // If clicking the same filter, clear it
+      const newFilter = currentStatusFilter === status ? null : status;
+      setCurrentStatusFilter(newFilter);
+      
+      // Refresh the table with the new filter
+      setRefreshKey((k) => k + 1);
+    } catch (error) {
+      console.error("Error filtering by status:", error);
+      showSnackbar("Failed to filter by status", "error");
+    }
+  };
+
   const columns = [
     // { key: "erp_code", label: "ERP Code", render: (row: LocalTableDataType) => row.erp_code || "-" },
     {
@@ -71,7 +91,6 @@ export default function Item() {
       showByDefault: true,
       render: (row: LocalTableDataType) => {
         return <div className="cursor-pointer hover:text-[#EA0A2A]" onClick={() => {
-          // console.log("clicked", row.uuid)
           setSelectedId(row?.uuid || "")
           setOpen(true);
         }}>{row.erp_code + " - " + row.name || "-"}</div>
@@ -82,6 +101,17 @@ export default function Item() {
       label: "Category",
       showByDefault: true,
       render: (row: LocalTableDataType) => row.item_category?.category_name || "-",
+            filter: {
+                isFilterable: true,
+                width: 320,
+                filterkey: "warehouse_id",
+                options: Array.isArray(itemCategoryAllOptions) ? itemCategoryAllOptions : [],
+                onSelect: (selected: string | string[]) => {
+                    setcategoryId((prev) => (prev === selected ? "" : (selected as string)));
+                },
+                isSingle: false,
+                selectedValue: categoryId,
+            },
     },
     {
       key: "base_uom",
@@ -131,9 +161,16 @@ export default function Item() {
             row.status.toLowerCase() === "active");
         return <StatusBtn isActive={isActive} />;
       },
+      filterStatus: {
+        enabled: true,
+        onFilter: handleStatusFilter,
+        currentFilter: currentStatusFilter,
+      },
     },
   ];
-
+useEffect(() => {
+        setRefreshKey((k) => k + 1);
+    }, [categoryId, currentStatusFilter]);
   const fetchItems = useCallback(
     async (
       page: number = 1,
@@ -141,7 +178,23 @@ export default function Item() {
     ): Promise<listReturnType> => {
       try {
         // setLoading(true);
-        const res = await itemList({ page: page.toString(), per_page: pageSize.toString() });
+        
+        // Build params with all filters
+        const params: any = {
+          page: page.toString(),
+          per_page: pageSize.toString(),
+        };
+        
+        // Add category filter if selected
+        if (categoryId) {
+          params.category_id = categoryId;
+        }
+        
+        // Add status filter if active (true=1, false=0)
+        if (currentStatusFilter !== null) {
+          params.status = currentStatusFilter ? "1" : "0";
+        }
+        const res = await itemList(params);
         // setLoading(false);
         const data = res.data.map((item: LocalTableDataType) => ({
           ...item,
@@ -158,7 +211,7 @@ export default function Item() {
         throw error;
       }
     },
-    []
+    [categoryId, currentStatusFilter]
   );
 
   const searchItems = useCallback(
@@ -175,6 +228,7 @@ export default function Item() {
         const data = res.data.map((item: LocalTableDataType) => ({
           ...item,
         }));
+        setSearchFilterValue(query);
 
         return {
           data: data || [],
@@ -190,54 +244,37 @@ export default function Item() {
     },
     []
   );
-
-  const handleStatusChange = async (
-    data: TableDataType[],
-    selectedRow: number[] | undefined,
-    status: "0" | "1"
-  ) => {
-    if (!selectedRow || selectedRow.length === 0) {
-      showSnackbar("Please select at least one salesman", "error");
-      return;
-    }
-
-    // const selectedItem = data.filter((_, index) =>
-    //   selectedRow.includes(index)
-    // );
-    // console.log(data, selectedRow)
-
-    const failedUpdates: string[] = [];
-
-    const selectedRowsData: string[] = data.filter((value, index) => selectedRow?.includes(index)).map((item) => item.id);
+ const statusUpdate = async (ids?: (string | number)[], status: number = 0) => {
     try {
       // setLoading(true);
-
-      const res = await updateItemStatus({ item_ids: selectedRowsData, status });
-
-      if (failedUpdates.length > 0) {
-        showSnackbar(
-          `Failed to update status for: ${failedUpdates.join(", ")}`,
-          "error"
-        );
-      } else {
-        setRefreshKey((k) => k + 1);
-        showSnackbar("Status updated successfully", "success");
-        // fetchItems();
+      if (!ids || ids.length === 0) {
+        showSnackbar("No vehicle selected", "error");
+        return;
       }
-
-    } catch (error) {
-      console.error("Status update error:", error);
-      showSnackbar("An error occurred while updating status", "error");
-    } finally {
+      const selectedRowsData: number[] = ids.map((id) => Number(id)).filter((n) => !Number.isNaN(n));
+      if (selectedRowsData.length === 0) {
+        showSnackbar("No vehicle selected", "error");
+        return;
+      }
+      await updateItemStatus({ item_ids: selectedRowsData, status });
+      // Refresh vehicle list after 3 seconds
+      // (async () => {
+        // fetchVehicles();
+        setRefreshKey((k) => k + 1);
+      // });
+      showSnackbar("Vehicle status updated successfully", "success");
       // setLoading(false);
-      // setShowDropdown(false);
+    } catch (error) {
+      showSnackbar("Failed to update vehicle status", "error");
+      // setLoading(false);
     }
   };
+
 
   const exportFile = async (format: string) => {
     try {
       setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
-      const response = await itemExport({ format });
+      const response = await itemExport({ format, search: searchFilterValue, filter:{ status: currentStatusFilter == false ? "0" : "1", category_id: categoryId }});
       if (response && typeof response === 'object' && response.download_url) {
         await downloadFile(response.download_url);
         showSnackbar("File downloaded successfully ", "success");
@@ -265,27 +302,68 @@ export default function Item() {
             header: {
               title: "Item",
               searchBar: true,
+               exportButton: {
+                threeDotLoading:  threeDotLoading,
+                show: true,
+                onClick: () => exportFile("xlsx"), 
+              },
               threeDot: [
-                {
-                  icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
-                  label: "Export CSV",
-                  labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => !threeDotLoading.csv && exportFile("csv"),
-                },
-                {
-                  icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
-                  label: "Export Excel",
-                  labelTw: "text-[12px] hidden sm:block",
-                  onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
-                },
+                // {
+                //   icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
+                //   label: "Export CSV",
+                //   labelTw: "text-[12px] hidden sm:block",
+                //   onClick: () => !threeDotLoading.csv && exportFile("csv"),
+                // },
+                // {
+                //   icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
+                //   label: "Export Excel",
+                //   labelTw: "text-[12px] hidden sm:block",
+                //   onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                // },
+                
                 {
                   icon: "lucide:radio",
                   label: "Inactive",
-                  showOnSelect: true,
-                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
-                    handleStatusChange(data, selectedRow, "0");
+                  // showOnSelect: true,
+                  showWhen: (data: TableDataType[], selectedRow?: number[]) => {
+                    if (!selectedRow || selectedRow.length === 0) return false;
+                    const status = selectedRow?.map((id) => data[id].status).map(String);
+                    return status?.includes("1") || false;
                   },
-                }
+                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                    const status: string[] = [];
+                    const ids = selectedRow?.map((id) => {
+                      const currentStatus = data[id].status;
+                      if (!status.includes(currentStatus)) {
+                        status.push(currentStatus);
+                      }
+                      return data[id].id;
+                    })
+                    statusUpdate(ids, Number(0));
+                  },
+                },
+                {
+                  icon: "lucide:radio",
+                  label: "Active",
+                  // showOnSelect: true,
+                  showWhen: (data: TableDataType[], selectedRow?: number[]) => {
+                    if (!selectedRow || selectedRow.length === 0) return false;
+                    const status = selectedRow?.map((id) => data[id].status).map(String);
+                    return status?.includes("0") || false;
+                  },
+                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                    const status: string[] = [];
+                    const ids = selectedRow?.map((id) => {
+                      const currentStatus = data[id].status;
+                      if (!status.includes(currentStatus)) {
+                        status.push(currentStatus);
+                      }
+                      return data[id].id;
+                    })
+                    statusUpdate(ids, Number(1));
+                  },
+                },
+              
               ],
               columnFilter: true,
               actions: can("create") ? [

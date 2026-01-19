@@ -32,6 +32,7 @@ export default function AddDiscount() {
     keyCombo, setKeyCombo,
     keyValue, setKeyValue,
     discount, setDiscount,
+    extraCustomerOptions, setExtraCustomerOptions
   } = useDiscountForm();
 
   // 2. Data Fetching Hook
@@ -49,7 +50,7 @@ export default function AddDiscount() {
 
     const { loading: dataLoading } = useDiscountData({
 
-      isEditMode, id, setDiscount, setKeyCombo, setKeyValue, setItemLoading, fetchItemsCategoryWise, router, showSnackbar
+      isEditMode, id, setDiscount, setKeyCombo, setKeyValue, setItemLoading, fetchItemsCategoryWise, router, showSnackbar, setExtraCustomerOptions
 
     });
 
@@ -140,7 +141,6 @@ export default function AddDiscount() {
     }
 
   }, [keyValue["Item Category"], fetchItemsCategoryWise]);
-  // console.log(keyValue, "keyValue")
   // Filter keyValue["Item"]
   useEffect(() => {
     if (itemLoading) return;
@@ -359,7 +359,6 @@ export default function AddDiscount() {
         }
 
       };
-      console.log(payload, "payload")
 
 
       let res;
@@ -422,6 +421,8 @@ export default function AddDiscount() {
             setKeyValue={setKeyValue}
             locationDropdownMap={locationDropdownMap}
             customerDropdownMap={customerDropdownMap}
+            extraOptions={extraCustomerOptions}
+            setExtraOptions={setExtraCustomerOptions}
           />
         );
       case 3:
@@ -462,7 +463,7 @@ export default function AddDiscount() {
               <Icon icon="lucide:arrow-left" width={24} />
             </button>
             <h1 className="text-xl font-semibold text-gray-900">
-              {isEditMode ? "Update Discount" : "Add New Discount"}
+              {isEditMode ? "Update Discount" : "Add Discount"}
             </h1>
           </div>
           <div className="flex justify-between items-center mb-6 pb-6">

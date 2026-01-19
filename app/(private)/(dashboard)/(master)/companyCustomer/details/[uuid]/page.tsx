@@ -1,11 +1,11 @@
 "use client";
 
 import ContainerCard from "@/app/components/containerCard";
-import Table, { configType, TableDataType } from "@/app/components/customTable";
+import Table, { configType, listReturnType, TableDataType } from "@/app/components/customTable";
 import KeyValueData from "@/app/components/keyValueData";
 import StatusBtn from "@/app/components/statusBtn2";
 import TabBtn from "@/app/components/tabBtn";
-import { getCompanyCustomerById } from "@/app/services/allApi";
+import { getCompanyCustomerById, getCompanyCustomers, getCompanyCustomersPurchase } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { Icon } from "@iconify-icon/react";
@@ -15,13 +15,15 @@ import { useEffect, useState } from "react";
 import { downloadFile } from "@/app/services/allApi";
 import Skeleton from "@mui/material/Skeleton";
 import { formatDate } from "../../../salesTeam/details/[uuid]/page";
-
+import FilterComponent from "@/app/components/filterComponent";
+import { exportCustomerPurchaseOrder, exportPurposeOrderViewPdf } from "@/app/services/companyTransaction";
+import ExportDropdownButton from "@/app/components/ExportDropdownButton";
 interface CustomerItem {
   id: number;
   sap_code: string;
   osa_code: string;
   business_name: string;
-  company_type: string;
+  company_type: { name: string };
   language: string;
   contact_number?: string;
   business_type: string;
@@ -45,8 +47,8 @@ interface CustomerItem {
   status: string;
 }
 
-const title = "Key Customer Details";
-const backBtnUrl = "/keyCustomer";
+const title = "Company Customer Details";
+const backBtnUrl = "/companyCustomer";
 export function getPaymentType(value: string): string {
   switch (value) {
     case "1":
@@ -64,6 +66,8 @@ export default function ViewPage() {
   const uuid = Array.isArray(params?.uuid)
     ? params?.uuid[0] || ""
     : (params?.uuid as string) || "";
+  const [purchaseList, setPurchaseList] = useState<any>("");
+  const [threeDotLoading, setThreeDotLoading] = useState<{ pdf: boolean; xlsx: boolean; csv: boolean }>({ pdf: false, xlsx: false, csv: false });
 
   const [customer, setCustomer] = useState<CustomerItem | null>(null);
   const [isChecked, setIsChecked] = useState(false);
@@ -77,39 +81,6 @@ export default function ViewPage() {
     setActiveTab(tabList[idx].key);
   };
 
-  // const IconComponentData2 = ({row}:{row:TableDataType})=>{
-  //   const [smallLoading, setSmallLoading] = useState(false)
-  //   const { showSnackbar } = useSnackbar();
-
-  //   const exportOrderFile = async (uuid: string, format: string) => {
-  //     try {
-  //       setSmallLoading(true)
-  //       const response = await exportOrderInvoice({ uuid, format }); // send proper body object
-
-  //       if (response && typeof response === "object" && response.download_url) {
-  //         await downloadFile(response.download_url);
-  //         showSnackbar("File downloaded successfully", "success");
-  //       setSmallLoading(false)
-
-
-  //       } else {
-  //         showSnackbar("Failed to get download URL", "error");
-  //       setSmallLoading(false)
-
-  //       }
-  //     } catch (error) {
-  //       console.error(error);
-  //       showSnackbar("Failed to download data", "error");
-  //       setSmallLoading(false)
-
-  //     }
-  //   };
-
-  //   return(smallLoading?<Skeleton/>:<div className="cursor-pointer" onClick={()=>{
-  //                       exportOrderFile(row.uuid, "pdf"); // or "excel", "csv" etc.
-
-  //       }}><Icon  icon="material-symbols:download"/></div>)
-  // }
   useEffect(() => {
     if (!uuid) return;
 
@@ -119,15 +90,16 @@ export default function ViewPage() {
         const res = await getCompanyCustomerById(uuid);
         if (res.error) {
           showSnackbar(
-            res.data?.message || "Unable to fetch key customer details",
+            res.data?.message || "Unable to fetch company customer details",
             "error"
           );
+
           return;
         }
-        console.log(res)
         setCustomer(res.data);
+        setPurchaseList(res.data.id);
       } catch {
-        showSnackbar("Unable to fetch key customer details", "error");
+        showSnackbar("Unable to fetch company customer details", "error");
       } finally {
         setLoading(false);
       }
@@ -137,9 +109,9 @@ export default function ViewPage() {
   }, [uuid, setLoading, showSnackbar]);
 
   const Columns: configType["columns"] = [
-    { key: "osa_code", label: "Code", showByDefault: true },
+    // { key: "osa_code", label: "Code", showByDefault: true },
     { key: "order_code", label: "Order Code", showByDefault: true },
-    { key: "delivery_code", label: "Delivery Code", showByDefault: true },
+    // { key: "delivery_code", label: "Delivery Code", showByDefault: true },
     {
       key: "warehouse_code", label: "Distributor", showByDefault: true, render: (row: TableDataType) => {
         const code = row.warehouse_code || "";
@@ -148,19 +120,22 @@ export default function ViewPage() {
       }
     },
     {
-      key: "route_code", label: "Route", showByDefault: true, render: (row: TableDataType) => {
-        const code = row.route_code || "";
-        const name = row.route_name || "";
-        return `${code}${code && name ? " - " : ""}${name}`;
+      key: "item",
+      label: "Item",
+      showByDefault: true,
+      render: (row: TableDataType) => {
+        if (!row.details || row.details.length === 0) return "-";
+
+        return row.details
+          .map((item: any) => {
+            const code = item.item_code || "";
+            const name = item.item_name || "";
+            return `${code}${code && name ? " - " : ""}${name}`;
+          })
+          .join(", ");
       }
     },
-    {
-      key: "customer_code", label: "Customer", showByDefault: true, render: (row: TableDataType) => {
-        const code = row.customer_code || "";
-        const name = row.customer_name || "";
-        return `${code}${code && name ? " - " : ""}${name}`;
-      }
-    },
+
     {
       key: "salesman_code", label: "Sales Team", showByDefault: true, render: (row: TableDataType) => {
         const code = row.salesman_code || "";
@@ -185,6 +160,68 @@ export default function ViewPage() {
     { key: "purchase", label: "Purchase" },
     { key: "creditNote", label: "Credit Note" },
   ];
+
+  const fetchCompanyCustomersPurchase = async (pageNo: number = 1, pageSize: number = 50): Promise<listReturnType> => {
+    // setLoading(true);
+
+    // Build params with all filters
+    const params: any = {
+      page: pageNo.toString(),
+      pageSize: pageSize.toString()
+    };
+
+    const res = await getCompanyCustomersPurchase({
+      customer_id: purchaseList,
+      ...params
+    });
+    // setLoading(false);
+    if (res.error) {
+      showSnackbar(res.data.message || "Failed to fetch Purchase order", "error");
+      throw new Error(res.data.message);
+    }
+    return {
+      data: res.data || [],
+      pageSize: res?.pagination?.per_page || pageSize,
+      total: res?.pagination?.last_page || 1,
+      currentPage: res?.pagination?.current_page || 1,
+    }
+  };
+
+  const exportFile = async (uuid: string, format: string) => {
+    try {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+      const response = await exportPurposeOrderViewPdf({ uuid, format }); // send proper body object
+      if (response && typeof response === "object" && response.download_url) {
+        await downloadFile(response.download_url);
+        showSnackbar("File downloaded successfully", "success");
+      } else {
+        showSnackbar("Failed to get download URL", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Failed to download data", "error");
+    } finally {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+    }
+  };
+
+  const allInvoices = async (format: string) => {
+    try {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+      const response = await exportCustomerPurchaseOrder({ customer_id: purchaseList, format }); // send proper body object
+      if (response && typeof response === "object" && response.download_url) {
+        await downloadFile(response.download_url);
+        showSnackbar("File downloaded successfully", "success");
+      } else {
+        showSnackbar("Failed to get download URL", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Failed to download data", "error");
+    } finally {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+    }
+  };
 
   return (
     <>
@@ -246,7 +283,7 @@ export default function ViewPage() {
                   { key: "SAP Code", value: customer?.sap_code || "-" },
                   { key: "Language", value: customer?.language || "-" },
                   { key: "Contact No.", value: customer?.contact_number || "-" },
-                  { key: "Company Type", value: customer?.company_type || "-" },
+                  { key: "Company Type", value: customer?.company_type?.name || "-" },
                   {
                     key: "Business Type",
                     value:
@@ -327,21 +364,28 @@ export default function ViewPage() {
               <div className="flex flex-col h-full">
                 <Table
                   config={{
+                    api: {
+                      list: fetchCompanyCustomersPurchase,
+                    },
                     header: {
-                      filterByFields: [
-                        {
-                          key: "start_date",
-                          label: "Start Date",
-                          type: "dateChange"
-                        },
-                        {
-                          key: "end_date",
-                          label: "End Date",
-                          type: "dateChange"
-                        },
 
-                      ],
+                      filterRenderer: (props) => (
+                        <FilterComponent
+                          currentDate={true}
+                          {...props}
+                          onlyFilters={['from_date', 'to_date']}
+                        />
+                      ),
                       searchBar: false,
+                      actions: [
+                        <ExportDropdownButton
+                          disabled={purchaseList?.length === 0}
+                          keyType="excel"
+                          threeDotLoading={threeDotLoading}
+                          exportReturnFile={allInvoices}
+                          uuid={uuid}
+                        />
+                      ],
                     },
                     showNestedLoading: true,
                     footer: { nextPrevBtn: true, pagination: true },
@@ -351,12 +395,12 @@ export default function ViewPage() {
                     columns: Columns,
                     rowSelection: false,
                     rowActions: [
-                      // {
-                      //     icon: "material-symbols:download",
-                      //     onClick: (data: TableDataType) => {
-                      //         exportFile(data.uuid, "csv"); // or "excel", "csv" etc.
-                      //     },
-                      // }
+                      {
+                        icon: threeDotLoading.pdf ? "eos-icons:three-dots-loading" : "material-symbols:download",
+                        onClick: (data: TableDataType) => {
+                          exportFile(data.uuid, "pdf");
+                        },
+                      }
                     ],
                     pageSize: 50,
                   }}
@@ -372,19 +416,13 @@ export default function ViewPage() {
                 <Table
                   config={{
                     header: {
-                      filterByFields: [
-                        {
-                          key: "start_date",
-                          label: "Start Date",
-                          type: "dateChange"
-                        },
-                        {
-                          key: "end_date",
-                          label: "End Date",
-                          type: "dateChange"
-                        },
-
-                      ],
+                      filterRenderer: (props) => (
+                        <FilterComponent
+                          currentDate={true}
+                          {...props}
+                          onlyFilters={['from_date', 'to_date']}
+                        />
+                      ),
                       searchBar: false,
                     },
                     showNestedLoading: true,

@@ -106,7 +106,6 @@ export default function Planogram() {
     async (searchQuery: string): Promise<searchReturnType> => {
       setLoading(true);
       try {
-        console.log(searchQuery);
         // always start from page 1 for a new search
         const res = await planogramList({
           search: searchQuery,
@@ -148,14 +147,13 @@ export default function Planogram() {
       setLoading(true);
 
       const res = await exportPlanogram({ format: fileType });
-      console.log("Export API Response:", res);
 
       let downloadUrl = "";
 
-      if (res?.url && res.url.startsWith("blob:")) {
-        downloadUrl = res.url;
-      } else if (res?.url && res.url.startsWith("http")) {
-        downloadUrl = res.url;
+      if (res?.download_url && res.download_url.startsWith("blob:")) {
+        downloadUrl = res.download_url;
+      } else if (res?.download_url && res.download_url.startsWith("http")) {
+        downloadUrl = res.download_url;
       } else if (typeof res === "string" && res.includes(",")) {
         const blob = new Blob([res], {
           type:

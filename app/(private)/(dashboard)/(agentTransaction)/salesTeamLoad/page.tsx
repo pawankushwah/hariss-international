@@ -8,7 +8,7 @@ import Table, {
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import StatusBtn from "@/app/components/statusBtn2";
-import { salesmanLoadHeaderList, exportSalesmanLoad, exportSalesmanLoadDownload } from "@/app/services/agentTransaction";
+import { salesmanLoadHeaderList, exportSalesmanLoad, exportSalesmanLoadDownload,loadExportCollapse,salesmanLoadPdf } from "@/app/services/agentTransaction";
 import { useRef } from "react";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
@@ -18,7 +18,10 @@ import { downloadFile } from "@/app/services/allApi";
 import ApprovalStatus from "@/app/components/approvalStatus";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import FilterComponent from "@/app/components/filterComponent";
-
+import { formatWithPattern } from "@/app/utils/formatDate";
+import { formatDate } from "../../(master)/salesTeam/details/[uuid]/page";
+import { downloadPDFGlobal } from "@/app/services/allApi";
+// import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 interface SalesmanLoadRow {
   osa_code?: string;
   warehouse?: { code?: string; name?: string };
@@ -32,8 +35,8 @@ interface SalesmanLoadRow {
 
 export default function SalemanLoad() {
   const { can, permissions } = usePagePermissions();
-  const { regionOptions, warehouseOptions, routeOptions, channelOptions, itemCategoryOptions, customerSubCategoryOptions, ensureChannelLoaded, ensureCustomerSubCategoryLoaded, ensureItemCategoryLoaded, ensureRegionLoaded, ensureRouteLoaded, ensureWarehouseLoaded } = useAllDropdownListData();
-
+  const { regionOptions, warehouseAllOptions,warehouseOptions, routeOptions, channelOptions, itemCategoryOptions, customerSubCategoryOptions, ensureChannelLoaded, ensureCustomerSubCategoryLoaded, ensureItemCategoryLoaded, ensureRegionLoaded, ensureRouteLoaded, ensureWarehouseLoaded,ensureWarehouseAllLoaded } = useAllDropdownListData();
+  const [warehouseId, setWarehouseId] = useState<string>();
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Refresh table when permissions load
@@ -51,11 +54,15 @@ export default function SalemanLoad() {
     ensureRegionLoaded();
     ensureRouteLoaded();
     ensureWarehouseLoaded();
-  }, [ensureChannelLoaded, ensureCustomerSubCategoryLoaded, ensureItemCategoryLoaded, ensureRegionLoaded, ensureRouteLoaded, ensureWarehouseLoaded]);
-
-
+    ensureWarehouseAllLoaded();
+  }, [ensureChannelLoaded, ensureCustomerSubCategoryLoaded, ensureItemCategoryLoaded, ensureRegionLoaded, ensureRouteLoaded, ensureWarehouseLoaded, ensureWarehouseAllLoaded]);
 
   const columns: configType["columns"] = [
+    {
+      key:"created_at",
+      label:"Load Date",
+      render: (row: TableDataType) => formatDate(row?.created_at || "-")
+    },
     {
       key: "warehouse",
       label: "Distributor",
@@ -68,6 +75,16 @@ export default function SalemanLoad() {
             : s.warehouse?.name || "-";
         return `${s.warehouse?.code ?? ""} - ${shortName}`;
       },
+      filter: {
+                isFilterable: true,
+                width: 320,
+                options: Array.isArray(warehouseAllOptions) ? warehouseAllOptions : [],
+                onSelect: (selected) => {
+                    setWarehouseId((prev) => (prev === selected ? "" : (selected as string)));
+                },
+                isSingle: false,
+                selectedValue: warehouseId,
+            },
     },
     {
       key: "route",
@@ -86,39 +103,24 @@ export default function SalemanLoad() {
       },
     },
     {
-      key: "salesman_type", label: "Salesman Type",
+      key: "salesman_type", label: "Sales Team Type",
       render: (row: TableDataType) => {
         const s = row as SalesmanLoadRow;
-        return `${s.salesman_type?.code ?? ""} - ${s.salesman_type?.name ?? ""}`;
+        return `${s.salesman_type?.name ?? ""}`;
       },
     },
     {
       key: "project_type",
-      label: "Salesman Role",
+      label: "Sales Team Role",
       render: (row: TableDataType) => {
-        const s = row as SalesmanLoadRow;
-
-        // Use project_type if present, otherwise fallback to salesman_type
-        if (s.project_type && typeof s.project_type === "object") {
-          const { code, name } = s.project_type;
-          if (code || name) return `${code ?? ""} - ${name ?? ""}`;
-        }
-
-        if (s.project_type && typeof s.project_type === "object") {
-          const { code, name } = s.project_type;
-          if (code || name) return `${code ?? ""} - ${name ?? ""}`;
-        }
-
-        if (typeof s.project_type === "string") return s.project_type;
-
-        return "-";
+       return `${(row as SalesmanLoadRow).project_type?.name ?? "-"}`;
       },
     },
-    {
-        key: "approval_status",
-        label: "Approval Status",
-        render: (row: TableDataType) => <ApprovalStatus status={row.approval_status || "-"} />,
-    },
+    // {
+    //     key: "approval_status",
+    //     label: "Approval Status",
+    //     render: (row: TableDataType) => <ApprovalStatus status={row.approval_status || "-"} />,
+    // },
     {
       key: "status",
       label: "Status",
@@ -133,6 +135,7 @@ export default function SalemanLoad() {
   const router = useRouter();
   const { showSnackbar } = useSnackbar();
   const [threeDotLoading, setThreeDotLoading] = useState({
+    pdf: false,
     csv: false,
     xlsx: false,
   });
@@ -247,10 +250,13 @@ export default function SalemanLoad() {
 
   const downloadPdf = async (uuid: string) => {
     try {
-      setLoading(true);
-      const response = await exportSalesmanLoadDownload({ uuid: uuid, format: "excel" });
+      // setLoading(true);
+      setThreeDotLoading((prev) => ({ ...prev, pdf: true }));
+      const response = await salesmanLoadPdf({ uuid: uuid, format: "pdf" });
       if (response && typeof response === 'object' && response.download_url) {
-        await downloadFile(response.download_url);
+         const fileName = `load-${uuid}.pdf`;
+        await downloadPDFGlobal(response.download_url, fileName);
+        // await downloadFile(response.download_url);
         showSnackbar("File downloaded successfully ", "success");
       } else {
         showSnackbar("Failed to get download URL", "error");
@@ -258,7 +264,8 @@ export default function SalemanLoad() {
     } catch (error) {
       showSnackbar("Failed to download file", "error");
     } finally {
-      setLoading(false);
+      setThreeDotLoading((prev) => ({ ...prev, pdf: false }));
+      // setLoading(false);
     }
   };
 
@@ -281,6 +288,24 @@ export default function SalemanLoad() {
     } finally {
     }
   };
+
+  const exportCollapseFile = async (format: "csv" | "xlsx" = "csv") => {
+      try {
+        setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+        const response = await loadExportCollapse({ format });
+        if (response && typeof response === "object" && response.download_url) {
+          await downloadFile(response.download_url);
+          showSnackbar("File downloaded successfully ", "success");
+        } else {
+          showSnackbar("Failed to get download URL", "error");
+        }
+        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+      } catch (error) {
+        showSnackbar("Failed to download warehouse data", "error");
+        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+      } finally {
+      }
+    };
 
   return (
     <div className="flex flex-col h-full">
@@ -306,7 +331,7 @@ export default function SalemanLoad() {
                 icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
                 label: "Export Excel",
                 labelTw: "text-[12px] hidden sm:block",
-                onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                onClick: () => !threeDotLoading.xlsx && exportCollapseFile("xlsx"),
               },
             ],
             filterRenderer: FilterComponent,
@@ -334,7 +359,7 @@ export default function SalemanLoad() {
               },
             },
             {
-              icon: "lucide:download",
+              icon: "material-symbols:download",
               onClick: (row: TableDataType) => downloadPdf(row.uuid),
             },
           ],

@@ -20,7 +20,6 @@ export default function PercentageDiscountTable({ percentageDiscounts, setPercen
     : (itemDropdownMap["Item"] ? [ ...itemDropdownMap["Item"]] : []);
 
     useEffect(() => { 
-      console.log(percentageDiscounts,"percentageDiscounts")
     },[percentageDiscounts])
 
   return (
@@ -84,6 +83,8 @@ export default function PercentageDiscountTable({ percentageDiscounts, setPercen
                 <InputFields
                   label=""
                   type="number"
+                  integerOnly={true}
+                  min={0}
                   placeholder={promotion.bundle_combination === "slab" && promotion.promotionType === "quantity" ? "Quantity" : "Percentage"}
                   value={String(row.percentage ?? "")}
                   onChange={e => {

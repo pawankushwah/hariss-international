@@ -15,12 +15,15 @@ import DeleteConfirmPopup from "@/app/components/deletePopUp";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
 import {
+  assetsRequestExport,
   chillerRequestGlobalSearch,
   chillerRequestList,
+  crfExport,
   deleteChillerRequest,
 } from "@/app/services/assetsApi";
 import StatusBtn from "@/app/components/statusBtn2";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
+import { downloadFile } from "@/app/services/allApi";
 
 const dropdownDataList = [
   { icon: "lucide:radio", label: "Inactive", iconWidth: 20 },
@@ -41,6 +44,7 @@ interface LocalTableDataType {
   asset_number?: string;
   model?: string;
   brand?: string;
+  approval_status?: string;
   status?: number | string;
 }
 
@@ -52,6 +56,11 @@ export default function Page() {
   const [deleteSelectedRow, setDeleteSelectedRow] = useState<string | null>(
     null
   );
+  const [threeDotLoading, setThreeDotLoading] = useState({
+    csv: false,
+    xlsx: false,
+  });
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Refresh table when permissions load
@@ -179,6 +188,30 @@ export default function Page() {
     []
   );
 
+  const exportFile = async (format: 'csv' | 'xlsx' = 'csv') => {
+    try {
+      // setLoading(true);
+      // Pass selected format to the export API
+      setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+      const response = await crfExport({ format });
+      // const url = response?.url || response?.data?.url;
+      const url = response?.download_url || response?.url || response?.data?.url;
+      if (url) {
+        await downloadFile(url);
+        showSnackbar("File downloaded successfully", "success");
+      } else {
+        showSnackbar("Failed to get download file", "error");
+      }
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+    } catch (error) {
+      console.error("Export failed:", error);
+      showSnackbar("Failed to download invoices", "error");
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+    } finally {
+      // setLoading(false);
+    }
+  };
+
   return (
     <>
       {/* Table */}
@@ -192,36 +225,19 @@ export default function Page() {
             },
             header: {
               title: "Assets Requests",
-              wholeTableActions: [
-                <div key={0} className="flex gap-[12px] relative">
-                  <DismissibleDropdown
-                    isOpen={showDropdown}
-                    setIsOpen={setShowDropdown}
-                    button={<BorderIconButton icon="ic:sharp-more-vert" />}
-                    dropdown={
-                      <div className="absolute top-[40px] right-0 z-30 w-[226px]">
-                        <CustomDropdown>
-                          {dropdownDataList.map((link, idx) => (
-                            <div
-                              key={idx}
-                              className="px-[14px] py-[10px] flex items-center gap-[8px] hover:bg-[#FAFAFA]"
-                            >
-                              <Icon
-                                icon={link.icon}
-                                width={link.iconWidth}
-                                className="text-[#717680]"
-                              />
-                              <span className="text-[#181D27] font-[500] text-[16px]">
-                                {link.label}
-                              </span>
-                            </div>
-                          ))}
-                        </CustomDropdown>
-                      </div>
-                    }
-                  />
-                </div>,
-              ],
+              threeDot: [
+                {
+                  icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
+                  label: "Export CSV",
+                  labelTw: "text-[12px] hidden sm:block",
+                  onClick: () => !threeDotLoading.csv && exportFile("csv"),
+                },
+                {
+                  icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
+                  label: "Export Excel",
+                  labelTw: "text-[12px] hidden sm:block",
+                  onClick: () => !threeDotLoading.xlsx && exportFile("xlsx"),
+                },],
               searchBar: true,
               columnFilter: true,
               // actions: can("create") ? [
@@ -295,6 +311,11 @@ export default function Page() {
                 label: "Brand",
               },
 
+              {
+                key: "approval_status",
+                label: "Approval Status",
+              },
+
               // Status
               {
                 key: "status",
@@ -310,7 +331,7 @@ export default function Page() {
                 ),
               },
             ],
-            rowSelection: true,
+            // rowSelection: true,
             rowActions: [
               {
                 icon: "lucide:eye",

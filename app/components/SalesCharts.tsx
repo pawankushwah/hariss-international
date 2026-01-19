@@ -14,20 +14,48 @@ interface ChartData {
 }
 
 interface SalesChartsProps {
-  chartData: ChartData;
+  chartData?: ChartData;
   dashboardData?: any;
   isLoading?: boolean;
   error?: string | null;
   searchType?: string;
+  reportType?: 'sales' | 'customer'; // New prop to distinguish report types
+  urlSizeWarning?: boolean; // Warning flag when URL size exceeds limit
+  onUrlSizeExceeded?: () => void; // Callback when URL size exceeds limit
 }
 
-const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isLoading, error, searchType }) => {
+const SalesCharts: React.FC<SalesChartsProps> = ({ 
+  chartData, 
+  dashboardData, 
+  isLoading, 
+  error, 
+  searchType, 
+  reportType = 'sales',
+  urlSizeWarning = false,
+  onUrlSizeExceeded
+}) => {
   const {showSnackbar} = useSnackbar();
   const [selectedMaxView, setSelectedMaxView] = useState<string | null>(null);
   const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
   const [is3DLoaded, setIs3DLoaded] = useState(false);
   const [hiddenWarehouses, setHiddenWarehouses] = useState<string[]>([]);
+  const [urlWarningShown, setUrlWarningShown] = useState(false);
   const CURRENCY = localStorage.getItem('country') + " " || ' ';
+
+  // Show snackbar when URL size exceeds limit
+  useEffect(() => {
+    if (urlSizeWarning && !urlWarningShown) {
+      showSnackbar('URL size limit exceeded! Please reduce your selection to avoid data loading issues.', 'error');
+      setUrlWarningShown(true);
+      if (onUrlSizeExceeded) {
+        onUrlSizeExceeded();
+      }
+    }
+    // Reset warning flag when urlSizeWarning becomes false
+    if (!urlSizeWarning && urlWarningShown) {
+      setUrlWarningShown(false);
+    }
+  }, [urlSizeWarning, urlWarningShown, showSnackbar, onUrlSizeExceeded]);
 
   // Load Highcharts 3D module
   useEffect(() => {
@@ -119,6 +147,16 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
     '#f60a0aff', '#fa7406ff', '#facc15', '#08f760ff', '#07d5f5ff', '#1f4068ff', '#a78bfa', '#c20b6aff'
   ];
 
+  // Color palettes for channels and customer categories
+  const channelColors = [
+    '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4'
+  ];
+
+  const customerCategoryColors = [
+    '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#14b8a6', '#f97316',
+    '#06b6d4', '#a855f7', '#22c55e', '#eab308', '#ef4444', '#0ea5e9', '#84cc16', '#f43f5e'
+  ];
+
   // 3D Column Chart Component
   const Column3DChart = ({ data, title, xAxisKey = 'name', yAxisKey = 'value', colors = areaColors, height = '400px', hiddenItems = [] }: any) => {
     if (!data || data.length === 0) {
@@ -145,8 +183,9 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
           depth: 50,
           viewDistance: 50
         },
-        
-        height: height
+        height: height,
+        marginTop: 100, 
+        spacingTop: 10,
       },
       title: {
         text: title,
@@ -164,6 +203,20 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
         align: 'center',
         verticalAlign: 'top',
         layout: 'horizontal',
+        maxHeight: 80,
+        margin: 30,
+        navigation: {
+          activeColor: '#3E576F',
+          animation: true,
+          arrowSize: 10,
+          inactiveColor: '#CCC',
+          style: {
+            align: 'right',
+            fontWeight: 'bold',
+            color: '#4b5563',
+            fontSize: '11px'
+          }
+        },
         itemStyle: {
           fontSize: '9px',
           fontWeight: 'normal',
@@ -176,9 +229,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
           color: '#9ca3af'
         },
         y: 0,
-        margin: 15,
-        // Add a custom class for Tailwind min-h-[40px]
-        className: 'min-h-[40px]',
+        className: 'min-h-[60px]',
       },
       xAxis: {
         categories: data.map((item: any) => item[xAxisKey]),
@@ -410,7 +461,6 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
     };
 
     const visibleSeriesData = seriesData.filter(s => !hiddenNames.includes(s.name));
-
     const isQuantity = searchType === 'quantity';
 
     const options: any = {
@@ -418,12 +468,15 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
         type: 'pie',
         options3d: { enabled: true, alpha: 45, beta: 0, depth: 45 },
         backgroundColor: null,
-        height,
+        height: height, // Use the passed height prop
+        spacingTop: 20,
       },
       credits: { enabled: false },
-      title: { text: title || null },
-      // Disable the built-in Highcharts legend (we render a custom interactive legend above)
-      legend: { enabled: false },
+      title: { 
+        text: title || null,
+        style: { fontSize: '16px', fontWeight: 'bold', color: '#1f2937' }
+      },
+      legend: { enabled: false }, // Keep custom legend
       tooltip: { pointFormat: isQuantity ? '<b>{point.percentage:.1f}%</b><br/>{point.y:,.0f} Qty' : '<b>{point.percentage:.1f}%</b><br/> {point.y:,.0f}' },
       plotOptions: {
         pie: {
@@ -432,34 +485,39 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
           depth: 45,
           size: size,
           innerSize: innerRadius && outerRadius ? `${Math.round((innerRadius / outerRadius) * 100)}%` : undefined,
-          dataLabels: {
-            enabled: false
-          },
+          dataLabels: { enabled: false },
           showInLegend: true,
         },
       },
       series: [{ name: title || 'Data', data: visibleSeriesData }],
     };
 
-    const legendItems = seriesData;
-
     return (
       <div style={{ width: '100%' }}>
-        {/* Interactive legend at top with small font and min-h-[40px] */}
-        {legendItems.length > 0 && (
-          <div className="mb-2 w-full min-h-[40px]">
-            <div className="flex flex-wrap gap-x-2 gap-y-1 items-center text-[10px] text-gray-700">
-              {legendItems.map((item: any, idx: number) => {
+        {seriesData.length > 0 && (
+          <div 
+            className="mb-4 w-full overflow-y-auto border-b border-gray-100" 
+            style={{ height: '80px' }}
+          >
+            <div className="flex flex-wrap items-center text-[10px] text-gray-700 p-1">
+              {seriesData.map((item: any, idx: number) => {
                 const hidden = hiddenNames.includes(item.name);
                 return (
                   <button
                     key={idx}
                     onClick={() => toggleLegend(item.name)}
-                    className={`inline-flex items-center gap-2 px-1 py-0.5 truncate focus:outline-none ${hidden ? 'opacity-40' : ''}`}
+                    className={`inline-flex items-center gap-2 px-1 py-0.5 focus:outline-none transition-opacity`}
                     title={item.name}
                   >
-                    <span style={{ width: 10, height: 10, borderRadius: 6, backgroundColor: item.color || '#ccc', display: 'inline-block', flex: '0 0 auto' }} />
-                    <span className="truncate max-w-[140px]">{item.name}</span>
+                    <span style={{ 
+                        width: 10, 
+                        height: 10, 
+                        borderRadius: '50%', 
+                        backgroundColor: hidden ? '#9ca3af' : item.color || '#ccc', 
+                        display: 'inline-block', 
+                        flex: '0 0 auto' 
+                    }} />
+                    <span className={`truncate max-w-[150px] ${hidden ? 'opacity-40 line-through hover:opacity-100' : 'opacity-100'}`}>{item.name}</span>
                   </button>
                 );
               })}
@@ -467,7 +525,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
           </div>
         )}
 
-        <div style={{ height: '100%' }}>
+        <div style={{ height: height }}>
           <HighchartsReact highcharts={Highcharts} options={options} />
         </div>
       </div>
@@ -517,6 +575,36 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
 
   const totalVisitedByRegion = (regionVisitedCustomerData || []).reduce((s: number, r: any) => s + (r.visited_customers || 0), 0);
   const totalCustomersByRegion = (regionVisitedCustomerData || []).reduce((s: number, r: any) => s + (r.total_customers || 0), 0);
+
+  // New data transformations for company-level customer report
+  const channelSalesData = dashboardData?.charts?.channel_sales?.map((item: any, idx: number) => ({
+    name: item.channel_name,
+    value: item.value || 0,
+    percentage: item.percentage || 0,
+    color: channelColors[idx % channelColors.length]
+  })) || [];
+
+  const customerCategorySalesData = dashboardData?.charts?.customer_category_sales?.map((item: any, idx: number) => ({
+    name: item.customer_category_name,
+    value: item.value || 0,
+    percentage: item.percentage || 0,
+    color: customerCategoryColors[idx % customerCategoryColors.length]
+  })) || [];
+
+  const topChannelsData = dashboardData?.charts?.top_channels?.map((item: any, idx: number) => ({
+    name: item.channel_name,
+    value: item.value || 0,
+    color: channelColors[idx % channelColors.length]
+  })) || [];
+
+  const topCustomerCategoriesData = dashboardData?.charts?.top_customer_categories?.map((item: any, idx: number) => ({
+    name: item.customer_category_name,
+    value: item.value || 0,
+    color: customerCategoryColors[idx % customerCategoryColors.length]
+  })) || [];
+
+  // Sales trend data - handle both old format (company_sales_trend) and new format (sales_trend)
+  const salesTrendData = dashboardData?.charts?.sales_trend || dashboardData?.charts?.company_sales_trend || [];
 
   // Area-specific charts
   const areaContributionData = dashboardData?.charts?.area_contribution_top_item?.map((item: any, idx: number) => ({
@@ -648,17 +736,21 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
   const totalCompany = companyData.reduce((sum: number, item: any) => sum + item.value, 0);
   const totalRegion = regionData.reduce((sum: number, item: any) => sum + item.value, 0);
 
-  // Table data transformations
+  // Table data transformations - Handle both sales reports (from tables) and customer reports (from charts)
   const topSalesmenTable = dashboardData?.tables?.top_salesmen?.slice(0, 10) || [];
   const topWarehousesTable = dashboardData?.tables?.top_warehouses?.slice(0, 10) || [];
-  const topCustomersTable = dashboardData?.tables?.top_customers?.slice(0, 10).map((customer: any) => ({
-    name: customer.customer_name,
+  
+  // For customers: try charts first (customer report), fallback to tables (sales report)
+  const topCustomersTable = (dashboardData?.charts?.top_customers || dashboardData?.tables?.top_customers)?.slice(0, 10).map((customer: any) => ({
+    name: customer.customers_name || customer.customer_name,
     contact: customer.contact,
     warehouse: customer.warehouse_name,
     value: customer.value
   })) || [];
-  const topItemsTable = dashboardData?.tables?.top_items?.slice(0, 10).map((item: any) => ({
-    name: item.item_name,
+  
+  // For items: try charts first (customer report), fallback to tables (sales report)
+  const topItemsTable = (dashboardData?.charts?.top_items || dashboardData?.tables?.top_items)?.slice(0, 10).map((item: any) => ({
+    name: item.name || item.item_name,
     value: item.value
   })) || [];
 
@@ -688,8 +780,9 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
   }));
 
   // Full top items dataset (no slice) — used for maximized view/table so chart and table match
-  const topItemsFull = (dashboardData?.tables?.top_items || []).map((item: any, idx: number) => ({
-    name: item.item_name || item.name,
+  // Handle both customer reports (charts) and sales reports (tables)
+  const topItemsFull = (dashboardData?.charts?.top_items || dashboardData?.tables?.top_items || []).map((item: any, idx: number) => ({
+    name: item.name || item.item_name,
     value: item.value || 0,
     color: ['#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ef4444', '#ec4899'][idx % 10]
   })) || [];
@@ -701,26 +794,8 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
 
   // Custom Pie Chart component with 3D exploded style
   const ExplodedPieChart = ({ data, innerRadius = 0, outerRadius = 80, labelType = 'percentage' }: any) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-
-    useEffect(() => {
-      const updateDimensions = () => {
-        if (containerRef.current) {
-          const { width, height } = containerRef.current.getBoundingClientRect();
-          setDimensions({ width, height });
-        }
-      };
-
-      updateDimensions();
-      window.addEventListener('resize', updateDimensions);
-      return () => window.removeEventListener('resize', updateDimensions);
-    }, []);
-
-    // Ensure data is an array
+    // Always use 100% for size and enforce a square aspect ratio on the container
     const chartData = Array.isArray(data) ? data : [];
-    const total = chartData.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-
     if (chartData.length === 0) {
       return (
         <div className="w-full h-full flex items-center justify-center text-gray-500">
@@ -728,36 +803,31 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
         </div>
       );
     }
-
     return (
-      <div ref={containerRef} className="w-full h-full relative">
-        <Highcharts3DPie data={chartData} innerRadius={innerRadius} outerRadius={outerRadius} />
+      <div
+        className="w-full h-full relative"
+        style={{
+          aspectRatio: '1 / 1',
+          minHeight: 220,
+          maxHeight: 500,
+          maxWidth: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div style={{ width: '100%', height: '100%', maxWidth: 500, maxHeight: 500 }}>
+          <Highcharts3DPie data={chartData} innerRadius={innerRadius} outerRadius={outerRadius} size={'100%'} />
+        </div>
       </div>
     );
   };
 
   // Donut Chart with exploded effect
-  const ExplodedDonutChart = ({ data, innerRadius = 60, outerRadius = 100, labelType = 'percentage', size = '75%' }: any) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-
-    useEffect(() => {
-      const updateDimensions = () => {
-        if (containerRef.current) {
-          const { width, height } = containerRef.current.getBoundingClientRect();
-          setDimensions({ width, height });
-        }
-      };
-
-      updateDimensions();
-      window.addEventListener('resize', updateDimensions);
-      return () => window.removeEventListener('resize', updateDimensions);
-    }, []);
-
-    // Ensure data is an array
+  const ExplodedDonutChart = ({ data, innerRadius = 60, outerRadius = 100, labelType = 'percentage', size = '100%' }: any) => {
+    // Always use 100% for size and enforce a square aspect ratio on the container
     const chartData = Array.isArray(data) ? data : [];
-    const total = chartData.reduce((sum: number, item: any) => sum + (item.value || 0), 0);
-
     if (chartData.length === 0) {
       return (
         <div className="w-full h-full flex items-center justify-center text-gray-500">
@@ -765,10 +835,23 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
         </div>
       );
     }
-
     return (
-      <div ref={containerRef} className="w-full h-full  relative">
-        <Highcharts3DPie data={chartData} innerRadius={innerRadius} outerRadius={outerRadius} size={size} />
+      <div
+        className="w-full h-full relative"
+        style={{
+          aspectRatio: '1 / 1',
+          minHeight: 220,
+          maxHeight: 500,
+          maxWidth: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div style={{ width: '100%', height: '100%', maxWidth: 500, maxHeight: 500 }}>
+          <Highcharts3DPie data={chartData} innerRadius={innerRadius} outerRadius={outerRadius} size={'100%'} />
+        </div>
       </div>
     );
   };
@@ -1019,22 +1102,31 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
     
     if (selectedMaxView === 'trend') {
       if (dataLevel === 'company') {
-        trendData = companySalesTrend;
+        // For customer reports, use salesTrendData; for sales reports, use companySalesTrend
+        trendData = reportType === 'customer' && salesTrendData.length > 0 ? salesTrendData : companySalesTrend;
         trendTitle = 'Company Sales Trend';
       } else if (dataLevel === 'region') {
-        trendData = regionSalesTrend;
+        // For customer reports, use salesTrendData; for sales reports, use regionSalesTrend
+        trendData = reportType === 'customer' && salesTrendData.length > 0 ? salesTrendData : regionSalesTrend;
         trendTitle = 'Region Sales Trend';
       } else if (dataLevel === 'area') {
-        trendData = areaSalesTrend;
+        // For customer reports, use salesTrendData; for sales reports, use areaSalesTrend
+        trendData = reportType === 'customer' && salesTrendData.length > 0 ? salesTrendData : areaSalesTrend;
         trendTitle = 'Area Sales Trend';
       } else if (dataLevel === 'warehouse') {
-        const wh = dashboardData?.charts?.warehouse_trend || [];
-        const periods = Array.from(new Set(wh.map((r: any) => r.period))) as string[];
-        trendData = (periods as string[]).map((p: string) => ({
-          period: p,
-          value: wh.filter((x: any) => x.period === p).reduce((s: number, x: any) => s + (x.value || 0), 0)
-        }));
-        trendTitle = 'Warehouse Sales Trend';
+        // For customer reports, use salesTrendData; for sales reports, use warehouse_trend
+        if (reportType === 'customer' && salesTrendData.length > 0) {
+          trendData = salesTrendData;
+          trendTitle = 'Warehouse Sales Trend';
+        } else {
+          const wh = dashboardData?.charts?.warehouse_trend || [];
+          const periods = Array.from(new Set(wh.map((r: any) => r.period))) as string[];
+          trendData = (periods as string[]).map((p: string) => ({
+            period: p,
+            value: wh.filter((x: any) => x.period === p).reduce((s: number, x: any) => s + (x.value || 0), 0)
+          }));
+          trendTitle = 'Warehouse Sales Trend';
+        }
       }
     }
 
@@ -1059,6 +1151,10 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
               {selectedMaxView === 'warehouses' && 'Top Warehouses Details'}
               {selectedMaxView === 'customers' && 'Top Customers Details'}
               {selectedMaxView === 'items' && 'Top Items Details'}
+              {selectedMaxView === 'channels' && 'Channel Sales Details'}
+              {selectedMaxView === 'customerCategories' && 'Customer Category Sales Details'}
+              {selectedMaxView === 'topChannels' && 'Top Channels Details'}
+              {selectedMaxView === 'topCustomerCategories' && 'Top Customer Categories Details'}
             </h2>
             <button 
               onClick={() => setSelectedMaxView(null)}
@@ -1235,7 +1331,6 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
               {selectedMaxView === 'regionItems' && (
                   (() => {
                     const source = props.regionContributionData || (dashboardData?.charts?.region_contribution_top_item || []);
-                    console.log('Region Contribution Data for Maximized View:', (dashboardData?.charts?.region_contribution_top_item || []));
                     const chartData = (Array.isArray(source) ? source : []).map((it: any, i: number) => ({
                       name: `${it.region_name || it.region_label || it.name}`,
                       value: it.value || 0,
@@ -1307,7 +1402,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                               <XAxis dataKey="period" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
                               <YAxis tickFormatter={(value) => `${(value / 100000).toFixed(2)}L`} tick={{ fontSize: 13 }} />
                               <Tooltip formatter={(value: any) => `${value.toLocaleString()}`} />
-                              <Legend />
+                              {/* <Legend /> */}
                               {regionNames.map((rn: string, idx: number) => (
                                 <Line
                                   key={rn}
@@ -1383,7 +1478,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                               <XAxis dataKey="period" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
                               <YAxis tickFormatter={(value) => ` ${(value / 100000).toFixed(2)}L`} tick={{ fontSize: 13 }} />
                               <Tooltip formatter={(value: any) => ` ${value.toLocaleString()}`} />
-                              <Legend />
+                              {/* <Legend /> */}
                               {areaNames.map((an: string, idx: number) => (
                                 <Line
                                   key={an}
@@ -1481,7 +1576,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                                 <XAxis dataKey="period" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
                                 <YAxis tickFormatter={(value) => ` ${(value / 100000).toFixed(2)}L`} tick={{ fontSize: 13 }} />
                                 <Tooltip formatter={(value: any) => ` ${value.toLocaleString()}`} />
-                                <Legend />
+                                {/* <Legend /> */}
                                 {warehouseNames.map((wn: string, idx: number) => (
                                   <Line
                                     key={wn}
@@ -1992,14 +2087,307 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                 </div>
               </>
             )}
+
+            {/* Channels View */}
+            {selectedMaxView === 'channels' && channelSalesData.length > 0 && (
+              <>
+                <div className="bg-white p-6 border rounded-lg shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Channel Sales Distribution</h3>
+                  <MaximizedExplodedPieChart data={channelSalesData} outerRadius={200} />
+                </div>
+                <div className="bg-white p-6 border rounded-lg shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Channel Sales Table</h3>
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b-2 border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">Rank</th>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">Channel Name</th>
+                        <th className="px-6 py-4 text-right font-semibold text-gray-700">Sales Value</th>
+                        <th className="px-6 py-4 text-right font-semibold text-gray-700">Percentage</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {channelSalesData.map((channel: any, index: number) => (
+                        <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="px-6 py-4 text-gray-600">{index + 1}</td>
+                          <td className="px-6 py-4 text-gray-800 font-medium">{channel.name}</td>
+                          <td className="px-6 py-4 text-right text-gray-800 font-semibold">
+                            {channel.value?.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-right text-gray-600">
+                            {channel.percentage?.toFixed(2)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Customer Categories View */}
+            {selectedMaxView === 'customerCategories' && customerCategorySalesData.length > 0 && (
+              <>
+                <div className="bg-white p-6 border rounded-lg shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Customer Category Sales Distribution</h3>
+                  <MaximizedExplodedPieChart data={customerCategorySalesData} innerRadius={100} outerRadius={200} />
+                </div>
+                <div className="bg-white p-6 border rounded-lg shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Customer Category Sales Table</h3>
+                  <div className="overflow-x-auto max-h-[600px]">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b-2 border-gray-200 sticky top-0">
+                        <tr>
+                          <th className="px-6 py-4 text-left font-semibold text-gray-700">Rank</th>
+                          <th className="px-6 py-4 text-left font-semibold text-gray-700">Customer Category</th>
+                          <th className="px-6 py-4 text-right font-semibold text-gray-700">Sales Value</th>
+                          <th className="px-6 py-4 text-right font-semibold text-gray-700">Percentage</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customerCategorySalesData.map((category: any, index: number) => (
+                          <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="px-6 py-4 text-gray-600">{index + 1}</td>
+                            <td className="px-6 py-4 text-gray-800 font-medium">{category.name}</td>
+                            <td className="px-6 py-4 text-right text-gray-800 font-semibold">
+                              {category.value?.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 text-right text-gray-600">
+                              {category.percentage?.toFixed(2)}%
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Top Channels View */}
+            {selectedMaxView === 'topChannels' && topChannelsData.length > 0 && (
+              <>
+                <div className="bg-white p-6 border rounded-lg shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Top Channels Distribution</h3>
+                  <div className="w-full h-[520px]">
+                    <Column3DChart data={topChannelsData} xAxisKey="name" yAxisKey="value" colors={channelColors} height="480px" />
+                  </div>
+                </div>
+                <div className="bg-white p-6 border rounded-lg shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Top Channels Table</h3>
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b-2 border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">Rank</th>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">Channel Name</th>
+                        <th className="px-6 py-4 text-right font-semibold text-gray-700">Sales Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topChannelsData.map((channel: any, index: number) => (
+                        <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="px-6 py-4 text-gray-600">{index + 1}</td>
+                          <td className="px-6 py-4 text-gray-800 font-medium">{channel.name}</td>
+                          <td className="px-6 py-4 text-right text-gray-800 font-semibold">
+                            {channel.value?.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Top Customer Categories View */}
+            {selectedMaxView === 'topCustomerCategories' && topCustomerCategoriesData.length > 0 && (
+              <>
+                <div className="bg-white p-6 border rounded-lg shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Top Customer Categories Distribution</h3>
+                  <div className="w-full h-[520px]">
+                    <Column3DChart data={topCustomerCategoriesData} xAxisKey="name" yAxisKey="value" colors={customerCategoryColors} height="480px" />
+                  </div>
+                </div>
+                <div className="bg-white p-6 border rounded-lg shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Top Customer Categories Table</h3>
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b-2 border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">Rank</th>
+                        <th className="px-6 py-4 text-left font-semibold text-gray-700">Customer Category</th>
+                        <th className="px-6 py-4 text-right font-semibold text-gray-700">Sales Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topCustomerCategoriesData.map((category: any, index: number) => (
+                        <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="px-6 py-4 text-gray-600">{index + 1}</td>
+                          <td className="px-6 py-4 text-gray-800 font-medium">{category.name}</td>
+                          <td className="px-6 py-4 text-right text-gray-800 font-semibold">
+                            {category.value?.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
     );
   };
 
-  // If API returned region-level data, render the region-specific 4-row layout
-  if (dataLevel === 'region') {
+  // Company-level sales report layout
+  if (dataLevel === 'company' && reportType !== 'customer') {
+    return (
+      <div className="mt-5 space-y-6">
+        <MaximizedView />
+
+        {/* Row 1 - Sales Trend: Company Level */}
+        <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-800">Company Sales Trend</h3>
+            <button 
+              onClick={() => setSelectedMaxView('trend')} 
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+            >
+              <Maximize2 size={16} className="text-gray-600" />
+            </button>
+          </div>
+          <div className="w-full h-[380px]">
+            {companySalesTrend.length === 0 ? (
+              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                No data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={companySalesTrend}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="period" 
+                    stroke="#6b7280"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis 
+                    stroke="#6b7280"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorValue)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2 - Top Performers: Salesmen and Customers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Salesmen Chart */}
+          <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Top Salesmen</h3>
+              <button onClick={() => setSelectedMaxView('salesmen')} className="p-1 hover:bg-gray-100 rounded"><Maximize2 size={16} /></button>
+            </div>
+            <div className="w-full h-[420px]">
+              {topSalesmenChartData.length === 0 ? (
+                <div className="flex items-center justify-center text-gray-500 text-sm">
+                  <AlertCircle size={16} className="mr-2" /> No data available
+                </div>
+              ) : (
+                <Column3DChart data={topSalesmenChartData} xAxisKey="name" yAxisKey="value" colors={salesmanColors} height="420px" />
+              )}
+            </div>
+          </div>
+
+          {/* Top Customers Chart */}
+          <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Top Customers</h3>
+              <button onClick={() => setSelectedMaxView('customers')} className="p-1 hover:bg-gray-100 rounded"><Maximize2 size={16} /></button>
+            </div>
+            <div className="w-full h-[420px]">
+              {topCustomersChartData.length === 0 ? (
+                <div className="flex items-center justify-center text-gray-500 text-sm">
+                  <AlertCircle size={16} className="mr-2" /> No data available
+                </div>
+              ) : (
+                <Column3DChart data={topCustomersChartData} xAxisKey="name" yAxisKey="value" colors={['#f43f5e', '#fb923c', '#facc15', '#4ade80', '#22d3ee', '#a78bfa', '#f472b6', '#fb7185', '#fdba74', '#fde047']} height="420px" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3 - Top Items + Top Warehouses */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Items */}
+          <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Top Items</h3>
+              <button onClick={() => setSelectedMaxView('items')} className="p-1 hover:bg-gray-100 rounded"><Maximize2 size={16} /></button>
+            </div>
+            <div className="w-full h-[420px]">
+              {topItemsChartData.length === 0 ? (
+                <div className="flex items-center justify-center text-gray-500 text-sm">
+                  <AlertCircle size={16} className="mr-2" /> No data available
+                </div>
+              ) : (
+                <Column3DChart
+                  data={topItemsChartData}
+                  xAxisKey="name"
+                  yAxisKey="value"
+                  colors={areaColors}
+                  height="420px"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Top Warehouses */}
+          <div className="bg-white p-5 border w-full rounded-lg shadow-sm border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Top Warehouses</h3>
+              <button onClick={() => setSelectedMaxView('warehouses')} className="p-1 hover:bg-gray-100 rounded"><Maximize2 size={16} /></button>
+            </div>
+            <div className="w-full  flex flex-wrap h-[420px]">
+              {topWarehousesChartData.length === 0 ? (
+                <div className="flex items-center justify-center text-gray-500 text-sm">
+                  <AlertCircle size={16} className="mr-2" /> No data available
+                </div>
+              ) : (
+                <Column3DChart data={topWarehousesChartData} xAxisKey="name" yAxisKey="value" colors={warehouseColors} height="420px" width="100%" />
+              )}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
+  // If API returned region-level data, render the region-specific 4-row layout (sales reports only)
+  if (dataLevel === 'region' && reportType !== 'customer') {
     // Prepare region contribution data for pie chart (use region + item labels)
     const regionContributionPieData = (dashboardData?.charts?.region_contribution_top_item || []).map((it: any, i: number) => ({
       name: `${it.region_name || 'Unknown'} - ${it.item_name || ''}`,
@@ -2052,7 +2440,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
               <h3 className="text-lg font-semibold text-gray-800">Region Performance</h3>
               <button onClick={() => setSelectedMaxView('region')} className="p-1 hover:bg-gray-100 rounded"><Maximize2 size={16} /></button>
             </div>
-            <div className="w-full h-[420px]">
+            <div className="w-full h-full">
               <ExplodedDonutChart 
                 data={regionPerformanceData}
                 innerRadius={60}
@@ -2176,8 +2564,8 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
     );
   }
 
-  // If API returned warehouse-level data, render the warehouse-specific 4-row layout
-  if (dataLevel === 'warehouse') {
+  // If API returned warehouse-level data, render the warehouse-specific 4-row layout (sales reports only)
+  if (dataLevel === 'warehouse' && reportType !== 'customer') {
     const warehouseTrend = dashboardData?.charts?.warehouse_trend || [];
     const warehouseSales = dashboardData?.charts?.warehouse_sales || [];
     const regionContribution = dashboardData?.charts?.region_contribution || [];
@@ -2325,7 +2713,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
               <h3 className="text-lg font-semibold text-gray-800">Region Contribution</h3>
               <button onClick={() => setSelectedMaxView('regionItems')} className="p-1 hover:bg-gray-100 rounded"><Maximize2 size={16} /></button>
             </div>
-            <div className="w-full h-[370px]">
+            <div className="w-full h-full">
               {regionContributionPieData.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
                   <AlertCircle size={16} className="mr-2" /> No data available
@@ -2588,8 +2976,8 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
     );
   }
 
-  // If API returned area-level data, render the area-specific 4-row layout
-  if (dataLevel === 'area') {
+  // If API returned area-level data, render the area-specific 4-row layout (sales reports only)
+  if (dataLevel === 'area' && reportType !== 'customer') {
     // Prepare area contribution data for pie chart
     const areaContributionPieData = (() => {
       const data = areaContributionData.reduce((acc: any, it: any) => {
@@ -2805,6 +3193,966 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
     );
   }
 
+  // Company-level layout for customer reports (new data structure)
+  if (dataLevel === 'company' && reportType === 'customer') {
+    // Extract KPI data
+    const kpisData = dashboardData?.kpis || {};
+    const totalSales = kpisData.total_sales || 0;
+    const totalCustomers = kpisData.total_customers || 0;
+    const activeSalesCustomers = kpisData.active_sales_customers || 0;
+    const inactiveSalesCustomers = kpisData.inactive_sales_customers || 0;
+
+    const kpiCards = [
+      {
+        title: "Total Sales",
+        value: totalSales.toLocaleString(),
+        icon: "carbon:currency",
+        color: "linear-gradient(135deg, #f43f5e 0%, #fbbf24 100%)", // Rose to amber
+      },
+      {
+        title: "Total Customers",
+        value: totalCustomers.toLocaleString(),
+        icon: "mdi:account-group",
+        color: "linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)", // Indigo to cyan
+      },
+      {
+        title: "Active Customers",
+        value: activeSalesCustomers.toLocaleString(),
+        icon: "mdi:account-check",
+        color: "linear-gradient(135deg, #22d3ee 0%, #4ade80 100%)", // Cyan to green
+      },
+      {
+        title: "Inactive Customers",
+        value: inactiveSalesCustomers.toLocaleString(),
+        icon: "mdi:account-off",
+        color: "linear-gradient(135deg, #64748b 0%, #a1a1aa 100%)", // Slate to gray
+      },
+    ];
+
+    return (
+      <div className="mt-5 space-y-6">
+        <MaximizedView />
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpiCards.map((card, index) => (
+            <div
+              key={index}
+              className="flex items-center rounded-xl shadow-lg border border-gray-100 p-3"
+              style={{
+                background: card.color,
+                color: '#fff',
+                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.08)',
+                minHeight: 80,
+              }}
+            >
+              <div className="p-3 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
+                <Icon icon={card.icon} width="32" height="32" color="#fff" />
+              </div>
+              <div className="ml-4 flex-1">
+                <p className="text-xs font-medium opacity-90" style={{ color: '#fff' }}>{card.title}</p>
+                <p className="mt-1 font-bold text-xl" style={{ color: '#fff' }}>{card.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Row 1: Sales Trend Line Graph (Full Width) */}
+        {salesTrendData.length > 0 && (
+          <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Sales Trend</h3>
+              <button 
+                onClick={() => setSelectedMaxView('trend')}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <Maximize2 size={16} />
+              </button>
+            </div>
+            <div className="w-full h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={salesTrendData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                  <defs>
+                    <linearGradient id="companyTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.5}/>
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="period" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
+                  <YAxis tickFormatter={(value) => `${(value / 100000).toFixed(2)}L`} tick={{ fontSize: 13 }} />
+                  <Tooltip formatter={(value: any) => `${value.toLocaleString()}`} />
+                  <Area type="monotone" dataKey="value" name="Sales" stroke="#8b5cf6" strokeWidth={2} fill="url(#companyTrendGradient)" dot={{ fill: '#8b5cf6', strokeWidth: 1, r: 3 }} activeDot={{ r: 5, fill: '#6d28d9' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Row 2: Channel Sales Distribution + Customer Category Sales */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Channel Sales - Pie Chart */}
+          {channelSalesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Channel Sales Distribution</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('channels')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-full">
+                <ExplodedPieChart data={channelSalesData} outerRadius={80} />
+              </div>
+            </div>
+          )}
+
+          {/* Customer Category Sales - Donut Chart */}
+          {customerCategorySalesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Customer Category Sales</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('customerCategories')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-full">
+                <ExplodedDonutChart data={customerCategorySalesData.slice(0, 10)} innerRadius={50} outerRadius={80} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Row 3: Top Items + Top Customers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Items */}
+          {topItemsChartData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Items</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('items')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topItemsChartData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={['#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ef4444', '#ec4899']} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Customers */}
+          {topCustomersChartData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Customers</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('customers')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topCustomersChartData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={['#f43f5e', '#fb923c', '#facc15', '#4ade80', '#22d3ee', '#a78bfa', '#f472b6', '#fb7185', '#fdba74', '#fde047']} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Row 4: Top Customer Categories + Top Channels */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Customer Categories Chart */}
+          {topCustomerCategoriesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Customer Categories</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('topCustomerCategories')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topCustomerCategoriesData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={customerCategoryColors} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Channels Chart */}
+          {topChannelsData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Channels</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('topChannels')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topChannelsData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={channelColors} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Region-level layout for customer reports
+  if (dataLevel === 'region' && reportType === 'customer') {
+    // Extract KPI data
+    const kpisData = dashboardData?.kpis || {};
+    const totalSales = kpisData.total_sales || 0;
+    const totalCustomers = kpisData.total_customers || 0;
+    const activeSalesCustomers = kpisData.active_sales_customers || 0;
+    const inactiveSalesCustomers = kpisData.inactive_sales_customers || 0;
+
+    const kpiCards = [
+      {
+        title: "Total Sales",
+        value: totalSales.toLocaleString(),
+        icon: "carbon:currency",
+        color: "linear-gradient(135deg, #f43f5e 0%, #fbbf24 100%)",
+      },
+      {
+        title: "Total Customers",
+        value: totalCustomers.toLocaleString(),
+        icon: "mdi:account-group",
+        color: "linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)",
+      },
+      {
+        title: "Active Customers",
+        value: activeSalesCustomers.toLocaleString(),
+        icon: "mdi:account-check",
+        color: "linear-gradient(135deg, #22d3ee 0%, #4ade80 100%)",
+      },
+      {
+        title: "Inactive Customers",
+        value: inactiveSalesCustomers.toLocaleString(),
+        icon: "mdi:account-off",
+        color: "linear-gradient(135deg, #64748b 0%, #a1a1aa 100%)",
+      },
+    ];
+
+    return (
+      <div className="mt-5 space-y-6">
+        <MaximizedView />
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpiCards.map((card, index) => (
+            <div
+              key={index}
+              className="flex items-center rounded-xl shadow-lg border border-gray-100 p-3"
+              style={{
+                background: card.color,
+                color: '#fff',
+                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.08)',
+                minHeight: 80,
+              }}
+            >
+              <div className="p-3 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
+                <Icon icon={card.icon} width="32" height="32" color="#fff" />
+              </div>
+              <div className="ml-4 flex-1">
+                <p className="text-xs font-medium opacity-90" style={{ color: '#fff' }}>{card.title}</p>
+                <p className="mt-1 font-bold text-xl" style={{ color: '#fff' }}>{card.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Row 1: Sales Trend Line Graph (Full Width) */}
+        {salesTrendData.length > 0 && (
+          <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Sales Trend</h3>
+              <button 
+                onClick={() => setSelectedMaxView('trend')}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <Maximize2 size={16} />
+              </button>
+            </div>
+            <div className="w-full h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={salesTrendData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                  <defs>
+                    <linearGradient id="regionTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.5}/>
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="period" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
+                  <YAxis tickFormatter={(value) => `${(value / 100000).toFixed(2)}L`} tick={{ fontSize: 13 }} />
+                  <Tooltip formatter={(value: any) => `${value.toLocaleString()}`} />
+                  <Area type="monotone" dataKey="value" name="Sales" stroke="#8b5cf6" strokeWidth={2} fill="url(#regionTrendGradient)" dot={{ fill: '#8b5cf6', strokeWidth: 1, r: 3 }} activeDot={{ r: 5, fill: '#6d28d9' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Row 2: Channel Sales Distribution + Customer Category Sales */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Channel Sales - Pie Chart */}
+          {channelSalesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Channel Sales Distribution</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('channels')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-full">
+                <ExplodedPieChart data={channelSalesData} outerRadius={80} />
+              </div>
+            </div>
+          )}
+
+          {/* Customer Category Sales - Donut Chart */}
+          {customerCategorySalesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Customer Category Sales</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('customerCategories')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-full">
+                <ExplodedDonutChart data={customerCategorySalesData.slice(0, 10)} innerRadius={50} outerRadius={80} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Row 3: Top Items + Top Customers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Items */}
+          {topItemsChartData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Items</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('items')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topItemsChartData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={['#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ef4444', '#ec4899']} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Customers */}
+          {topCustomersChartData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Customers</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('customers')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topCustomersChartData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={['#f43f5e', '#fb923c', '#facc15', '#4ade80', '#22d3ee', '#a78bfa', '#f472b6', '#fb7185', '#fdba74', '#fde047']} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Row 4: Top Customer Categories + Top Channels */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Customer Categories Chart */}
+          {topCustomerCategoriesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Customer Categories</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('topCustomerCategories')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topCustomerCategoriesData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={customerCategoryColors} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Channels Chart */}
+          {topChannelsData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Channels</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('topChannels')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topChannelsData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={channelColors} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Area-level layout for customer reports
+  if (dataLevel === 'area' && reportType === 'customer') {
+    // Extract KPI data
+    const kpisData = dashboardData?.kpis || {};
+    const totalSales = kpisData.total_sales || 0;
+    const totalCustomers = kpisData.total_customers || 0;
+    const activeSalesCustomers = kpisData.active_sales_customers || 0;
+    const inactiveSalesCustomers = kpisData.inactive_sales_customers || 0;
+
+    const kpiCards = [
+      {
+        title: "Total Sales",
+        value: totalSales.toLocaleString(),
+        icon: "carbon:currency",
+        color: "linear-gradient(135deg, #f43f5e 0%, #fbbf24 100%)",
+      },
+      {
+        title: "Total Customers",
+        value: totalCustomers.toLocaleString(),
+        icon: "mdi:account-group",
+        color: "linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)",
+      },
+      {
+        title: "Active Customers",
+        value: activeSalesCustomers.toLocaleString(),
+        icon: "mdi:account-check",
+        color: "linear-gradient(135deg, #22d3ee 0%, #4ade80 100%)",
+      },
+      {
+        title: "Inactive Customers",
+        value: inactiveSalesCustomers.toLocaleString(),
+        icon: "mdi:account-off",
+        color: "linear-gradient(135deg, #64748b 0%, #a1a1aa 100%)",
+      },
+    ];
+
+    return (
+      <div className="mt-5 space-y-6">
+        <MaximizedView />
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpiCards.map((card, index) => (
+            <div
+              key={index}
+              className="flex items-center rounded-xl shadow-lg border border-gray-100 p-3"
+              style={{
+                background: card.color,
+                color: '#fff',
+                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.08)',
+                minHeight: 80,
+              }}
+            >
+              <div className="p-3 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
+                <Icon icon={card.icon} width="32" height="32" color="#fff" />
+              </div>
+              <div className="ml-4 flex-1">
+                <p className="text-xs font-medium opacity-90" style={{ color: '#fff' }}>{card.title}</p>
+                <p className="mt-1 font-bold text-xl" style={{ color: '#fff' }}>{card.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Row 1: Sales Trend Line Graph (Full Width) */}
+        {salesTrendData.length > 0 && (
+          <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Sales Trend</h3>
+              <button 
+                onClick={() => setSelectedMaxView('trend')}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <Maximize2 size={16} />
+              </button>
+            </div>
+            <div className="w-full h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={salesTrendData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                  <defs>
+                    <linearGradient id="areaTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.5}/>
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="period" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
+                  <YAxis tickFormatter={(value) => `${(value / 100000).toFixed(2)}L`} tick={{ fontSize: 13 }} />
+                  <Tooltip formatter={(value: any) => `${value.toLocaleString()}`} />
+                  <Area type="monotone" dataKey="value" name="Sales" stroke="#8b5cf6" strokeWidth={2} fill="url(#areaTrendGradient)" dot={{ fill: '#8b5cf6', strokeWidth: 1, r: 3 }} activeDot={{ r: 5, fill: '#6d28d9' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Row 2: Channel Sales Distribution + Customer Category Sales */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Channel Sales - Pie Chart */}
+          {channelSalesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Channel Sales Distribution</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('channels')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-full">
+                <ExplodedPieChart data={channelSalesData} outerRadius={80} />
+              </div>
+            </div>
+          )}
+
+          {/* Customer Category Sales - Donut Chart */}
+          {customerCategorySalesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Customer Category Sales</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('customerCategories')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-full">
+                <ExplodedDonutChart data={customerCategorySalesData.slice(0, 10)} innerRadius={50} outerRadius={80} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Row 3: Top Items + Top Customers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Items */}
+          {topItemsChartData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Items</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('items')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topItemsChartData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={['#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ef4444', '#ec4899']} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Customers */}
+          {topCustomersChartData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Customers</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('customers')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topCustomersChartData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={['#f43f5e', '#fb923c', '#facc15', '#4ade80', '#22d3ee', '#a78bfa', '#f472b6', '#fb7185', '#fdba74', '#fde047']} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Row 4: Top Customer Categories + Top Channels */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Customer Categories Chart */}
+          {topCustomerCategoriesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Customer Categories</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('topCustomerCategories')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topCustomerCategoriesData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={customerCategoryColors} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Channels Chart */}
+          {topChannelsData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Channels</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('topChannels')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topChannelsData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={channelColors} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Warehouse-level layout for customer reports
+  if (dataLevel === 'warehouse' && reportType === 'customer') {
+    // Extract KPI data
+    const kpisData = dashboardData?.kpis || {};
+    const totalSales = kpisData.total_sales || 0;
+    const totalCustomers = kpisData.total_customers || 0;
+    const activeSalesCustomers = kpisData.active_sales_customers || 0;
+    const inactiveSalesCustomers = kpisData.inactive_sales_customers || 0;
+
+    const kpiCards = [
+      {
+        title: "Total Sales",
+        value: totalSales.toLocaleString(),
+        icon: "carbon:currency",
+        color: "linear-gradient(135deg, #f43f5e 0%, #fbbf24 100%)",
+      },
+      {
+        title: "Total Customers",
+        value: totalCustomers.toLocaleString(),
+        icon: "mdi:account-group",
+        color: "linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)",
+      },
+      {
+        title: "Active Customers",
+        value: activeSalesCustomers.toLocaleString(),
+        icon: "mdi:account-check",
+        color: "linear-gradient(135deg, #22d3ee 0%, #4ade80 100%)",
+      },
+      {
+        title: "Inactive Customers",
+        value: inactiveSalesCustomers.toLocaleString(),
+        icon: "mdi:account-off",
+        color: "linear-gradient(135deg, #64748b 0%, #a1a1aa 100%)",
+      },
+    ];
+
+    return (
+      <div className="mt-5 space-y-6">
+        <MaximizedView />
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpiCards.map((card, index) => (
+            <div
+              key={index}
+              className="flex items-center rounded-xl shadow-lg border border-gray-100 p-3"
+              style={{
+                background: card.color,
+                color: '#fff',
+                boxShadow: '0 4px 24px 0 rgba(0,0,0,0.08)',
+                minHeight: 80,
+              }}
+            >
+              <div className="p-3 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
+                <Icon icon={card.icon} width="32" height="32" color="#fff" />
+              </div>
+              <div className="ml-4 flex-1">
+                <p className="text-xs font-medium opacity-90" style={{ color: '#fff' }}>{card.title}</p>
+                <p className="mt-1 font-bold text-xl" style={{ color: '#fff' }}>{card.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Row 1: Sales Trend Line Graph (Full Width) */}
+        {salesTrendData.length > 0 && (
+          <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Sales Trend</h3>
+              <button 
+                onClick={() => setSelectedMaxView('trend')}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <Maximize2 size={16} />
+              </button>
+            </div>
+            <div className="w-full h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={salesTrendData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                  <defs>
+                    <linearGradient id="warehouseTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.5}/>
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="period" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" height={80} />
+                  <YAxis tickFormatter={(value) => `${(value / 100000).toFixed(2)}L`} tick={{ fontSize: 13 }} />
+                  <Tooltip formatter={(value: any) => `${value.toLocaleString()}`} />
+                  <Area type="monotone" dataKey="value" name="Sales" stroke="#8b5cf6" strokeWidth={2} fill="url(#warehouseTrendGradient)" dot={{ fill: '#8b5cf6', strokeWidth: 1, r: 3 }} activeDot={{ r: 5, fill: '#6d28d9' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Row 2: Channel Sales Distribution + Customer Category Sales */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Channel Sales - Pie Chart */}
+          {channelSalesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Channel Sales Distribution</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('channels')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-full">
+                <ExplodedPieChart data={channelSalesData} outerRadius={80} />
+              </div>
+            </div>
+          )}
+
+          {/* Customer Category Sales - Donut Chart */}
+          {customerCategorySalesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Customer Category Sales</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('customerCategories')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-full">
+                <ExplodedDonutChart data={customerCategorySalesData.slice(0, 10)} innerRadius={50} outerRadius={80} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Row 3: Top Items + Top Customers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Items */}
+          {topItemsChartData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Items</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('items')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topItemsChartData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={['#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#84cc16', '#eab308', '#f59e0b', '#f97316', '#ef4444', '#ec4899']} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Customers */}
+          {topCustomersChartData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Customers</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('customers')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topCustomersChartData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={['#f43f5e', '#fb923c', '#facc15', '#4ade80', '#22d3ee', '#a78bfa', '#f472b6', '#fb7185', '#fdba74', '#fde047']} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Row 4: Top Customer Categories + Top Channels */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Customer Categories Chart */}
+          {topCustomerCategoriesData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Customer Categories</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('topCustomerCategories')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topCustomerCategoriesData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={customerCategoryColors} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Channels Chart */}
+          {topChannelsData.length > 0 && (
+            <div className="bg-white p-5 border rounded-lg shadow-sm border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Top Channels</h3>
+                <button 
+                  onClick={() => setSelectedMaxView('topChannels')}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <Maximize2 size={16} />
+                </button>
+              </div>
+              <div className="w-full h-[420px]">
+                <Column3DChart 
+                  data={topChannelsData} 
+                  xAxisKey="name" 
+                  yAxisKey="value" 
+                  colors={channelColors} 
+                  height="420px" 
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-5 space-y-6">
       {/* Maximized View Modal */}
@@ -2824,7 +4172,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                 <Maximize2 size={16} />
               </button>
             </div>
-            <div className="w-full h-[350px]">
+            <div className="w-full h-full">
               <ExplodedPieChart data={companyData} outerRadius={80} />
             </div>
           </div>
@@ -2842,7 +4190,7 @@ const SalesCharts: React.FC<SalesChartsProps> = ({ chartData, dashboardData, isL
                 <Maximize2 size={16} />
               </button>
             </div>
-            <div className="w-full h-[350px]">
+            <div className="w-full h-full">
               <ExplodedDonutChart data={regionData} innerRadius={50} outerRadius={80} />
             </div>
           </div>
@@ -3043,6 +4391,8 @@ export default React.memo(SalesCharts, (prevProps, nextProps) => {
     prevProps.dashboardData === nextProps.dashboardData &&
     prevProps.isLoading === nextProps.isLoading &&
     prevProps.error === nextProps.error &&
-    prevProps.searchType === nextProps.searchType
+    prevProps.searchType === nextProps.searchType &&
+    prevProps.reportType === nextProps.reportType &&
+    prevProps.urlSizeWarning === nextProps.urlSizeWarning
   );
 });

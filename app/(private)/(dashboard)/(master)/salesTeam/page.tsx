@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState,useEffect } from "react";
-
+import { downloadFile } from "@/app/services/allApi";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import Table, {
   listReturnType,
@@ -15,6 +15,7 @@ import {
   salesmanList,
   SalesmanListGlobalSearch,
   updateSalesmanStatus,
+  statusFilter,
 } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
@@ -25,9 +26,14 @@ const SalesmanPage = () => {
   const { setLoading } = useLoading();
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
-
+  const [threeDotLoading, setThreeDotLoading] = useState({
+        csv: false,
+        xlsx: false,
+    });
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentStatusFilter, setCurrentStatusFilter] = useState<boolean | null>(null);
+  const [searchFilterValue, setSearchFilterValue] = useState<string>("");
 
   // Refresh table when permissions load
   useEffect(() => {
@@ -46,93 +52,60 @@ const SalesmanPage = () => {
   const [warehouseId, setWarehouseId] = useState<string>("");
   const [routeId, setRouteId] = useState<string>("");
 
-  const handleStatusChange = async (
-    data: TableDataType[],
-    selectedRow: number[] | undefined,
-    status: "0" | "1"
-  ) => {
-    if (!selectedRow || selectedRow.length === 0) {
-      showSnackbar("Please select at least one sales Team", "error");
-      return;
-    }
-
-    const selectedSalesmen = data.filter((_, index) =>
-      selectedRow.includes(index)
-    );
-    // console.log(data, selectedRow)
-
-    const failedUpdates: string[] = [];
-
-    const selectedRowsData: string[] = data.filter((value, index) => selectedRow?.includes(index)).map((item) => item.id);
+  const handleStatusFilter = async (status: boolean) => {
     try {
-      setLoading(true);
-
-      const res = await updateSalesmanStatus({ salesman_ids: selectedRowsData, status });
-
-      if (failedUpdates.length > 0) {
-        showSnackbar(
-          `Failed to update status for: ${failedUpdates.join(", ")}`,
-          "error"
-        );
-      } else {
-        setRefreshKey((k) => k + 1);
-        showSnackbar("Status updated successfully", "success");
-        fetchSalesman();
-      }
-
+      const newFilter = currentStatusFilter === status ? null : status;
+      setCurrentStatusFilter(newFilter);
+      
+      setRefreshKey((k) => k + 1);
     } catch (error) {
-      console.error("Status update error:", error);
-      showSnackbar("An error occurred while updating status", "error");
-    } finally {
-      setLoading(false);
+      console.error("Error filtering by status:", error);
+      showSnackbar("Failed to filter by status", "error");
     }
   };
 
-
-  const handleExport = async (fileType: "csv" | "xlsx") => {
-    try {
-      setLoading(true);
-
-      const res = await exportSalesmanData({ format: fileType });
-      console.log("Export API Response:", res);
-
-      let downloadUrl = "";
-
-      if (res?.url && res.url.startsWith("blob:")) {
-        downloadUrl = res.url;
-      } else if (res?.url && res.url.startsWith("http")) {
-        downloadUrl = res.url;
-      } else if (typeof res === "string" && res.includes(",")) {
-        const blob = new Blob([res], {
-          type:
-            fileType === "csv"
-              ? "text/csv;charset=utf-8;"
-              : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-        downloadUrl = URL.createObjectURL(blob);
-      } else {
-        showSnackbar("No valid file or URL returned from server", "error");
-        return;
+    const statusUpdate = async (ids?: (string | number)[], status: number = 0) => {
+      try {
+        // setLoading(true);
+        if (!ids || ids.length === 0) {
+          showSnackbar("No vehicle selected", "error");
+          return;
+        }
+        const selectedRowsData: number[] = ids.map((id) => Number(id)).filter((n) => !Number.isNaN(n));
+        if (selectedRowsData.length === 0) {
+          showSnackbar("No vehicle selected", "error");
+          return;
+        }
+        await updateSalesmanStatus({ salesman_ids: selectedRowsData, status });
+        // Refresh vehicle list after 3 seconds
+        // (async () => {
+          // fetchVehicles();
+          setRefreshKey((k) => k + 1);
+        // });
+        showSnackbar("Vehicle status updated successfully", "success");
+        // setLoading(false);
+      } catch (error) {
+        showSnackbar("Failed to update vehicle status", "error");
+        // setLoading(false);
       }
+    };
 
-      // ⬇ Trigger browser download
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = `salesman_export.${fileType}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      showSnackbar(
-        `File Downloaded Successfully`,
-        "success"
-      );
+const exportFile = async (format: string) => {
+    try {
+      setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+      const response = await exportSalesmanData({ format, search: searchFilterValue, filter:{ status: currentStatusFilter == false ? "0" : "1" }});
+      if (response && typeof response === 'object' && response.download_url) {
+        await downloadFile(response.download_url);
+        showSnackbar("File downloaded successfully", "success");
+      } else {
+        showSnackbar("Failed to get download URL", "error");
+        setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+      }
     } catch (error) {
-      console.error("Export error:", error);
-      showSnackbar("Failed to export sales team data", "error");
+      showSnackbar("Failed to download vehicle data", "error");
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
     } finally {
-      // setLoading(false);
-      setShowExportDropdown(false);
+      setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
     }
   };
 
@@ -147,6 +120,7 @@ const SalesmanPage = () => {
         // setLoading(true);
         const res = await SalesmanListGlobalSearch({ query: query, per_page: pageSize.toString(), page: page.toString() });
         // setLoading(false);
+        setSearchFilterValue(query);
 
         return {
           data: res.data || [],
@@ -170,9 +144,18 @@ const SalesmanPage = () => {
     ): Promise<listReturnType> => {
       try {
         // setLoading(true);
-        const listRes = await salesmanList({
+        
+        // Build params with all filters
+        const params: any = {
           page: page.toString(),
-        });
+        };
+        
+        // Add status filter if active (true=1, false=0)
+        if (currentStatusFilter !== null) {
+          params.status = currentStatusFilter ? "1" : "0";
+        }
+        
+        const listRes = await salesmanList(params);
         // setLoading(false);
         return {
           data: listRes.data || [],
@@ -186,7 +169,7 @@ const SalesmanPage = () => {
         throw error;
       }
     },
-    []
+    [currentStatusFilter]
   );
 
   const columns = [
@@ -267,6 +250,11 @@ const SalesmanPage = () => {
       render: (row: TableDataType) => (
         <StatusBtn isActive={String(row.status) === "1"} />
       ),
+      filterStatus: {
+        enabled: true,
+        onFilter: handleStatusFilter,
+        currentFilter: currentStatusFilter,
+      },
     },
   ];
 
@@ -283,25 +271,80 @@ const SalesmanPage = () => {
             
             header: {
               title: "Sales Team",
+              exportButton: {
+                threeDotLoading: threeDotLoading,
+                show: true,
+                onClick: () => exportFile("xlsx"), // Only onClick, no api property
+              },
               threeDot: [
-                {
-                  icon: "gala:file-document",
-                  label: "Export CSV",
-                  onClick: () => handleExport("csv")
-                },
-                {
-                  icon: "gala:file-document",
-                  label: "Export Excel",
-                  onClick: () => handleExport("xlsx")
+                // {
+                //   icon: "gala:file-document",
+                //   label: "Export CSV",
+                //   onClick: () => handleExport("csv")
+                // },
+                // {
+                //   icon: "gala:file-document",
+                //   label: "Export Excel",
+                //   onClick: () => handleExport("xlsx")
+                // },
+                 {
+                  icon: "lucide:radio",
+                  label: "Inactive",
+                  // showOnSelect: true,
+                  showWhen: (data: TableDataType[], selectedRow?: number[]) => {
+                    if (!selectedRow || selectedRow.length === 0) return false;
+                    const status = selectedRow?.map((id) => data[id].status).map(String);
+                    return status?.includes("1") || false;
+                  },
+                  onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                    const status: string[] = [];
+                    const ids = selectedRow?.map((id) => {
+                      const currentStatus = data[id].status;
+                      if (!status.includes(currentStatus)) {
+                        status.push(currentStatus);
+                      }
+                      return data[id].id;
+                    })
+                    statusUpdate(ids, Number(0));
+                  },
                 },
                 {
                   icon: "lucide:radio",
-                  label: "Inactive",
-                  showOnSelect: true,
+                  label: "Active",
+                  // showOnSelect: true,
+                  showWhen: (data: TableDataType[], selectedRow?: number[]) => {
+                    if (!selectedRow || selectedRow.length === 0) return false;
+                    const status = selectedRow?.map((id) => data[id].status).map(String);
+                    return status?.includes("0") || false;
+                  },
                   onClick: (data: TableDataType[], selectedRow?: number[]) => {
-                    handleStatusChange(data, selectedRow, "0");
-                  }
-                }
+                    const status: string[] = [];
+                    const ids = selectedRow?.map((id) => {
+                      const currentStatus = data[id].status;
+                      if (!status.includes(currentStatus)) {
+                        status.push(currentStatus);
+                      }
+                      return data[id].id;
+                    })
+                    statusUpdate(ids, Number(1));
+                  },
+                },
+                // {
+                //   icon: "lucide:radio",
+                //   label: "Active",
+                //   showOnSelect: true,
+                //   onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                //     handleStatusChange(data, selectedRow, "1");
+                //   }
+                // },
+                // {
+                //   icon: "lucide:radio",
+                //   label: "Inactive",
+                //   showOnSelect: true,
+                //   onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                //     handleStatusChange(data, selectedRow, "0");
+                //   }
+                // }
               ],
               searchBar: true,
               columnFilter: true,

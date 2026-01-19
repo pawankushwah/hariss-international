@@ -20,6 +20,7 @@ interface CampaignInformationItem {
   merchandiser: string;
   customer: string;
   feedback: string;
+  images: string[];
 }
 
 export default function CampaignPage() {
@@ -132,7 +133,6 @@ export default function CampaignPage() {
     async (searchQuery: string): Promise<searchReturnType> => {
       setLoading(true);
       try {
-        console.log(searchQuery);
         // always start from page 1 for a new search
         const res = await campaignInformationList({
           search: searchQuery,
@@ -147,6 +147,7 @@ export default function CampaignPage() {
           merchandiser: item.merchandiser,
           customer: item.customer,
           feedback: item.feedback,
+          images: item.images,
         }));
         return {
           data,
@@ -188,7 +189,7 @@ export default function CampaignPage() {
               searchBar: true,
             },
             footer: { nextPrevBtn: true, pagination: true },
-            rowSelection: true,
+            // rowSelection: true,
             pageSize: 50,
             table: {
               height: "400px"

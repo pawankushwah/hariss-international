@@ -13,6 +13,7 @@ import { useSnackbar } from "@/app/services/snackbarContext";
 import StatusBtn from "@/app/components/statusBtn2";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import { useEffect } from "react";
+import { surveyExport } from "@/app/services/assetsApi";
 
 interface SurveyItem {
   id: number;
@@ -53,7 +54,7 @@ export default function Survey() {
   const { setLoading } = useLoading();
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
-
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -85,11 +86,16 @@ export default function Survey() {
 
         const data: TableDataType[] = res.data.map((item) => ({
           id: item.id.toString(),
+          uuid: item.uuid, // Add uuid for navigation
           survey_code: item.survey_code,
           survey_name: item.survey_name,
           survey_type: SURVEY_TYPE_MAP[item.survey_type] || "-",
           start_date: item.start_date,
           end_date: item.end_date,
+          status:
+            item.status === 1 || String(item.status).toLowerCase() === "active"
+              ? "1"
+              : "0",
         }));
 
         return {
@@ -123,6 +129,7 @@ export default function Survey() {
 
         const data: TableDataType[] = res.data.map((item) => ({
           id: item.id.toString(),
+          uuid: item.uuid, // Add uuid for navigation
           survey_code: item.survey_code,
           survey_name: item.survey_name,
           survey_type: SURVEY_TYPE_MAP[item.survey_type] || "-",
@@ -130,8 +137,8 @@ export default function Survey() {
           end_date: item.end_date,
           status:
             item.status === 1 || String(item.status).toLowerCase() === "active"
-              ? "Active"
-              : "Inactive",
+              ? "1"
+              : "0",
         }));
 
         return {
@@ -159,9 +166,57 @@ export default function Survey() {
     {
       key: "status",
       label: "Status",
-      render: (row: TableDataType) => <StatusBtn isActive={row.status === "Active"} />,
+      render: (row: TableDataType) => (
+        <StatusBtn isActive={row.status === "1"} />
+      ),
     },
   ];
+
+  const handleExport = async (fileType: "csv" | "xlsx") => {
+    try {
+      setLoading(true);
+
+      const res = await surveyExport({ format: fileType });
+
+      let downloadUrl = "";
+
+      if (res?.file_url && res.file_url.startsWith("blob:")) {
+        downloadUrl = res.file_url;
+      } else if (res?.file_url && res.file_url.startsWith("http")) {
+        downloadUrl = res.file_url;
+      } else if (typeof res === "string" && res.includes(",")) {
+        const blob = new Blob([res], {
+          type:
+            fileType === "csv"
+              ? "text/csv;charset=utf-8;"
+              : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        downloadUrl = URL.createObjectURL(blob);
+      } else {
+        showSnackbar("No valid file or URL returned from server", "error");
+        return;
+      }
+
+      // ⬇️ Trigger browser download
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `survey_export.${fileType}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showSnackbar(
+        `Download started for ${fileType.toUpperCase()} file`,
+        "success"
+      );
+    } catch (error) {
+      console.error("Export error:", error);
+      showSnackbar("Failed to export Survey data", "error");
+    } finally {
+      setLoading(false);
+      setShowExportDropdown(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -174,6 +229,22 @@ export default function Survey() {
           },
           header: {
             title: "Survey",
+            threeDot: [
+              {
+                icon: "gala:file-document",
+                label: "Export CSV",
+                onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                  handleExport("csv");
+                },
+              },
+              {
+                icon: "gala:file-document",
+                label: "Export Excel",
+                onClick: (data: TableDataType[], selectedRow?: number[]) => {
+                  handleExport("xlsx");
+                },
+              },
+            ],
             searchBar: true,
             columnFilter: true,
             wholeTableActions: [

@@ -99,7 +99,6 @@ export default function AddOrEditChiller() {
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
   const params = useParams();
-  console.log(params)
   const { setLoading } = useLoading();
 
   const [assetsStatusOptions, setAssetsStatusOptions] = useState<
@@ -107,7 +106,6 @@ export default function AddOrEditChiller() {
   >([]);
 
   const isEditMode = params?.id && params?.id !== "add";
-  console.log(isEditMode)
   const chillerId = isEditMode ? String(params?.id) : null;
 
   /* ----------------------------------------------------
@@ -435,6 +433,7 @@ export default function AddOrEditChiller() {
                   { value: "2023", label: "2023" },
                   { value: "2024", label: "2024" },
                   { value: "2025", label: "2025" },
+                  { value: "2026", label: "2026" },
                 ]}
                 value={values.manufacturing_year}
                 onChange={(e) => setFieldValue("manufacturing_year", e.target.value)}
@@ -487,7 +486,7 @@ export default function AddOrEditChiller() {
         onSubmit={handleSubmit}
         enableReinitialize
       >
-        {({ values, setFieldValue, errors, touched, handleSubmit, setErrors, setTouched }) => (
+        {({ values, setFieldValue, errors, touched, handleSubmit, setErrors, setTouched, isSubmitting }) => (
           <Form>
             <StepperForm
               steps={steps.map((step) => ({
@@ -506,7 +505,13 @@ export default function AddOrEditChiller() {
               showSubmitButton={isLastStep}
               showNextButton={!isLastStep}
               nextButtonText="Save & Next"
-              submitButtonText="Submit"
+              submitButtonText={
+                isSubmitting
+                  ? (isEditMode ? "Updating..." : "Submitting...")
+                  : isEditMode
+                    ? "Update"
+                    : "Submit"
+              }
             >
               {renderStepContent(values, setFieldValue, errors, touched)}
             </StepperForm>

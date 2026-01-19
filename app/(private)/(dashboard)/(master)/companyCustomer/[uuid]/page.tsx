@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-import RegionWatcher from "./areaOptions";
 import { Icon } from "@iconify-icon/react";
 import { useRouter } from "next/navigation";
 import { Formik, Form, FormikHelpers } from "formik";
@@ -27,7 +25,6 @@ import StepperForm, {
   StepperStep,
 } from "@/app/components/stepperForm";
 import { useLoading } from "@/app/services/loadingContext";
-import { number } from "framer-motion";
 
 export type CompanyCustomerFormValues = {
   sap_code: string;
@@ -106,29 +103,37 @@ const validationSchema = Yup.object({
   region_id: Yup.string().required("Region is required."),
   area_id: Yup.string().required("Area is required."),
   payment_type: Yup.string().required("Payment Type is required."),
-  creditday: Yup.string().required("Credit Day is required."),
+  creditday: Yup.string().when('payment_type', (payment_type, schema) => 
+    (typeof payment_type === "string" && payment_type === '2')
+      ? schema.required("Credit Day is required.")
+      : schema.notRequired()
+  ),
   tin_no: Yup.string().required("TIN No is required."),
-  creditlimit: Yup.string().required("Credit Limit is required."),
+  creditlimit: Yup.string().when('payment_type', (payment_type, schema) => 
+    (typeof payment_type === "string" && payment_type === '2')
+      ? schema.required("Credit Limit is required.")
+      : schema.notRequired()
+  ),
   bank_guarantee_name: Yup.string().required("Guarantee Name is required."),
   bank_guarantee_amount: Yup.string().required("Guarantee Amount is required."),
 
   bank_guarantee_from: Yup.date()
-    // .required("Guarantee From is required")
+    .required("Guarantee From is required")
     .typeError("Please enter a valid date"),
   bank_guarantee_to: Yup.date()
-    // .required("Guarantee To is required")
+    .required("Guarantee To is required")
     .typeError("Please enter a valid date")
     .min(
       Yup.ref("bank_guarantee_from"),
       "Guarantee To date cannot be before Guarantee From date"
     ),
 
-  totalcreditlimit: Yup.string(),
-  // .required("Total Credit Limit is required."),
-  credit_limit_validity: Yup.string(),
-  dChannelId: Yup.string(),
-  // .required("Channel is required."),
-  merchendiser_ids: Yup.string(),
+  // totalcreditlimit: Yup.string(),
+  // // .required("Total Credit Limit is required."),
+  // credit_limit_validity: Yup.string(),
+  // dChannelId: Yup.string(),
+  // // .required("Channel is required."),
+  // merchendiser_ids: Yup.string(),
 });
 
 const stepSchemas = [
@@ -154,7 +159,7 @@ const stepSchemas = [
     payment_type: validationSchema.fields.payment_type,
     creditday: validationSchema.fields.creditday,
     creditlimit: validationSchema.fields.creditlimit,
-    totalcreditlimit: validationSchema.fields.totalcreditlimit,
+    // totalcreditlimit: validationSchema.fields.totalcreditlimit,
     bank_guarantee_name: validationSchema.fields.bank_guarantee_name,
     bank_guarantee_amount: validationSchema.fields.bank_guarantee_amount,
     bank_guarantee_from: validationSchema.fields.bank_guarantee_from,
@@ -180,15 +185,19 @@ export default function AddCompanyCustomer() {
     allCompanyTypeOptions,
     channelOptions,
     fetchAreaOptions,
-   ensureAreaLoaded, ensureChannelLoaded, ensureCompanyTypeLoaded, ensureRegionLoaded,ensureAllCompanyTypesLoaded} = useAllDropdownListData();
+    ensureAreaLoaded, ensureChannelLoaded, ensureCompanyTypeLoaded, ensureRegionLoaded, ensureAllCompanyTypesLoaded } = useAllDropdownListData();
 
+    // const [skeleton, setSkeleton] = useState({
+    //     region: false,
+    //     area: false,
+    //   });
   // Load dropdown data
   useEffect(() => {
     ensureAreaLoaded();
     ensureChannelLoaded();
     ensureCompanyTypeLoaded();
     ensureRegionLoaded();
-    if(!isEditMode){
+    if (!isEditMode) {
       ensureAllCompanyTypesLoaded();
     }
   }, [ensureAreaLoaded, ensureChannelLoaded, ensureCompanyTypeLoaded, ensureRegionLoaded]);
@@ -260,7 +269,6 @@ export default function AddCompanyCustomer() {
       const res = await getCompanyCustomerById(uuid);
 
       const data = res.data;
-      console.log("Fetched data:", data);
 
 
 
@@ -367,16 +375,16 @@ export default function AddCompanyCustomer() {
 
   const handleSubmit = async (
     values: CompanyCustomerFormValues,
-    
+
     {
       setSubmitting,
       setErrors,
       setTouched,
     }: FormikHelpers<CompanyCustomerFormValues>,
     actions?: Pick<
-                FormikHelpers<CompanyCustomerFormValues>,
-                "setErrors" | "setTouched" | "setSubmitting"
-            >
+      FormikHelpers<CompanyCustomerFormValues>,
+      "setErrors" | "setTouched" | "setSubmitting"
+    >
   ) => {
     try {
       await validationSchema.validate(values, { abortEarly: false });
@@ -422,9 +430,9 @@ export default function AddCompanyCustomer() {
       } else {
         showSnackbar(
           res.message ||
-            (isEditMode
-              ? "Key Customer Updated Successfully"
-              : "Key Customer Created Successfully"),
+          (isEditMode
+            ? "Company Customer Updated Successfully"
+            : "Company Customer Created Successfully"),
           "success"
         );
 
@@ -439,12 +447,12 @@ export default function AddCompanyCustomer() {
           }
         }
 
-        router.push("/keyCustomer");
+        router.push("/companyCustomer");
       }
     } catch (error: unknown) {
       if (error instanceof Yup.ValidationError) {
         const fields = error.inner.map((e) => e.path);
-       
+
         actions?.setErrors(
           error.inner.reduce(
             (
@@ -459,7 +467,7 @@ export default function AddCompanyCustomer() {
         );
       } else {
         showSnackbar(
-          `Failed to ${isEditMode ? "update" : "add"} Key Customer `,
+          `Failed to ${isEditMode ? "update" : "add"} Company Customer `,
           "error"
         );
       }
@@ -505,7 +513,7 @@ export default function AddCompanyCustomer() {
                     <SettingPopUp
                       isOpen={isOpen}
                       onClose={() => setIsOpen(false)}
-                      title="Key Customer Code"
+                      title="Company Customer Code"
                       prefix={prefix}
                       setPrefix={setPrefix}
                       onSave={(mode, code) => {
@@ -557,7 +565,7 @@ export default function AddCompanyCustomer() {
                   required
                   label="Company Type"
                   name="company_type"
-                  value={(  values.company_type).toString()}
+                  value={(values.company_type).toString()}
                   onChange={(e) =>
                     setFieldValue("company_type", e.target.value)
                   }
@@ -626,15 +634,15 @@ export default function AddCompanyCustomer() {
                   label="Business Type"
                   name="business_type"
                   type="radio"
-                  value={( values.business_type).toString()}
+                  value={(values.business_type).toString()}
                   onChange={(e) => setFieldValue("business_type", e.target.value)}
                   options={[
                     { value: "0", label: "Buyer" },
                     { value: "1", label: "Seller" },
                   ]}
                 />
+              </div>
             </div>
-          </div>
           </ContainerCard>
         );
       case 3:
@@ -678,7 +686,14 @@ export default function AddCompanyCustomer() {
                   label="Region"
                   name="region_id"
                   value={values.region_id}
-                  onChange={(e) => setFieldValue("region_id", e.target.value)}
+                  onChange={(e) => {
+                    setFieldValue("region_id", e.target.value);
+                    setSkeleton((prev) => ({ ...prev, area_id: true }));
+                      fetchAreaOptions(e.target.value)
+                      .finally(() => {
+                        setSkeleton((prev) => ({ ...prev, area_id: false }));
+                      });
+                    }}
                   options={regionOptions}
                   error={touched.region_id && errors.region_id}
                 />
@@ -690,21 +705,10 @@ export default function AddCompanyCustomer() {
                   name="area_id"
                   value={values.area_id}
                   onChange={(e) => setFieldValue("area_id", e.target.value)}
-                  // keep enabled if we already have a value (edit mode) so it shows the current selection
-                  disabled={areaOptions.length === 0 && !values.area_id}
+                  disabled={areaOptions.length === 0 || !values.region_id}
                   showSkeleton={skeleton.area_id}
                   options={
-                    areaOptions && areaOptions.length > 0
-                      ? areaOptions
-                      : values.area_id
-                      ? // show the existing area_id value as an option when areaOptions haven't loaded yet
-                        [
-                          {
-                            value: values.area_id,
-                            label: `Selected Area (${values.area_id})`,
-                          },
-                        ]
-                      : [{ value: "", label: "No options" }]
+                    areaOptions
                   }
                   error={touched.area_id && errors.area_id}
                 />
@@ -722,7 +726,7 @@ export default function AddCompanyCustomer() {
               <div>
                 <InputFields
                   required
-                  label="Payment Type"
+                  label="Payment Terms"
                   name="payment_type"
                   type="radio"
                   value={values.payment_type}
@@ -731,11 +735,16 @@ export default function AddCompanyCustomer() {
                     { value: "1", label: "Cash" },
                     { value: "2", label: "Credit" },
                   ]}
+                  error={touched.payment_type && errors.payment_type} 
                 />
               </div>
+              {values.payment_type === "2" && (
+                <>
               <div>
                 <InputFields
                   required
+                  type="number"
+                  integerOnly
                   label="Credit Day"
                   name="creditday"
                   value={values.creditday}
@@ -746,6 +755,8 @@ export default function AddCompanyCustomer() {
               <div>
                 <InputFields
                   required
+                  type="number"
+                  integerOnly
                   label="Credit Limit"
                   name="creditlimit"
                   value={values.creditlimit}
@@ -755,14 +766,14 @@ export default function AddCompanyCustomer() {
               </div>
               <div>
                 <InputFields
-                  required
+                type="number"
+                  integerOnly
                   label="Total Credit Limit"
                   name="totalcreditlimit"
                   value={values.totalcreditlimit}
                   onChange={(e) =>
                     setFieldValue("totalcreditlimit", e.target.value)
                   }
-                  error={touched.totalcreditlimit && errors.totalcreditlimit}
                 />
               </div>
               <div>
@@ -774,11 +785,14 @@ export default function AddCompanyCustomer() {
                     setFieldValue("credit_limit_validity", e.target.value)
                   }
                   type="date"
+                  min={new Date().toISOString().split('T')[0]}
                   error={
                     touched.credit_limit_validity && errors.credit_limit_validity
                   }
                 />
               </div>
+              </>
+              )}
               <div>
                 <InputFields
                   required
@@ -794,6 +808,8 @@ export default function AddCompanyCustomer() {
               <div>
                 <InputFields
                   required
+                  type="number"
+                  integerOnly
                   label="Guarantee Amount"
                   name="bank_guarantee_amount"
                   value={values.bank_guarantee_amount}
@@ -824,6 +840,7 @@ export default function AddCompanyCustomer() {
                   value={values.bank_guarantee_to}
                   onChange={(e) => setFieldValue("bank_guarantee_to", e.target.value)}
                   type="date"
+                  min={values.bank_guarantee_from || new Date().toISOString().split('T')[0]}
                   error={touched.bank_guarantee_to && errors.bank_guarantee_to}
                 />
               </div>
@@ -843,9 +860,7 @@ export default function AddCompanyCustomer() {
                         { value: "2", label: "Merchendiser 2" },
                         { value: "3", label: "Merchendiser 3" },
                       ]}
-                      error={
-                        touched.merchendiser_ids && errors.merchendiser_ids
-                      }
+                      
                     />
                   </>
                 )}
@@ -865,7 +880,7 @@ export default function AddCompanyCustomer() {
           <Icon icon="lucide:arrow-left" width={24} />
         </div>
         <h1 className="text-xl font-semibold text-gray-900">
-          {isEditMode ? "Update" : "Add"} Key Customer
+          {isEditMode ? "Update" : "Add"} Company Customer
         </h1>
       </div>
 
@@ -887,20 +902,14 @@ export default function AddCompanyCustomer() {
           isSubmitting,
         }) => (
           <Form>
-            {/* Formik-aware watcher for region_id changes */}
-            <RegionWatcher
-              fetchAreaOptions={fetchAreaOptions}
-              setSkeleton={setSkeleton}
-              preserveExistingArea={isEditMode}
-              initialArea={initialValues.area_id}
-            />
+           
             <StepperForm
               steps={steps.map((step) => ({
                 ...step,
                 isCompleted: isStepCompleted(step.id),
               }))}
               currentStep={currentStep}
-              onStepClick={() => {}}
+              onStepClick={() => { }}
               onBack={prevStep}
               onNext={() =>
                 handleNext(values, {
@@ -914,12 +923,12 @@ export default function AddCompanyCustomer() {
               showNextButton={!isLastStep}
               nextButtonText="Save & Next"
               submitButtonText={
-                                isSubmitting
-                                    ? (isEditMode ? "Updating..." : "Submitting...")
-                                    : isEditMode
-                                    ? "Update"
-                                    : "Submit"
-                            }
+                isSubmitting
+                  ? (isEditMode ? "Updating..." : "Submitting...")
+                  : isEditMode
+                    ? "Update"
+                    : "Submit"
+              }
             >
               {renderStepContent(values, setFieldValue, errors, touched)}
             </StepperForm>

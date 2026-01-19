@@ -18,7 +18,6 @@ const columns = [
     // { key: "permissions", label: "Permissions", render: (data: TableDataType) => {
     //     const row = (data as any)[0];
     //     if (row && typeof row === "object" && "menus" in row) {
-    //         console.log(row, "dfjkdlfjldkj");
     //         return row?.menus?.[0]?.menu?.submenu?.[0]?.permissions?.[0] || "-";
     //     }
     //     return "-";
@@ -102,7 +101,7 @@ export default function Roles() {
                     localStorageKey: "role-table",
                     footer: { nextPrevBtn: true, pagination: true },
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
                         {
                             icon: "lucide:edit-2",

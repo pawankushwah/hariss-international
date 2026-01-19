@@ -6,6 +6,24 @@ export type SidebarDataType = {
   data: LinkDataType[];
 };
 
+function lowercaseHrefs(data: SidebarDataType[]): SidebarDataType[] {
+  return data.map((sidebar) => ({
+    ...sidebar,
+    data: sidebar.data.map(lowercaseLinkData)
+  }));
+}
+
+function lowercaseLinkData(link: LinkDataType): LinkDataType {
+  const newLink: LinkDataType = {
+    ...link,
+    href: typeof link.href === 'string' ? link.href.toLowerCase() : link.href,
+  };
+  if (link.children && Array.isArray(link.children)) {
+    newLink.children = link.children.map(lowercaseLinkData);
+  }
+  return newLink;
+}
+
 export type LinkDataType = {
   isActive: boolean;
   href: string;
@@ -16,7 +34,7 @@ export type LinkDataType = {
   children?: LinkDataType[];
 };
 
-export const initialLinkData: SidebarDataType[] = [
+export const initialLinkData: SidebarDataType[] = lowercaseHrefs([
   {
     data: [
       {
@@ -337,6 +355,27 @@ export const initialLinkData: SidebarDataType[] = [
             leadingIcon: "mdi:map",
             iconColor: "text-yellow-400",
           },
+          {
+            isActive: false,
+            href: "/settings/manageAssets/spareCategory",
+            label: "Spare Category",
+            leadingIcon: "mdi:map",
+            iconColor: "text-yellow-400",
+          },
+           {
+            isActive: false,
+            href: "/settings/manageAssets/spareMenu",
+            label: "Spare Menu",
+            leadingIcon: "mdi:map",
+            iconColor: "text-yellow-400",
+          },
+          {
+            isActive: false,
+            href: "/settings/manageAssets/spareSubCategory",
+            label: "Spare SubCategory",
+            leadingIcon: "mdi:map",
+            iconColor: "text-yellow-400",
+          },
         ],
       },
       {
@@ -350,4 +389,4 @@ export const initialLinkData: SidebarDataType[] = [
       }
     ],
   },
-];
+]);

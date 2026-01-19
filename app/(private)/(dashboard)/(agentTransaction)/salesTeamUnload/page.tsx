@@ -9,20 +9,24 @@ import Table, {
 } from "@/app/components/customTable";
 import SidebarBtn from "@/app/components/dashboardSidebarBtn";
 import StatusBtn from "@/app/components/statusBtn2";
-import { salesmanUnloadList } from "@/app/services/agentTransaction";
+import { salesmanUnloadList,unloadExportCollapse } from "@/app/services/agentTransaction";
+import { downloadFile } from "@/app/services/allApi";
 import { useLoading } from "@/app/services/loadingContext";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useEffect } from "react";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import FilterComponent from "@/app/components/filterComponent";
-
+import { formatWithPattern } from "@/app/utils/formatDate";
 export default function SalesmanUnloadPage() {
   const { can, permissions } = usePagePermissions();
   const { setLoading } = useLoading();
   const { showSnackbar } = useSnackbar();
   const router = useRouter();
-
+const [threeDotLoading, setThreeDotLoading] = useState({
+    csv: false,
+    xlsx: false,
+  });
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Refresh table when permissions load
@@ -164,9 +168,16 @@ export default function SalesmanUnloadPage() {
 
   // ✅ Table Columns
   const columns: configType["columns"] = [
-    { key: "unload_date", label: "Unload Date" },
-    { key: "unload_time", label: "Unload Time" },
-    { key: "laod_date", label: "Load Date" },
+    { key: "unload_date", label: "Unload Date",render: (row: TableDataType) => {
+      return formatWithPattern(
+                new Date(row.unload_date),
+                "DD MMM YYYY",
+                "en-GB",
+              );
+            }
+    },
+    { key: "unload_time", label: "Unload Time"},
+    { key: "laod_date", label: "Load Date",showByDefault: false  },
     {
       key: "salesman",
       label: "Sales Team",
@@ -214,11 +225,29 @@ export default function SalesmanUnloadPage() {
     },
   ];
 
+  const exportCollapseFile = async (format: "csv" | "xlsx" = "csv") => {
+        try {
+          setThreeDotLoading((prev) => ({ ...prev, [format]: true }));
+          const response = await unloadExportCollapse({ format });
+          if (response && typeof response === "object" && response.download_url) {
+            await downloadFile(response.download_url);
+            showSnackbar("File downloaded successfully ", "success");
+          } else {
+            showSnackbar("Failed to get download URL", "error");
+          }
+          setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+        } catch (error) {
+          showSnackbar("Failed to download warehouse data", "error");
+          setThreeDotLoading((prev) => ({ ...prev, [format]: false }));
+        } finally {
+        }
+      };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="gap-3 mb-4">
-        <h1 className="text-bold-700 text-lg font-semibold">Salesman Unload</h1>
-      </div>
+      {/* <div className="gap-3 mb-4">
+        <h1 className="text-bold-700 text-lg font-semibold">Sales Team Unload</h1>
+      </div> */}
 
       {/* 📋 Table Section with Dynamic Filters */}
       <Table
@@ -226,10 +255,25 @@ export default function SalesmanUnloadPage() {
         config={{
           api: { list: fetchSalesmanUnloadHeader, filterBy },
           header: {
+            title: "Sales Team Unload",
             searchBar: false,
             columnFilter: true,
+            threeDot: [
+             {
+               icon: threeDotLoading.csv ? "eos-icons:three-dots-loading" : "gala:file-document",
+               label: "Export CSV",
+               labelTw: "text-[12px] hidden sm:block",
+               onClick: () => !threeDotLoading.csv && exportCollapseFile("csv"),
+             },
+             {
+               icon: threeDotLoading.xlsx ? "eos-icons:three-dots-loading" : "gala:file-document",
+               label: "Export Excel",
+               labelTw: "text-[12px] hidden sm:block",
+               onClick: () => !threeDotLoading.xlsx && exportCollapseFile("xlsx"),
+             },
+           ],
             filterRenderer: FilterComponent,
-            
+
             actions: can("create") ? [
               <SidebarBtn
                 key={0}
@@ -244,7 +288,6 @@ export default function SalesmanUnloadPage() {
           localStorageKey: "salesmanUnload-table",
           footer: { nextPrevBtn: true, pagination: true },
           columns,
-          rowSelection: true,
           rowActions: [
             {
               icon: "lucide:eye",

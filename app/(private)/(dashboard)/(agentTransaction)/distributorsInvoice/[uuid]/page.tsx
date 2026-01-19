@@ -12,12 +12,17 @@ import InputFields from "@/app/components/inputFields";
 import AutoSuggestion from "@/app/components/autoSuggestion";
 import { useAllDropdownListData } from "@/app/components/contexts/allDropdownListData";
 import { createInvoice, updateInvoice, invoiceByUuid, deliveryList } from "@/app/services/agentTransaction";
-import { warehouseStockTopOrders, routeList, getCompanyCustomers, agentCustomerList, itemGlobalSearch, genearateCode, saveFinalCode, getAllActiveWarehouse } from "@/app/services/allApi";
+import { warehouseStockTopOrders, routeList, getCompanyCustomers, agentCustomerList, itemGlobalSearch, genearateCode, saveFinalCode, getAllActiveWarehouse, applyPromotion } from "@/app/services/allApi";
 import { useSnackbar } from "@/app/services/snackbarContext";
 import { useLoading } from "@/app/services/loadingContext";
 import * as yup from "yup";
 import { FormikValues } from "formik";
 import toInternationalNumber from "@/app/(private)/utils/formatNumber";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import StepperForm, { StepperStep, useStepperForm } from "@/app/components/stepperForm";
+import { Link } from "lucide-react";
 
 // Local types to avoid any
 type Option = { value: string; label: string; code?: string; name?: string };
@@ -28,9 +33,9 @@ interface ItemUom {
     price?: string | number;
 }
 interface WarehouseStock {
-  item_id: number;
-  warehouse_id: number;
-  qty: string;
+    item_id: number;
+    warehouse_id: number;
+    qty: string;
 }
 
 interface FullItem {
@@ -65,15 +70,15 @@ interface CustomerLike {
 }
 
 interface ItemUOM {
-  id: number;
-  item_id: number;
-  uom_type: string;
-  name: string;
-  price: string;
-  is_stock_keeping: boolean;
-  upc: string;
-  enable_for: string;
-  uom_id: number;
+    id: number;
+    item_id: number;
+    uom_type: string;
+    name: string;
+    price: string;
+    is_stock_keeping: boolean;
+    upc: string;
+    enable_for: string;
+    uom_id: number;
 }
 
 interface DeliveryDetail {
@@ -92,6 +97,7 @@ interface DeliveryDetail {
     total?: number | string;
     quantity?: number | string;
     discount?: number | string;
+    is_promotional?: boolean;
 }
 
 interface Delivery {
@@ -115,11 +121,13 @@ interface InvoiceItemRow {
     uom_id: string;
     Quantity: string;
     Price: string;
+    isPrmotion:boolean;
     Excise: string;
     Discount: string;
     Net: string;
     Vat: string;
     Total: string;
+    is_promotional?: boolean;
 }
 
 // Helper to safely extract UOMs from unknown API shapes (item_uoms or uom)
@@ -134,6 +142,29 @@ const extractUoms = (source: unknown): ItemUom[] => {
         } as ItemUom;
     });
 };
+
+type ConvertedOrder = {
+  customer_id: number;
+  warehouse_id: number;
+  items: {
+    item_id: number;
+    item_uom_id: number;
+    item_qty: number;
+  }[];
+};
+
+export function convertOrderPayload(order: any): ConvertedOrder {
+  return {
+    customer_id: order.customer_id,
+    warehouse_id: order.warehouse_id,
+    items: order.details.map((detail:any) => ({
+      item_id: detail.item_id,
+      item_uom_id: detail.uom,
+      item_qty: detail.quantity,
+    })),
+  };
+}
+
 
 const dropdownDataList = [
     { icon: "humbleicons:radio", label: "Inactive", iconWidth: 20 },
@@ -152,15 +183,15 @@ export default function InvoiceddEditPage() {
             .required("Quantity is required"),
     });
 
-    const { warehouseOptions, agentCustomerOptions, routeOptions, itemOptions, fetchAgentCustomerOptions , ensureAgentCustomerLoaded, ensureItemLoaded, ensureRouteLoaded, ensureWarehouseLoaded} = useAllDropdownListData();
+    const { warehouseOptions, agentCustomerOptions, routeOptions, itemOptions, fetchAgentCustomerOptions, ensureAgentCustomerLoaded, ensureItemLoaded, ensureRouteLoaded, ensureWarehouseLoaded } = useAllDropdownListData();
 
-  // Load dropdown data
-  useEffect(() => {
-    ensureAgentCustomerLoaded();
-    ensureItemLoaded();
-    ensureRouteLoaded();
-    ensureWarehouseLoaded();
-  }, [ensureAgentCustomerLoaded, ensureItemLoaded, ensureRouteLoaded, ensureWarehouseLoaded]);
+    // Load dropdown data
+    useEffect(() => {
+        ensureAgentCustomerLoaded();
+        ensureItemLoaded();
+        ensureRouteLoaded();
+        ensureWarehouseLoaded();
+    }, [ensureAgentCustomerLoaded, ensureItemLoaded, ensureRouteLoaded, ensureWarehouseLoaded]);
     const [itemsWithUOM, setItemsWithUOM] = useState<Record<string, { uoms: ItemUOM[], stock_qty: string }>>({});
     const [invoiceData, setInvoiceData] = useState<FormData[]>([]);
     const [warehouseStocks, setWarehouseStocks] = useState<Record<string, WarehouseStock[]>>({});
@@ -173,17 +204,21 @@ export default function InvoiceddEditPage() {
     const uuid = params?.uuid as string | undefined;
     const isEditMode = uuid !== undefined && uuid !== "add";
     const [isSubmitting, setIsSubmitting] = useState(false);
+      const [checkout,setCheckout]=useState(1);
+      const [selectedPromotionsItems, setSelectedPromotionsItems] = useState([]);
+      const [openPromotion, setOpenPromotion] = useState(false);
+      const [promotions, setPromotions] = useState([]);
     const [deliveryOptions, setDeliveryOptions] = useState<Option[]>([]);
     const [skeleton, setSkeleton] = useState({
         route: false,
         customer: false,
         item: false,
     });
-    
+
     // per-row validation errors for item rows (keyed by row index)
     const [itemErrors, setItemErrors] = useState<Record<number, Record<string, string>>>({});
     const [form, setForm] = useState({
-        customerType: "",
+        customerType: "2",
         warehouse: "",
         warehouse_name: "",
         route: "",
@@ -207,12 +242,14 @@ export default function InvoiceddEditPage() {
         UOM: "",
         uom_id: "",
         Quantity: "1",
+        isPrmotion:false,
         Price: "",
         Excise: "",
         Discount: "",
         Net: "",
         Vat: "",
         Total: "",
+        is_promotional: false,
     }]);
 
     // Store UOM options for each row
@@ -231,12 +268,12 @@ export default function InvoiceddEditPage() {
     const [suppressItemSearch, setSuppressItemSearch] = useState(false);
     const codeGeneratedRef = useRef(false);
     const [code, setCode] = useState("");
-    
+
     // Validation function for item rows
     const validateRow = async (index: number, row?: InvoiceItemRow, options?: { skipUom?: boolean }) => {
         const rowData = row ?? itemData[index];
         if (!rowData) return;
-        
+
         // prepare data for Yup: convert numeric strings to numbers
         const toValidate = {
             item_id: String(rowData.item_id ?? ""),
@@ -246,7 +283,7 @@ export default function InvoiceddEditPage() {
 
         try {
             const validationErrors: Record<string, string> = {};
-            
+
             if (options?.skipUom) {
                 // validate only item_id and Quantity to avoid showing UOM required immediately after selecting item
                 try {
@@ -286,7 +323,7 @@ export default function InvoiceddEditPage() {
             setItemErrors((prev) => ({ ...prev, [index]: validationErrors }));
         }
     };
-    
+
     useEffect(() => {
         setLoading(true);
 
@@ -359,6 +396,7 @@ export default function InvoiceddEditPage() {
                                     itemLabel: itemLabel,
                                     UOM: uomName,
                                     uom_id: uomId,
+                                    isPrmotion: false,
                                     Quantity: String(detail.quantity ?? "1"),
                                     Price: String(detail.item_price ?? detail.itemvalue ?? ""),
                                     Excise: String(detail.excise ?? ""),
@@ -366,6 +404,7 @@ export default function InvoiceddEditPage() {
                                     Net: String(detail.net ?? ""),
                                     Vat: String(detail.vat ?? ""),
                                     Total: String(detail.total ?? ""),
+                                    is_promotional: detail.is_promotional ?? false,
                                 };
                             });
 
@@ -387,95 +426,96 @@ export default function InvoiceddEditPage() {
     }, [isEditMode, uuid, setLoading, showSnackbar]);
     // Auto-generate invoice code in add mode only (prevent on edit)
 
-      const fetchWarehouseItems = useCallback(async (warehouseId: string, searchTerm: string = "") => {
+    const fetchWarehouseItems = useCallback(async (warehouseId: string, searchTerm: string = "") => {
         if (!warehouseId) {
-          setItemsOptions([]);
-          setItemsWithUOM({});
-          setWarehouseStocks({});
-          return;
+            setItemsOptions([]);
+            setItemsWithUOM({});
+            setWarehouseStocks({});
+            return;
         }
-    
+
         try {
-          setSkeleton(prev => ({ ...prev, item: true }));
-          
-          // Fetch warehouse stocks - this API returns all needed data including pricing and UOMs
-          const stockRes = await warehouseStockTopOrders(warehouseId);
-          const stocksArray = stockRes.data?.stocks || stockRes.stocks || [];
-    
-          // Store warehouse stocks for validation
-          setWarehouseStocks(prev => ({
-            ...prev,
-            [warehouseId]: stocksArray
-          }));
-    
-          // Filter items based on search term and stock availability
-          const filteredStocks = stocksArray.filter((stock: any) => {
-            if (Number(stock.stock_qty) <= 0) return false;
-            if (!searchTerm) return true;
-            const searchLower = searchTerm.toLowerCase();
-            return stock.item_name?.toLowerCase().includes(searchLower) ||
-                   stock.item_code?.toLowerCase().includes(searchLower);
-          });
-    
-          // Create items with UOM data map for easy access
-          const itemsUOMMap: Record<string, { uoms: ItemUOM[], stock_qty: string }> = {};
-          
-          const processedItems = filteredStocks.map((stockItem: any) => {
-            const item_uoms = stockItem?.uoms ? stockItem.uoms.map((uom: any) => {
-              let price = uom.price;
-              // Override with specific pricing from the API response
-              if (uom?.uom_type === "primary") {
-                price = stockItem.buom_ctn_price || uom.price;
-              } else if (uom?.uom_type === "secondary") {
-                price = stockItem.auom_pc_price || uom.price;
-              }
-              return { 
-                ...uom, 
-                price,
-                id: uom.id || `${stockItem.item_id}_${uom.uom_type}`,
-                item_id: stockItem.item_id
-              };
-            }) : [];
-    
-            // Store UOM data for this item
-            itemsUOMMap[stockItem.item_id] = {
-              uoms: item_uoms,
-              stock_qty: stockItem.stock_qty
-            };
-    
-            return { 
-              id: stockItem.item_id,
-              name: stockItem.item_name,
-              item_code: stockItem.item_code,
-              erp_code: stockItem.erp_code,
-              item_uoms,
-              warehouse_stock: stockItem.stock_qty,
-              pricing: {
-                buom_ctn_price: stockItem.buom_ctn_price,
-                auom_pc_price: stockItem.auom_pc_price
-              }
-            };
-          });
-    
-          setItemsWithUOM(itemsUOMMap);
-          setInvoiceData(processedItems);
-    
-          // Create dropdown options
-          const options = processedItems.map((item: any) => ({
-            value: String(item.id),
-            label: `${item.erp_code || item.item_code || ''} - ${item.name || ''} (Stock: ${item.warehouse_stock})`
-          }));
-    
-          setItemsOptions(options);
-          setSkeleton(prev => ({ ...prev, item: false }));
-          
-          return options;
+            setSkeleton(prev => ({ ...prev, item: true }));
+
+            // Fetch warehouse stocks - this API returns all needed data including pricing and UOMs
+            const stockRes = await warehouseStockTopOrders(warehouseId);
+            const stocksArray = stockRes.data?.stocks || stockRes.stocks || [];
+
+            // Store warehouse stocks for validation
+            setWarehouseStocks(prev => ({
+                ...prev,
+                [warehouseId]: stocksArray
+            }));
+
+            // Filter items based on search term and stock availability
+            const filteredStocks = stocksArray.filter((stock: any) => {
+                if (Number(stock.stock_qty) <= 0) return false;
+                if (!searchTerm) return true;
+                const searchLower = searchTerm.toLowerCase();
+                return stock.item_name?.toLowerCase().includes(searchLower) ||
+                    stock.item_code?.toLowerCase().includes(searchLower);
+            });
+
+            // Create items with UOM data map for easy access
+            const itemsUOMMap: Record<string, { uoms: ItemUOM[], stock_qty: string }> = {};
+
+            const processedItems = filteredStocks.map((stockItem: any) => {
+                const item_uoms = stockItem?.uoms ? stockItem.uoms.map((uom: any) => {
+                    let price = uom.price;
+                    // Override with specific pricing from the API response
+                    if (uom?.uom_type === "primary") {
+                        price = stockItem.auom_pc_price || uom.price;
+                    } else if (uom?.uom_type === "secondary") {
+                        price = stockItem.buom_ctn_price || uom.price;
+                    }
+                    return {
+                        ...uom,
+                        price,
+                        id: uom.id || `${stockItem.item_id}_${uom.uom_type}`,
+                        item_id: stockItem.item_id,
+                        uom_id: uom.uom_id // Ensure uom_id is preserved
+                    };
+                }) : [];
+
+                // Store UOM data for this item
+                itemsUOMMap[stockItem.item_id] = {
+                    uoms: item_uoms,
+                    stock_qty: stockItem.stock_qty
+                };
+
+                return {
+                    id: stockItem.item_id,
+                    name: stockItem.item_name,
+                    item_code: stockItem.item_code,
+                    erp_code: stockItem.erp_code,
+                    item_uoms,
+                    warehouse_stock: stockItem.stock_qty,
+                    pricing: {
+                        buom_ctn_price: stockItem.buom_ctn_price,
+                        auom_pc_price: stockItem.auom_pc_price
+                    }
+                };
+            });
+
+            setItemsWithUOM(itemsUOMMap);
+            setInvoiceData(processedItems);
+
+            // Create dropdown options
+            const options = processedItems.map((item: any) => ({
+                value: String(item.id),
+                label: `${item.erp_code || item.item_code || ''} - ${item.name || ''} (Stock: ${item.warehouse_stock})`
+            }));
+
+            setItemsOptions(options);
+            setSkeleton(prev => ({ ...prev, item: false }));
+
+            return options;
         } catch (error) {
-          console.error("Error fetching warehouse items:", error);
-          setSkeleton(prev => ({ ...prev, item: false }));
-          return [];
+            console.error("Error fetching warehouse items:", error);
+            setSkeleton(prev => ({ ...prev, item: false }));
+            return [];
         }
-      }, []);
+    }, []);
 
     useEffect(() => {
         if (!isEditMode && !codeGeneratedRef.current) {
@@ -603,7 +643,7 @@ export default function InvoiceddEditPage() {
         // For warehouse items, filter from already loaded itemsOptions
         if (itemsOptions.length > 0) {
             const searchLower = searchText.toLowerCase();
-            return itemsOptions.filter(opt => 
+            return itemsOptions.filter(opt =>
                 opt.label.toLowerCase().includes(searchLower)
             );
         }
@@ -617,7 +657,6 @@ export default function InvoiceddEditPage() {
     }, [form.warehouse, itemsOptions, suppressItemSearch, fetchWarehouseItems]);
 
     const handleDeliverySearch = useCallback(async (warehouseId?: string) => {
-        // console.log('Searching deliveries for warehouse:', warehouseId || form.warehouse);
         if (!warehouseId && !form.warehouse) return;
         try {
             setSkeleton((prev) => ({ ...prev, customer: true }));
@@ -673,7 +712,7 @@ export default function InvoiceddEditPage() {
         // Default / Direct Invoice
         return yup.object().shape({
             ...base,
-            customerType: yup.string().required("Customer Type is required"),
+            customerType: yup.string(),
             route: yup.string().required("Route is required"),
             customer: yup.string().required("Customer is required"),
         });
@@ -706,6 +745,7 @@ export default function InvoiceddEditPage() {
                         UOM: "",
                         uom_id: "",
                         Quantity: "1",
+                        isPrmotion:false,
                         Price: "",
                         Excise: "",
                         Discount: "",
@@ -738,7 +778,11 @@ export default function InvoiceddEditPage() {
     const recalculateItem = (index: number, field: string, value: string) => {
         const newData = [...itemData];
         const item = newData[index];
-        item[field as keyof typeof item] = value;
+       
+        // Only update string fields (not boolean fields like is_promotional)
+        if (field !== 'is_promotional') {
+            item[field as keyof typeof item] = value as never;
+        }
 
         const qty = Number(item.Quantity) || 0;
         const price = Number(item.Price) || 0;
@@ -754,7 +798,7 @@ export default function InvoiceddEditPage() {
         if (field !== "itemName" && field !== "item_id") {
             validateRow(index, newData[index]);
         }
-        
+
         setItemData(newData);
     };
 
@@ -768,12 +812,14 @@ export default function InvoiceddEditPage() {
                 UOM: "",
                 uom_id: "",
                 Quantity: "1",
+                isPrmotion:false,
                 Price: "",
                 Excise: "",
                 Discount: "",
                 Net: "",
                 Vat: "",
                 Total: "",
+                is_promotional: false,
             },
         ]);
     };
@@ -788,12 +834,14 @@ export default function InvoiceddEditPage() {
                     UOM: "",
                     uom_id: "",
                     Quantity: "1",
+                    isPrmotion:false,
                     Price: "",
                     Excise: "",
                     Discount: "",
                     Net: "",
                     Vat: "",
                     Total: "",
+                    is_promotional: false,
                 },
             ]);
             return;
@@ -854,7 +902,8 @@ export default function InvoiceddEditPage() {
             warehouse_id: Number(form.warehouse),
             customer_id: customerId,
             delivery_id: deliveryId,
-            customer_type: form.customerType ? Number(form.customerType) : undefined,
+            // customer_type: form.customerType ? Number(form.customerType) : undefined,
+            customer_type: 1,
             route_id: routeId,
             salesman_id: salesmanId,
             invoice_date: form.invoice_date,
@@ -871,17 +920,19 @@ export default function InvoiceddEditPage() {
             status: "1",
             details: itemData
                 .filter(item => item.item_id && item.uom_id)
-                .map((item) => ({
+                .map((item:any) => ({
                     item_id: Number(item.item_id),
                     uom: Number(item.uom_id),
                     quantity: Number(item.Quantity) || 0,
+                    isPromotion: item.isPrmotion,
                     item_price: Number(item.Price) || 0,
                     vat: Number(item.Vat) || 0,
                     discount: Number(item.Discount) || 0,
                     excise: Number(item.Excise) || 0,
                     gross_total: Number(item.Total) || 0,
                     net_total: Number(item.Net) || 0,
-                    total: Number(item.Total) || 0,
+                    item_total: Number(item.Total) || 0,
+                    is_promotional: item.is_promotional ?? false,
                 })),
         };
     };
@@ -892,7 +943,7 @@ export default function InvoiceddEditPage() {
             const schema = createValidationSchema(form);
             await schema.validate(form, { abortEarly: false });
             setErrors({});
-            
+
             // Validate item rows separately (they live in local state)
             const itemsSchema = yup.array().of(itemRowSchema);
             try {
@@ -903,7 +954,7 @@ export default function InvoiceddEditPage() {
                 showSnackbar(itemErr.inner.map((err: any) => err.message).join(", "), "error");
                 return;
             }
-            
+
             const validItems = itemData.filter(item => item.item_id && item.uom_id);
             if (validItems.length === 0) {
                 showSnackbar("Please add at least one item with UOM selected", "error");
@@ -914,15 +965,11 @@ export default function InvoiceddEditPage() {
             const payload = generatePayload();
 
             let res;
-            if (isEditMode && uuid) {
-                // Update existing invoice
-                res = await updateInvoice(uuid, payload);
-            } else {
-                // Create new invoice
-                res = await createInvoice(payload);
-            }
+            if(form.customerType == "2" || form.invoice_type == "0")
+           {
+                          res = await createInvoice(payload);
 
-            // Check if response contains an error
+                             // Check if response contains an error
             if (res?.error) {
                 showSnackbar(
                     res.data?.message || (isEditMode ? "Failed to update invoice" : "Failed to create invoice"),
@@ -953,6 +1000,106 @@ export default function InvoiceddEditPage() {
                 "success"
             );
             router.push("/distributorsInvoice");
+
+                    }
+            else{
+            if (isEditMode && uuid) {
+                // Update existing invoice
+                res = await updateInvoice(uuid, payload);
+                     // Check if response contains an error
+            if (res?.error) {
+                showSnackbar(
+                    res.data?.message || (isEditMode ? "Failed to update invoice" : "Failed to create invoice"),
+                    "error"
+                );
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Save the generated code after successful creation (add mode only)
+            if (!isEditMode && code) {
+                try {
+                    await saveFinalCode({
+                        reserved_code: code,
+                        model_name: "invoice",
+                    });
+                } catch (e) {
+                    // Optionally handle error, but don't block success
+                    console.error("Failed to save final code:", e);
+                }
+            }
+
+            // Success
+            showSnackbar(
+                isEditMode
+                    ? "Invoice updated successfully!"
+                    : "Invoice created successfully!",
+                "success"
+            );
+            } else {
+                // Create new invoice
+               
+                console.log(payload,"payload")
+                      let promotionPayload = convertOrderPayload(payload)
+               
+                const promotionRes = await applyPromotion(promotionPayload);
+                      console.log(promotionRes,"promotionRes")
+                      if(checkout == 1)
+                      {
+                      if (promotionRes?.data?.itemPromotionInfo.length > 0) {
+                       
+                           
+                        setPromotions(promotionRes?.data?.itemPromotionInfo);
+                         setOpenPromotion(true);
+                     
+                      }
+                      else{
+               
+               
+                        setCheckout(2);
+                      }
+                    }
+
+                    if(checkout == 2)
+                    {
+                          res = await createInvoice(payload);
+
+                             // Check if response contains an error
+            if (res?.error) {
+                showSnackbar(
+                    res.data?.message || (isEditMode ? "Failed to update invoice" : "Failed to create invoice"),
+                    "error"
+                );
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Save the generated code after successful creation (add mode only)
+            if (!isEditMode && code) {
+                try {
+                    await saveFinalCode({
+                        reserved_code: code,
+                        model_name: "invoice",
+                    });
+                } catch (e) {
+                    // Optionally handle error, but don't block success
+                    console.error("Failed to save final code:", e);
+                }
+            }
+
+            // Success
+            showSnackbar(
+                isEditMode
+                    ? "Invoice updated successfully!"
+                    : "Invoice created successfully!",
+                "success"
+            );
+            router.push("/distributorsInvoice");
+
+                    }
+            }
+        }
+       
         } catch (error) {
             if (error instanceof yup.ValidationError) {
                 // Handle yup validation errors
@@ -999,7 +1146,8 @@ export default function InvoiceddEditPage() {
         if (String(form.invoice_type) === "0") {
             return [form.warehouse, form.customer, form.invoice_type, form.invoice_date].every(Boolean);
         }
-        return [form.customerType, form.route, form.warehouse, form.customer, form.invoice_type, form.invoice_date].every(Boolean);
+        return [form.route, form.warehouse, form.customer, form.invoice_type, form.invoice_date].every(Boolean);
+        return [form.route, form.warehouse, form.customer, form.invoice_type, form.invoice_date].every(Boolean);
     })();
 
     return (
@@ -1071,7 +1219,6 @@ export default function InvoiceddEditPage() {
                                 initialValue={form.warehouse_name}
                                 onSearch={(searchText) => handleWarehouseSearch(searchText)}
                                 onSelect={(option) => {
-                                    console.log(option)
                                     setForm(prev => ({
                                         ...prev,
                                         warehouse: option.value,
@@ -1085,6 +1232,20 @@ export default function InvoiceddEditPage() {
                                     // Fetch items for the selected warehouse
                                     fetchWarehouseItems(option.value);
                                     handleDeliverySearch(option.value);
+                                     setItemData([{item_id: "",
+        itemName: "",
+        itemLabel: "",
+        UOM: "",
+        uom_id: "",
+        Quantity: "1",
+        isPrmotion:false,
+        Price: "",
+        Excise: "",
+        Discount: "",
+        Net: "",
+        Vat: "",
+        Total: "",
+        is_promotional: false,}]);
                                 }}
                                 onClear={() => {
                                     setForm(prev => ({
@@ -1093,7 +1254,10 @@ export default function InvoiceddEditPage() {
                                         warehouse_name: "",
                                         customer: "",
                                         customer_name: "",
-                                    }));
+                                        
+                                    }
+                                ));
+                               
                                     // Clear items when warehouse is cleared
                                     setItemsOptions([]);
                                     setItemsWithUOM({});
@@ -1101,9 +1265,10 @@ export default function InvoiceddEditPage() {
                                 }}
                                 error={errors.warehouse}
                             />
-                         
+
                             <InputFields
                                 required
+                                width="300px"
                                 label="Delivery"
                                 name="customer"
                                 placeholder="Search delivery..."
@@ -1127,7 +1292,7 @@ export default function InvoiceddEditPage() {
                                         const newRowUomOptions: Record<string, { value: string; label: string; price?: string }[]> = {};
                                         const newFullItemsData: Record<string, FullItem> = { ...fullItemsData };
 
-                                        const loadedItemData: InvoiceItemRow[] = selectedDelivery.details.map((detail: DeliveryDetail, index: number) => {
+                                        const loadedItemData: any[] = selectedDelivery.details.map((detail: DeliveryDetail, index: number) => {
                                             const itemId = String(detail.item?.id ?? "");
                                             const uomId = String(detail.uom_id ?? "");
 
@@ -1219,6 +1384,7 @@ export default function InvoiceddEditPage() {
                                                 Net: net.toFixed(2),
                                                 Vat: vat.toFixed(2),
                                                 Total: total.toFixed(2),
+                                                is_promotional: detail.is_promotional ?? false,
                                             };
                                         });
 
@@ -1242,11 +1408,13 @@ export default function InvoiceddEditPage() {
                                                 uom_id: "",
                                                 Quantity: "1",
                                                 Price: "",
+                                                isPrmotion:false,
                                                 Excise: "",
                                                 Discount: "",
                                                 Net: "",
                                                 Vat: "",
                                                 Total: "",
+                                                is_promotional: false,
                                             },
                                         ]);
                                     }
@@ -1260,7 +1428,8 @@ export default function InvoiceddEditPage() {
                     )}
                     {form.invoice_type === "1" && (
                         <>
-                            <InputFields
+                            {/* <InputFields
+                            {/* <InputFields
                                 required
                                 label="Customer Type"
                                 name="customerType"
@@ -1268,11 +1437,12 @@ export default function InvoiceddEditPage() {
                                 searchable={true}
                                 options={[
                                     { label: "Field Customer", value: "1" },
-                                    { label: "Key Customer", value: "2" },
+                                    { label: "Company Customer", value: "2" },
                                 ]}
                                 onChange={handleChange}
                                 error={errors.customerType}
-                            />
+                            /> */}
+                            
                             <AutoSuggestion
                                 required
                                 label="Distributor"
@@ -1295,6 +1465,20 @@ export default function InvoiceddEditPage() {
                                     }
                                     // Fetch items for the selected warehouse
                                     fetchWarehouseItems(option.value);
+                                    setItemData([{item_id: "",
+        itemName: "",
+        itemLabel: "",
+        UOM: "",
+        uom_id: "",
+        Quantity: "1",
+        isPrmotion:false,
+        Price: "",
+        Excise: "",
+        Discount: "",
+        Net: "",
+        Vat: "",
+        Total: "",
+        is_promotional: false}]);
                                 }}
                                 onClear={() => {
                                     setForm(prev => ({
@@ -1307,6 +1491,7 @@ export default function InvoiceddEditPage() {
                                         customer_name: "",
                                     }));
                                     // Clear items when warehouse is cleared
+                                   
                                     setItemsOptions([]);
                                     setItemsWithUOM({});
                                     setWarehouseStocks({});
@@ -1393,7 +1578,7 @@ export default function InvoiceddEditPage() {
                                     const currentItem = itemData[idx];
                                     const selectedItemId = currentItem?.item_id;
                                     const err = itemErrors[idx]?.item_id;
-                                    
+
                                     // Build selected option from current item data
                                     const selectedOpt = selectedItemId ? {
                                         value: selectedItemId,
@@ -1412,27 +1597,27 @@ export default function InvoiceddEditPage() {
                                                     const selectedItemId = option.value;
                                                     const newData = [...itemData];
                                                     const index = Number(row.idx);
-                                                    
+
                                                     // Get item data from warehouse stocks
                                                     const itemUOMData = itemsWithUOM[selectedItemId];
                                                     const selectedOrder = invoiceData.find((order: any) => String(order.id) === selectedItemId);
-                                                    
+
                                                     newData[index].item_id = selectedItemId;
                                                     newData[index].itemName = (selectedOrder as any)?.name || option.label;
                                                     newData[index].itemLabel = option.label;
-                                                    
+
                                                     if (itemUOMData?.uoms) {
-                                                        const uomOpts = itemUOMData.uoms.map(uom => ({ 
-                                                            label: uom.name, 
-                                                            value: String(uom.id || ''), 
-                                                            price: uom.price 
+                                                        const uomOpts = itemUOMData.uoms.map(uom => ({
+                                                            label: uom.name,
+                                                            value: String(uom.uom_id || ''), // Use uom_id instead of id
+                                                            price: uom.price
                                                         }));
-                                                        
+
                                                         setRowUomOptions(prev => ({
                                                             ...prev,
                                                             [row.idx]: uomOpts
                                                         }));
-                                                        
+
                                                         newData[index].uom_id = uomOpts[0]?.value || "";
                                                         newData[index].UOM = uomOpts[0]?.value || "";
                                                         newData[index].Price = uomOpts[0]?.price || "";
@@ -1445,26 +1630,26 @@ export default function InvoiceddEditPage() {
                                                             } else if (uom.uom_type === "secondary") {
                                                                 price = (selectedOrder as any).pricing?.buom_ctn_price || "-";
                                                             }
-                                                            return { 
-                                                                label: uom.name, 
-                                                                value: String(uom.id || ''), 
-                                                                price: price 
+                                                            return {
+                                                                label: uom.name,
+                                                                value: String(uom.uom_id || ''), // Use uom_id instead of id
+                                                                price: price
                                                             };
                                                         });
-                                                        
+
                                                         setRowUomOptions(prev => ({
                                                             ...prev,
                                                             [row.idx]: uomOpts
                                                         }));
-                                                        
+
                                                         const firstUom = (selectedOrder as any).item_uoms[0];
                                                         if (firstUom) {
-                                                            newData[index].uom_id = String(firstUom.id || "");
-                                                            newData[index].UOM = String(firstUom.id || "");
+                                                            newData[index].uom_id = String(firstUom.uom_id || ""); // Use uom_id instead of id
+                                                            newData[index].UOM = String(firstUom.uom_id || "");
                                                             if (firstUom.uom_type === "primary") {
-                                                                newData[index].Price = (selectedOrder as any).pricing?.auom_pc_price || firstUom.price || "";
+                                                                newData[index].Price = (selectedOrder as any).pricing?.auom_pc_price || "";
                                                             } else if (firstUom.uom_type === "secondary") {
-                                                                newData[index].Price = (selectedOrder as any).pricing?.buom_ctn_price || firstUom.price || "";
+                                                                newData[index].Price = (selectedOrder as any).pricing?.buom_ctn_price ||  "";
                                                             } else {
                                                                 newData[index].Price = firstUom.price || "";
                                                             }
@@ -1479,9 +1664,9 @@ export default function InvoiceddEditPage() {
                                                         newData[index].UOM = "";
                                                         newData[index].Price = "";
                                                     }
-                                                    
+
                                                     newData[index].Quantity = "1";
-                                                    
+
                                                     // Ensure the selected item persists in itemsOptions
                                                     if (option.label) {
                                                         setItemsOptions((prev: Option[] = []) => {
@@ -1489,7 +1674,7 @@ export default function InvoiceddEditPage() {
                                                             return [...prev, { value: selectedItemId, label: option.label }];
                                                         });
                                                     }
-                                                    
+
                                                     setItemData(newData);
                                                     recalculateItem(index, "itemName", selectedItemId);
                                                 }}
@@ -1509,7 +1694,7 @@ export default function InvoiceddEditPage() {
                                                     });
                                                     setItemData(newData);
                                                 }}
-                                                disabled={!isFormReadyForItems && !row.item_id}
+                                                disabled={form.invoice_type === "0" || !isFormReadyForItems}
                                                 error={err}
                                             />
                                         </div>
@@ -1529,9 +1714,9 @@ export default function InvoiceddEditPage() {
                                             <InputFields
                                                 label=""
                                                 name="UOM"
-                                                options={uomOptions}
+                                                options={row.isPrmotion?row.UOM:uomOptions}
                                                 value={row.uom_id}
-                                                disabled={uomOptions.length === 0}
+                                                disabled={form.invoice_type === "0" || !row.item_id || uomOptions.length === 0}
                                                 onChange={(e) => {
                                                     const selectedUomId = e.target.value;
                                                     const selectedUom = uomOptions.find(uom => uom.value === selectedUomId);
@@ -1558,7 +1743,7 @@ export default function InvoiceddEditPage() {
                                 render: (row) => {
                                     const idx = Number(row.idx);
                                     const err = itemErrors[idx]?.Quantity;
-                                    
+
                                     return (
                                         <div style={{ minWidth: '100px', maxWidth: '100px' }}>
                                             <InputFields
@@ -1566,6 +1751,7 @@ export default function InvoiceddEditPage() {
                                                 type="number"
                                                 name="Quantity"
                                                 value={row.Quantity}
+                                                // disabled={row.isPrmotion}
                                                 onChange={(e) => {
                                                     const value = e.target.value;
                                                     const numValue = parseFloat(value);
@@ -1577,6 +1763,8 @@ export default function InvoiceddEditPage() {
                                                         recalculateItem(Number(row.idx), "Quantity", value);
                                                     }
                                                 }}
+                                                disabled={form.invoice_type === "0" || row.isPrmotion === true}
+                               
                                                 error={err}
                                             />
                                         </div>
@@ -1596,35 +1784,40 @@ export default function InvoiceddEditPage() {
                             {
                                 key: "Net",
                                 label: "Net",
-                                render: (row) => toInternationalNumber(row.Net) || "0.00"
+                                render: (row) => toInternationalNumber(row.Net,{ minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"
                             },
                             {
                                 key: "Vat",
                                 label: "VAT",
-                                render: (row) => toInternationalNumber(row.Vat) || "0.00"
+                                render: (row) => toInternationalNumber(row.Vat,{ minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"
                             },
                             {
                                 key: "Total",
                                 label: "Total",
-                                render: (row) => toInternationalNumber(Number(row.Total)) || "0.00"
+                                render: (row) => toInternationalNumber(Number(row.Total),{ minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"
                             },
                             {
                                 key: "action",
                                 label: "Action",
-                                render: (row) => (
-                                    <button
-                                        type="button"
-                                        className={`${itemData.length <= 1
-                                            ? "opacity-50 cursor-not-allowed"
-                                            : ""
-                                            } text-red-500 flex items-center`}
-                                        onClick={() =>
-                                            itemData.length > 1 && handleRemoveItem(Number(row.idx))
-                                        }
-                                    >
-                                        <Icon icon="hugeicons:delete-02" width={20} />
-                                    </button>
-                                ),
+                                render: (row) => {
+                                    const isAgainstDelivery = form.invoice_type === "0";
+                                    const isDisabled = itemData.length <= 1 || isAgainstDelivery;
+                                    return (
+                                        <button
+                                            type="button"
+                                            className={`${isDisabled
+                                                ? "opacity-50 cursor-not-allowed"
+                                                : ""
+                                                } text-red-500 flex items-center`}
+                                            onClick={() =>
+                                                !isDisabled && handleRemoveItem(Number(row.idx))
+                                            }
+                                            disabled={isDisabled}
+                                        >
+                                            <Icon icon="hugeicons:delete-02" width={20} />
+                                        </button>
+                                    );
+                                }
                             },
                         ],
                     }}
@@ -1635,12 +1828,13 @@ export default function InvoiceddEditPage() {
                     {(() => {
                         // disable add when there's already an empty/new item row
                         const hasEmptyRow = itemData.some(it => (String(it.item_id ?? '').trim() === '' && String(it.uom_id ?? '').trim() === ''));
+                        const isAgainstDelivery = form.invoice_type === "0";
                         return (
                             <button
                                 type="button"
-                                disabled={hasEmptyRow}
-                                className={`text-[#E53935] font-medium text-[16px] flex items-center gap-2 ${hasEmptyRow ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                onClick={() => { if (!hasEmptyRow) handleAddNewItem(); }}
+                                disabled={hasEmptyRow || isAgainstDelivery}
+                                className={`text-[#E53935] font-medium text-[16px] flex items-center gap-2 ${hasEmptyRow || isAgainstDelivery ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={() => { if (!hasEmptyRow && !isAgainstDelivery) handleAddNewItem(); }}
                             >
                                 <Icon icon="material-symbols:add-circle-outline" width={20} />
                                 Add New Item
@@ -1700,8 +1894,8 @@ export default function InvoiceddEditPage() {
                             {[
                                 // { key: "Gross Total", value: `AED ${grossTotal.toFixed(2)}` },
                                 // { key: "Discount", value: `AED ${discount.toFixed(2)}` },
-                                { key: "Net Total", value: `${CURRENCY} ${toInternationalNumber(Number(netAmount))}` },
-                                { key: "VAT", value: `${CURRENCY} ${toInternationalNumber(Number(totalVat))}` },
+                                { key: "Net Total", value: `${CURRENCY} ${toInternationalNumber(Number(netAmount),{ minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+                                { key: "VAT", value: `${CURRENCY} ${toInternationalNumber(Number(totalVat),{ minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
                                 // { key: "preVAT", value: `AED ${toInternationalNumber(netAmount - totalVat)}` },
                                 // { key: "Delivery Charges", value: "AED 0.00" },
                             ].map((item) => (
@@ -1736,13 +1930,276 @@ export default function InvoiceddEditPage() {
                         disabled={isSubmitting}
                         label={
                             isSubmitting
-                                ? (isEditMode ? "Updating Invoice..." : "Creating Invoice...")
-                                : (isEditMode ? "Update Invoice" : "Create Invoice")
+                                ? (checkout == 1?"Checkout":isEditMode ? "Updating Invoice..." : "Creating Invoice...")
+                                : (isEditMode ? "Update Invoice" : form.customerType == "2"?"Create Invoice":form.invoice_type == "0"?"Create Invoice":checkout == 1?"Checkout":"Create Invoice")
                         }
                         onClick={handleSubmit}
                     />
                 </div>
             </ContainerCard>
+
+            <Dialog
+        open={openPromotion}
+        onClose={()=>setOpenPromotion(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+       
+      >
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+           <PromotionStepper setCheckout={setCheckout} setOpenPromotion={setOpenPromotion} promotions={promotions} selectedPromotionsItems={selectedPromotionsItems} recalculateItem={recalculateItem} setSelectedPromotionsItems={setSelectedPromotionsItems} itemData={itemData}  setItemData={setItemData} />
+          </DialogContentText>
+        </DialogContent>
+       
+      </Dialog>
         </div>
     );
 }
+
+type PromotionItems = {
+  id: number;
+  item_code: string;
+  item_name: string;
+  item_uom_id: string;
+  name: string;
+};
+
+type Promotion = {
+  id: number;
+  name: string;
+  bundle_combination: string;
+  promotion_type: string;
+  FocQty: number;
+  promotion_items: PromotionItems[];
+};
+
+type ResultItem = PromotionItems & {
+  focQty: number;
+};
+
+function getPromotionItemsByIndex(
+  promotions: Promotion[],
+  itemIds: number[]
+): ResultItem[] {
+  const result: ResultItem[] = [];
+
+  itemIds.forEach((itemId, index) => {
+    const promotion = promotions[index];
+    if (!promotion) return;
+
+    const matchedItem = promotion.promotion_items.find(
+      (item) => item.id === itemId
+    );
+
+    if (matchedItem) {
+      result.push({
+        ...matchedItem,
+        focQty: promotion.FocQty,
+      });
+    }
+  });
+
+  return result;
+}
+
+ function PromotionStepper({setCheckout, promotions,setOpenPromotion, selectedPromotionsItems,setPromotions, setSelectedPromotionsItems,itemData,setItemData,recalculateItem }: any) {
+  const { showSnackbar } = useSnackbar();
+
+  /** 🔹 Convert promotions → steps */
+  const steps: StepperStep[] = promotions.map((promo:any, index:any) => ({
+    id: index + 1,
+    label: promo.name,
+  }));
+
+  const {
+    currentStep,
+    nextStep,
+    prevStep,
+    isLastStep,
+    markStepCompleted,
+    isStepCompleted,
+  } = useStepperForm(steps.length);
+
+  const handleNext = () => {
+    markStepCompleted(currentStep);
+    nextStep();
+  };
+
+  const handleSubmit = () => {
+    console.log(selectedPromotionsItems,"selectedPromotionsItems",itemData)
+
+    let result = getPromotionItemsByIndex(promotions,selectedPromotionsItems)
+    console.log(result,"result",selectedPromotionsItems)
+
+    result.map((item:any)=>{
+      console.log(item,"item")
+      itemData.push({
+      item_id: item.id,
+      itemName: `${item.item_code}-${item.item_name}`,
+      itemLabel: `${item.item_code}-${item.item_name}`,
+      UOM: [{
+        value: item.item_uom_id,
+        label: item.name,
+      }],
+      uom_id: item.item_uom_id,
+      Quantity: item.focQty,
+      Price: "0.00",
+      Excise: "0",
+      Discount: "0",
+      Net: "0",
+      Vat: "0",
+      Total: "0.00",
+      available_stock: "",
+      isPrmotion: true,
+    })
+    })
+      //  itemData.pop()
+       setItemData([...itemData]);
+
+   
+    // recalculateItem(Number(itemData.length), "item_id", selectedPromotionsItems[0])
+setOpenPromotion(false);
+setCheckout(2)
+    // showSnackbar("All promotions processed successfully", "success");
+  };
+
+
+
+  return (
+    <>
+      <div className="flex items-center gap-2 mb-4">
+        {/* <Link href="/promotion">
+          <Icon icon="lucide:arrow-left" width={22} />
+        </Link> */}
+        <h1 className="text-xl font-semibold">
+          Promotion Setup
+        </h1>
+      </div>
+
+      <StepperForm
+        steps={steps.map((step) => ({
+          ...step,
+          isCompleted: isStepCompleted(step.id),
+        }))}
+        currentStep={currentStep}
+        onStepClick={() => {}}
+        onBack={prevStep}
+        close={true}
+        closeFunction={() => setOpenPromotion(false)}
+        onNext={handleNext}
+        onSubmit={handleSubmit}
+        showSubmitButton={isLastStep}
+        showNextButton={!isLastStep}
+        nextButtonText="Save & Next"
+        submitButtonText="Finish"
+      >
+        <RenderStepContent promotions={promotions} selectedPromotionsItems={selectedPromotionsItems} setSelectedPromotionsItems={setSelectedPromotionsItems} setPromotions={setPromotions} currentStep={currentStep} promotionItems={promotions.promotion_items}/>
+      </StepperForm>
+    </>
+  );
+}
+
+
+
+interface PromotionItem {
+  id: number;
+  item_code: string;
+  item_name: string;
+  item_uom_id: string;
+  name: any;
+}
+
+interface Props {
+  promotionItems: PromotionItem[];
+  qtyData: Record<number, string>;
+ 
+  setQtyData: (idx: number, value: string) => void;
+}
+
+ function PromotionItemsQtyTable({
+  selectedItems, setSelectedItems, promotions, setPromotions, currentStep, selectedPromotionsItems, setSelectedPromotionsItems,
+  promotionItems,
+}: any) {
+  const [qtyData, setQtyData] = useState<any>(0);
+  const [selects, setSelects] = useState<any>("");
+
+  useEffect(() => {
+    const selectedItemId = selectedPromotionsItems[currentStep - 1] || "";
+    setSelects(selectedItemId);
+  }, [currentStep, selectedPromotionsItems]);
+                          // const options = JSON.parse(row.UOM ?? "[]");
+
+
+  return (
+    <div style={{height:"300px"}}>
+       <InputFields
+                                label=""
+                                name={`item_id`}
+                                value={selects}
+                                searchable={true}
+                                onChange={(e) => {
+                                  console.log(e.target.value,"e.target.value")
+                                  setSelects(e.target.value);    
+                                  selectedPromotionsItems[currentStep - 1] = e.target.value;
+                                  console.log(selectedPromotionsItems,"selectedPromotionsItems1.2")
+                                  setSelectedPromotionsItems([...selectedPromotionsItems]);  
+
+                                }}
+                                options={promotionItems.map((row:any, idx:any) => ({
+                                  value: row.id,
+                                  label: row.item_name,
+      }))}
+                                placeholder="Search item"
+                                // disabled={!values.customer}
+                                // error={err && err}
+                              />
+                              <div className="mt-4">
+                              <InputFields
+                                label="Quantity"
+                                type="number"
+                                name="Quantity"
+                                placeholder="Enter Qty"
+                                value={promotions[currentStep - 1]?.FocQty}
+                                onChange={(e) => {
+                                   
+                                }}
+                               disabled={true}
+                              />
+                             
+                              </div>
+                               <div>
+                              <InputFields
+                                label="Uom"
+                                value={promotionItems[0]?.name}
+                                placeholder="Select UOM"
+                                width="max-w-[150px]"
+                                onChange={()=>{}}
+                                disabled={true}
+                              />
+                            </div>
+
+    </div>
+  );
+}
+
+    const RenderStepContent = ({promotions,selectedPromotionsItems,setSelectedPromotionsItems,setPromotions,currentStep,promotionItems}:any) => {
+    const promotion = promotions[currentStep - 1];
+  const [selectedItems, setSelectedItems] = useState<any>(selectedPromotionsItems[currentStep - 1]);
+   
+
+    return (
+      <ContainerCard>
+
+        <PromotionItemsQtyTable selectedItems={selectedItems} setSelectedItems={setSelectedItems} promotions={promotions} selectedPromotionsItems={selectedPromotionsItems} setSelectedPromotionsItems={setSelectedPromotionsItems} setPromotions={setPromotions} currentStep={currentStep} promotionItems={promotion.promotion_items}/>
+       
+         
+        {/* <h2 className="mb-4 text-lg font-semibold">
+          {promotion?.name}
+        </h2> */}
+
+     
+      </ContainerCard>
+    );
+  };
+
+     

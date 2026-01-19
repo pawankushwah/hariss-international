@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState, useEffect } from "react";
 import { usePagePermissions } from "@/app/(private)/utils/usePagePermissions";
 import toInternationalNumber from "@/app/(private)/utils/formatNumber";
+import { formatWithPattern } from "@/app/utils/formatDate";
 // import 
 
 export default function SalesTeamReconciliationPage() {
@@ -128,13 +129,16 @@ export default function SalesTeamReconciliationPage() {
             key: "reconsile_date",
             label: "Date",
             render: (row: any) => {
-                const date = row.reconsile_date ? new Date(row.reconsile_date) : null;
-                return date ? date.toLocaleDateString() : "-";
+               return formatWithPattern(
+                         new Date(row.reconsile_date),
+                         "DD MMM YYYY",
+                         "en-GB",
+                       );
             }
         },
         {
             key: "warehouse_name",
-            label: "Warehouse",
+            label: "Distributor",
             render: (row: any) =>
                 row.warehouse_code && row.warehouse_name
                     ? `${row.warehouse_code} - ${row.warehouse_name}`
@@ -206,7 +210,7 @@ export default function SalesTeamReconciliationPage() {
                     localStorageKey: "sales-team-reconciliation-table",
                     footer: { pagination: true, nextPrevBtn: true },
                     columns,
-                    rowSelection: true,
+                    // rowSelection: true,
                     rowActions: [
                         {
                             icon: "lucide:eye",

@@ -5,6 +5,9 @@ import { FilterRendererProps } from "./customTable";
 // Extend props to allow specifying which filters to show
 type FilterComponentProps = FilterRendererProps & {
   onlyFilters?: string[]; // e.g. ['warehouse_id', 'company_id']
+  currentDate?: boolean;
+  api?: (payload: any) => Promise<any>; // Optional API function to call on filter submit
+  disabled?: boolean;
 };
 import SidebarBtn from "./dashboardSidebarBtn";
 import InputFields from "./inputFields";
@@ -48,6 +51,7 @@ type ApiResponse<T> = {
 };
 
 export default function FilterComponent(filterProps: FilterComponentProps) {
+    const { disabled = false } = filterProps;
   const {
     customerSubCategoryOptions,
     companyOptions,
@@ -61,13 +65,25 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
     ensureCompanyLoaded();
     ensureSalesmanLoaded();
   }, [ensureCompanyLoaded, ensureSalesmanLoaded]);
-  const { onlyFilters } = filterProps;
+  const { onlyFilters, currentDate, api } = filterProps;
 
+  // Set default date for from_date and to_date to today if currentDate is true
   useEffect(() => {
-    ensureCompanyLoaded();
-    ensureSalesmanLoaded();
-  }, [ensureCompanyLoaded,
-    ensureSalesmanLoaded]);
+    if (currentDate) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (!filterProps.payload.from_date) {
+        filterProps.setPayload((prev) => ({ ...prev, from_date: today }));
+      }
+      if (!filterProps.payload.to_date) {
+        filterProps.setPayload((prev) => ({ ...prev, to_date: today }));
+      }
+    } else {
+      // If currentDate is false, clear the dates
+      filterProps.setPayload((prev) => ({ ...prev, from_date: "", to_date: "" }));
+    }
+    // Only run on mount or when currentDate changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate]);
   const [skeleton, setSkeleton] = useState({
     company: false,
     region: false,
@@ -237,16 +253,47 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
     fetchRoutes();
   }, [warehouseVal.join(",")]);
 
-  // console.log("FilterComponent payload:", payload);
 
   // Helper to check if a filter should be shown
   const showFilter = (key: string) => {
+    // Only show day_filter if onlyFilters is provided and includes it
+    if (key === 'day_filter') {
+      return Array.isArray(onlyFilters) && onlyFilters.includes('day_filter');
+    }
     if (!onlyFilters) return true;
     return onlyFilters.includes(key);
   };
 
   return (
     <div className="grid grid-cols-2 gap-4">
+      {/* Day Filter Dropdown */}
+       {showFilter("day_filter") && (
+      <InputFields
+        label="Day Filter"
+        name="day_filter"
+        placeholder="Select Filter"
+        type="select"
+        options={[
+          { value: "yesterday", label: "Yesterday" },
+          { value: "today", label: "Today" },
+          { value: "3days", label: "Last 3 Days" },
+          { value: "7days", label: "Last 7 Days" },
+          { value: "lastmonth", label: "Last Month" },
+        ]}
+        value={
+          Array.isArray(payload.day_filter)
+            ? payload.day_filter.map((v) => (typeof v === "number" ? String(v) : v))
+            : typeof payload.day_filter === "number"
+            ? String(payload.day_filter)
+            : payload.day_filter || ""
+        }
+        disabled={disabled || !!payload.from_date || !!payload.to_date}
+        onChange={(e) => {
+          const raw = (e as any)?.target?.value ?? e;
+          setPayload((prev) => ({ ...prev, day_filter: raw }));
+        }}
+      />
+       )}
       {/* Start Date */}
       {showFilter("from_date") && (
         <InputFields
@@ -258,6 +305,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
               ? String(payload.from_date)
               : (payload.from_date as string | undefined) ?? ""
           }
+          disabled={disabled || !!payload.day_filter}
           onChange={(e) => {
             const raw = (e as any)?.target?.value ?? e;
             setPayload((prev) => ({ ...prev, from_date: raw }));
@@ -276,7 +324,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
               ? String(payload.to_date)
               : (payload.to_date as string | undefined) ?? ""
           }
-          disabled={!payload.from_date}
+          disabled={disabled || !!payload.day_filter || !payload.from_date}
           onChange={(e) => {
             const raw = (e as any)?.target?.value ?? e;
             setPayload((prev) => ({ ...prev, to_date: raw }));
@@ -295,6 +343,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           showSkeleton={skeleton.company}
           options={Array.isArray(companyOptions) ? companyOptions : []}
           value={companyVal as any}
+          disabled={disabled}
           onChange={(e) => {
             const raw = (e as any)?.target?.value ?? e;
             const val = Array.isArray(raw)
@@ -321,7 +370,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           isSingle={false}
           multiSelectChips
           showSkeleton={skeleton.region}
-          disabled={companyVal.length === 0}
+          disabled={disabled || companyVal.length === 0}
           options={Array.isArray(regionOptions) ? regionOptions : []}
           value={regionVal as any}
           onChange={(e) => {
@@ -348,7 +397,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           isSingle={false}
           multiSelectChips
           showSkeleton={skeleton.area}
-          disabled={regionVal.length === 0}
+          disabled={disabled || regionVal.length === 0}
           options={Array.isArray(areaOptions) ? areaOptions : []}
           value={areaVal as any}
           onChange={(e) => {
@@ -374,7 +423,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           isSingle={false}
           multiSelectChips
           showSkeleton={skeleton.warehouse}
-          disabled={areaVal.length === 0 || areaOptions.length === 0}
+          disabled={disabled || areaVal.length === 0 || areaOptions.length === 0}
           options={Array.isArray(warehouseOptions) ? warehouseOptions : []}
           value={warehouseVal as any}
           onChange={(e) => {
@@ -399,7 +448,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           isSingle={false}
           multiSelectChips
           showSkeleton={skeleton.route}
-          disabled={warehouseVal.length === 0}
+          disabled={disabled || warehouseVal.length === 0}
           options={Array.isArray(routeOptions) ? routeOptions : []}
           value={routeVal as any}
           onChange={(e) => {
@@ -423,7 +472,7 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           isSingle={false}
           multiSelectChips
           showSkeleton={skeleton.salesteam}
-          disabled={routeVal.length === 0}
+          disabled={disabled || routeVal.length === 0}
           options={Array.isArray(salesmanOptions) ? salesmanOptions : []}
           value={salesVal as any}
           onChange={(e) => {
@@ -445,15 +494,20 @@ export default function FilterComponent(filterProps: FilterComponentProps) {
           onClick={() => clear()}
           label="Clear All"
           buttonTw="px-3 py-2 h-9"
-          disabled={isClearing || activeFilterCount === 0}
+          disabled={disabled || isClearing || activeFilterCount === 0}
         />
         <SidebarBtn
           isActive={true}
           type="button"
-          onClick={() => submit(payload)}
+          onClick={async () => {
+            if (api) {
+              await api(payload);
+            }
+            submit(payload);
+          }}
           label="Apply Filter"
           buttonTw="px-4 py-2 h-9"
-          disabled={isApplying || activeFilterCount === 0}
+          disabled={disabled || isApplying || activeFilterCount === 0}
         />
       </div>
     </div>
